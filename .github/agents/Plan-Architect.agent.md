@@ -376,11 +376,11 @@ When finished, you WILL provide:
 
 **When exploring design options or breaking down unclear requirements:**
 
-- Load `.github/skills/brainstorming/SKILL.md` for structured Socratic questioning
+- Load `.claude/skills/brainstorming/SKILL.md` for structured Socratic questioning
 
 **When planning layer placement or code organization:**
 
-- Load `.github/skills/software-architecture/SKILL.md` for Clean Architecture guidance
+- Load `.claude/skills/software-architecture/SKILL.md` for Clean Architecture guidance
 
 ---
 

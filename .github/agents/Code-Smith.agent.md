@@ -197,7 +197,7 @@ class NewProcessor {
 
 See `.github/architecture-rules.md` → "Extraction & Extension Principles" for details.
 
-**🔧 When extracting code**: Load `.github/skills/software-architecture/SKILL.md` and apply full architecture review (layer placement, SOLID, naming, file size guidelines).
+**🔧 When extracting code**: Load `.claude/skills/software-architecture/SKILL.md` and apply full architecture review (layer placement, SOLID, naming, file size guidelines).
 
 **Workflow**:
 
@@ -212,16 +212,16 @@ See `.github/architecture-rules.md` → "Extraction & Extension Principles" for 
 
 **When implementing domain/core logic layer code or organizing modules:**
 
-- Load `.github/skills/software-architecture/SKILL.md` for Clean Architecture and layer rules
+- Load `.claude/skills/software-architecture/SKILL.md` for Clean Architecture and layer rules
 
 **When debugging issues:**
 
-- Load `.github/skills/systematic-debugging/SKILL.md` for structured 4-phase debugging
+- Load `.claude/skills/systematic-debugging/SKILL.md` for structured 4-phase debugging
 - Follow the Iron Law: NO FIXES WITHOUT ROOT CAUSE INVESTIGATION FIRST
 
 **When implementing UI components:**
 
-- Reference `.github/skills/frontend-design/SKILL.md` for aesthetic guidance
+- Reference `.claude/skills/frontend-design/SKILL.md` for aesthetic guidance
 
 ---
 

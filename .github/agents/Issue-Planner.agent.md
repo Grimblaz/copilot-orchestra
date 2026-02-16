@@ -105,7 +105,7 @@ The plan should reflect:
 - Deferral handling should be explicit: significant non-blocking improvements (>1 day) should be marked `DEFERRED-SIGNIFICANT` and tracked via automatically created follow-up issues.
 - Include a short post-issue process retrospective checkpoint (slowdowns, late-failing checks, one workflow guardrail improvement).
 - Changes should only be pushed to another issue if they are quite significant.
-- For projects with UI components: UI-touching plans must include `visual_verification: true` in frontmatter and per-step visual checkpoints (affected route(s)/page(s) + AC to verify) so Code-Conductor can run the Visual Verification Gate.
+- For projects with UI components: UI-touching plans must include `visual_verification: true` in frontmatter and per-step visual checkpoints (affected route(s)/page(s) + AC to verify) so Code-Conductor can run the Visual Verification Gate; backend-only or non-UI plans should set `visual_verification: false` or omit the field to skip that gate.
 
 Present the plan as a **DRAFT**, then **IMMEDIATELY** use #tool:vscode/askQuestions to ask for approval. NEVER end your turn after presenting a draft without calling #tool:vscode/askQuestions — this wastes the user's premium requests by forcing a new turn just to say "looks good."
 

@@ -269,7 +269,7 @@ When orchestrating validation, always use this order:
 6. **Code review** (Code-Critic)
 7. **Visual verification** (LAST - manual step, dev server)
 
-**Note**: This gate applies only to projects with UI components and Playwright MCP configured. For backend-only projects, this section is automatically skipped via the `visual_verification: true` plan frontmatter check.
+**Note**: Run this gate only when plan frontmatter sets `visual_verification: true` (UI plans). Backend-only or non-UI plans skip this gate when `visual_verification` is `false` or omitted.
 
 **Why this order?**
 
