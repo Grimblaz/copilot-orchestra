@@ -125,7 +125,7 @@ Complete set of agent definitions in `.github/agents/`:
 - **Code-Critic** - Reviews implementations
 - **Code-Review-Response** - Categorizes review feedback
 - **Janitor** - Handles file cleanup and organization
-- **Plan-General** - General planning assistance
+- **Issue-Planner** - General planning assistance
 - **Process-Review** - Reviews process compliance
 - **Specification** - Helps define specifications
 - **UI-Iterator** - Polishes UI implementation
