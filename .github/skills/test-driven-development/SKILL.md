@@ -3,7 +3,7 @@ name: test-driven-development
 description: Test-Driven Development workflow guidance, quality standards, and practical patterns. Use when writing tests first, implementing to pass tests, validating quality gates, or refactoring safely.
 ---
 
-# TDD Workflow Skill
+# Test-Driven Development Skill
 
 ## Overview
 
