@@ -41,7 +41,7 @@ handoffs:
     send: false
 ---
 
-# Test Writer Chat Mode
+# Test Writer Agent
 
 ## Overview
 

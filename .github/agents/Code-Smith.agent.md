@@ -40,7 +40,7 @@ handoffs:
     send: false
 ---
 
-# Code Smith Chat Mode
+# Code Smith Agent
 
 ## Overview
 

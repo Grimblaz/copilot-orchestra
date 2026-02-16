@@ -34,7 +34,7 @@ handoffs:
     send: false
 ---
 
-# Refactor Specialist Chat Mode
+# Refactor Specialist Agent
 
 ## Overview
 

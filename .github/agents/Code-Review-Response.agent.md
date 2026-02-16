@@ -35,7 +35,7 @@ handoffs:
     send: false
 ---
 
-# Code Review Response Chat Mode
+# Code Review Response Agent
 
 ## Overview
 

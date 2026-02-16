@@ -14,7 +14,7 @@ tools:
   - web/githubRepo
 ---
 
-# Janitor Chat Mode
+# Janitor Agent
 
 ## Overview
 

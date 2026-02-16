@@ -20,7 +20,7 @@ handoffs:
     send: false
 ---
 
-# Doc Keeper Chat Mode
+# Doc Keeper Agent
 
 ## Overview
 

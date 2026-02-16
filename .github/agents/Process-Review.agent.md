@@ -578,7 +578,6 @@ When reviewing a completed workflow, audit skill usage:
 | `ui-testing`                     | Component tests, Testing Library         |
 | `systematic-debugging`           | Bug investigation, test failures         |
 | `verification-before-completion` | Pre-commit checks, quality gates         |
-| `webapp-testing`                 | E2E tests, Playwright                    |
 
 ### Output Format
 
