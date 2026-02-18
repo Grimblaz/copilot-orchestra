@@ -65,7 +65,7 @@ Before researching domain topics, load the appropriate skill:
 
 When the design involves UI changes, new screens, or modifications to existing views, and Playwright MCP is available, use Playwright MCP to see what currently exists before proposing changes.
 
-1. **Check dev server**: Verify the project's configured local preview URL is running (see `.github/copilot-instructions.md` and `browser-mcp.instructions.md (if present)` for startup details)
+1. **Check dev server**: Verify the project's configured local preview URL is running (see `.github/copilot-instructions.md` and `.github/instructions/browser-mcp.instructions.md` (if present) for startup details)
 2. **Navigate**: Use `browser_navigate` to visit relevant routes or screens for the feature under design
 3. **Capture**: Use `browser_take_screenshot` to capture current state; save to `screenshots/` (gitignored, transient)
 4. **Inspect**: Use `browser_snapshot` for accessibility tree / DOM structure when layout details matter
