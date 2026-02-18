@@ -16,7 +16,6 @@ tools:
   - web
   - vscode/extensions
   - todo
-  # Requires Playwright MCP — this agent is UI-focused
   - "playwright/*"
   - memory
   - agent
@@ -31,13 +30,11 @@ handoffs:
     send: false
 ---
 
-# UI-Iterator Agent
+# UI-Iterator Chat Mode
 
 ## Overview
 
 A systematic UI refinement mode using screenshot-based iteration. Evaluates current UI state against aesthetic criteria, proposes improvements, and implements changes through iterative polish passes.
-
-**Applicability**: This agent requires a project with UI components. Not applicable to backend-only or CLI projects. Requires either Playwright MCP tools or manual screenshot workflow via `vscode/openSimpleBrowser`.
 
 **Core Workflow**: Agent autonomously manages browser-based polish using Playwright MCP tools (`browser_navigate`, `browser_take_screenshot`) with iterative analyze→implement→verify loops, and falls back to `vscode/openSimpleBrowser` + user-pasted screenshots when MCP is unavailable.
 
@@ -67,7 +64,7 @@ A systematic UI refinement mode using screenshot-based iteration. Evaluates curr
 
 For dev server lifecycle, navigation defaults, cleanup, and deterministic error handling, follow:
 
-- `.github/instructions/browser-mcp.instructions.md (if present)`
+- `.github/instructions/browser-mcp.instructions.md`
 
 ---
 

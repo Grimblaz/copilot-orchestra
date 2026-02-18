@@ -68,7 +68,7 @@ MANDATORY: Instruct the subagent to work autonomously following <research_instru
 - Start with high-level code searches before reading specific files.
 - Check `Documents/Design/` and `Documents/Decisions/` for existing design docs relevant to the task.
 - Pay special attention to instructions and skills made available by the developers to understand best practices and intended usage.
-- If the project has a UI layer, detect UI/presentation-layer impact by checking for UI-specific files (for example, known UI/presentation directories, style assets, or JSX/TSX/Tailwind markup changes), and identify affected routes/pages for per-step visual checkpoints.
+- Detect UI/presentation-layer impact by checking for UI-specific files (for example, known UI/presentation directories, style assets, or JSX/TSX/Tailwind markup changes), and identify affected routes/pages for per-step visual checkpoints.
 - Identify missing information, conflicting requirements, or technical unknowns.
 - DO NOT draft a full plan yet — focus on discovery and feasibility.
   </research_instructions>
@@ -105,7 +105,7 @@ The plan should reflect:
 - Deferral handling should be explicit: significant non-blocking improvements (>1 day) should be marked `DEFERRED-SIGNIFICANT` and tracked via automatically created follow-up issues.
 - Include a short post-issue process retrospective checkpoint (slowdowns, late-failing checks, one workflow guardrail improvement).
 - Changes should only be pushed to another issue if they are quite significant.
-- For projects with UI components: UI-touching plans must include `visual_verification: true` in frontmatter and per-step visual checkpoints (affected route(s)/page(s) + AC to verify) so Code-Conductor can run the Visual Verification Gate; backend-only or non-UI plans should set `visual_verification: false` or omit the field to skip that gate.
+- UI-touching plans must include `visual_verification: true` in frontmatter and per-step visual checkpoints (affected route(s)/page(s) + AC to verify) so Code-Conductor can run the Visual Verification Gate.
 
 Present the plan as a **DRAFT**, then **IMMEDIATELY** use #tool:vscode/askQuestions to ask for approval. NEVER end your turn after presenting a draft without calling #tool:vscode/askQuestions — this wastes the user's premium requests by forcing a new turn just to say "looks good."
 

@@ -35,7 +35,7 @@ handoffs:
     send: false
 ---
 
-# Code Review Response Agent
+# Code Review Response Chat Mode
 
 ## Overview
 
@@ -259,7 +259,7 @@ User grants blanket approval upfront (e.g., "you have pre-approval") and this re
 
 ## 🚨 CRITICAL: Line-Limit Lint Failures Require Real Refactors
 
-This repo enforces `max-lines` and `max-lines-per-function` to prevent “god files” and SRP violations (see project lint configuration (e.g., ESLint, Checkstyle, or equivalent)).
+This repo enforces `max-lines` and `max-lines-per-function` to prevent “god files” and SRP violations (see `eslint.config.js`).
 
 When CI fails on these rules, you MUST follow the intent of the rule:
 

@@ -1,7 +1,7 @@
 ---
 name: Code-Critic
-description: "Adversarial code review — your job is to break this code, not validate it"
-argument-hint: "Review code for architecture compliance, security issues, and quality standards"
+description: 'Adversarial code review — your job is to break this code, not validate it'
+argument-hint: 'Review code for architecture compliance, security issues, and quality standards'
 tools:
   - execute/testFailure
   - execute/getTerminalOutput
@@ -14,8 +14,7 @@ tools:
   - search
   - web
   - github/*
-  # Optional: remove if not using Playwright MCP
-  - "playwright/*"
+  - 'playwright/*'
   - memory
 # NOTE: 'edit' tool intentionally EXCLUDED - Code-Critic is READ-ONLY.
 # Fixes are delegated via handoff to Code-Review-Response → Code-Smith.
@@ -38,7 +37,7 @@ handoffs:
     send: false
 ---
 
-# Code Critic Agent
+# Code Critic Chat Mode
 
 ## Overview
 
@@ -288,8 +287,6 @@ For any **new data field, constant, or map** added:
 
 ## Browser-Based Review (UI-Touching PRs)
 
-**Note**: This section applies only to projects with UI components. Skip for backend-only projects or when Playwright MCP is not configured.
-
 Use browser-based review only when PR changes touch UI implementation.
 
 **When to use**:
@@ -375,7 +372,7 @@ Use browser-based review only when PR changes touch UI implementation.
 
 - `.github/architecture-rules.md` - Architecture boundaries and enforcement
 - `.github/copilot-instructions.md` - Project coding standards
-- `.github/instructions/browser-mcp.instructions.md (if present)` - Shared Playwright MCP browser workflow and constraints
+- `.github/instructions/browser-mcp.instructions.md` - Shared Playwright MCP browser workflow and constraints
 - `Documents/Development/TestingStrategy.md` - Test coverage requirements
 - `npm audit` output - Security vulnerability report
 
