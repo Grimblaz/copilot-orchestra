@@ -163,6 +163,7 @@ Foundation for automation in `.github/`:
 
 - **Validation Scripts** - Template for test/lint validation
 - **CI Workflows** - Template for continuous integration
+- **Auto PR Workflow** - Automatically opens a draft PR on pushes to `feature/*`, `fix/*`, `bugfix/*`, and `hotfix/*` when no open PR exists
 
 ### 📚 Example Project
 
