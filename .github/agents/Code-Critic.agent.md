@@ -288,8 +288,6 @@ For any **new data field, constant, or map** added:
 
 ## Browser-Based Review (UI-Touching PRs)
 
-**Note**: This section applies only to projects with UI components. Skip for backend-only projects or when Playwright MCP is not configured.
-
 Use browser-based review only when PR changes touch UI implementation.
 
 **When to use**:
@@ -375,7 +373,7 @@ Use browser-based review only when PR changes touch UI implementation.
 
 - `.github/architecture-rules.md` - Architecture boundaries and enforcement
 - `.github/copilot-instructions.md` - Project coding standards
-- `.github/instructions/browser-mcp.instructions.md (if present)` - Shared Playwright MCP browser workflow and constraints
+- `.github/instructions/browser-mcp.instructions.md` (if present) - Shared Playwright MCP browser workflow and constraints
 - `Documents/Development/TestingStrategy.md` - Test coverage requirements
 - `npm audit` output - Security vulnerability report
 
@@ -394,12 +392,3 @@ Use browser-based review only when PR changes touch UI implementation.
 ---
 
 **Activate with**: `Use code-critic mode` or reference this file in chat context
-
-## Model Recommendations
-
-**Best for this agent**: **Claude Sonnet 4.5** (1x) — excellent precision for code review and quality analysis.
-
-**Alternatives**:
-
-- **Claude Opus 4.5** (3x): For architectural reviews requiring deep reasoning.
-- **GPT-5.2** (1x): Strong for comprehensive security analysis.

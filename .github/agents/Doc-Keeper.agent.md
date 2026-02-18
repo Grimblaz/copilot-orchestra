@@ -13,6 +13,8 @@ tools:
   - web/fetch
   - github/*
   - agent
+  # Optional: remove if not using Playwright MCP
+  - "playwright/*"
 handoffs:
   - label: Cleanup & Archive
     agent: Janitor
@@ -103,12 +105,3 @@ See also: [Issue-Designer](Issue-Designer.agent.md) for ROADMAP updates.
 - Load relevant project guidance from `.github/copilot-instructions.md` and `.github/architecture-rules.md`
 
 **Note**: Doc-Keeper primarily handles documentation formatting and accuracy. Most deep implementation skills are owned by implementation agents.
-
-## Model Recommendations
-
-**Best for this agent**: **Claude Haiku 4.5** (0.33x) — fast and precise for documentation updates.
-
-**Alternatives**:
-
-- **GPT-5.1-Codex-Mini** (0.33x): Efficient for simple doc edits.
-- **Claude Sonnet 4.5** (1x): For complex technical documentation.

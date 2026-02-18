@@ -37,9 +37,9 @@ handoffs:
 
 A systematic UI refinement mode using screenshot-based iteration. Evaluates current UI state against aesthetic criteria, proposes improvements, and implements changes through iterative polish passes.
 
-**Applicability**: This agent requires a project with UI components. Not applicable to backend-only or CLI projects. Requires either Playwright MCP tools or manual screenshot workflow via `vscode/openSimpleBrowser`.
-
 **Core Workflow**: Agent autonomously manages browser-based polish using Playwright MCP tools (`browser_navigate`, `browser_take_screenshot`) with iterative analyze→implement→verify loops, and falls back to `vscode/openSimpleBrowser` + user-pasted screenshots when MCP is unavailable.
+
+**Applicability**: This agent is for projects with UI surfaces. For backend-only or CLI-only projects, this agent is not applicable; use Code-Smith/Refactor-Specialist for non-UI improvements, then follow standard validation and review workflow.
 
 ## Screenshot Workflow
 
@@ -67,7 +67,7 @@ A systematic UI refinement mode using screenshot-based iteration. Evaluates curr
 
 For dev server lifecycle, navigation defaults, cleanup, and deterministic error handling, follow:
 
-- `.github/instructions/browser-mcp.instructions.md (if present)`
+- `.github/instructions/browser-mcp.instructions.md` (if present)
 
 ---
 
@@ -230,12 +230,3 @@ For dev server lifecycle, navigation defaults, cleanup, and deterministic error 
 ---
 
 **Activate with**: `Use UI-Iterator mode` or reference this file in chat context
-
-## Model Recommendations
-
-**Best for this agent**: **Gemini 3 Pro** (1x) — exceptional for "vibe coding" and intuitive UI/UX polish.
-
-**Alternatives**:
-
-- **Claude Sonnet 4.5** (1x): Reliable for systematic UI improvements.
-- **GPT-5.1-Codex-Max** (1x): Strong for complex component refactoring.

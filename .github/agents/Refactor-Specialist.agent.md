@@ -19,6 +19,8 @@ tools:
   - sonarsource.sonarlint-vscode/sonarqube_setUpConnectedMode
   - sonarsource.sonarlint-vscode/sonarqube_analyzeFile
   - agent
+  # Optional: remove if not using Playwright MCP
+  - "playwright/*"
 handoffs:
   - label: Re-Validate Tests
     agent: Test-Writer
@@ -246,12 +248,3 @@ For each file modified in the PR, evaluate:
 ---
 
 **Activate with**: `Use refactor-specialist mode` or reference this file in chat context
-
-## Model Recommendations
-
-**Best for this agent**: **GPT-5.1-Codex-Max** (1x) — specialized for complex code restructuring.
-
-**Alternatives**:
-
-- **Claude Sonnet 4.5** (1x): Reliable for DRY and SOLID refactoring.
-- **Gemini 3 Pro** (1x): Good for UI component refactoring.

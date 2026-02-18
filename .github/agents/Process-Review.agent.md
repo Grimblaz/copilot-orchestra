@@ -578,6 +578,7 @@ When reviewing a completed workflow, audit skill usage:
 | `ui-testing`                     | Component tests, Testing Library         |
 | `systematic-debugging`           | Bug investigation, test failures         |
 | `verification-before-completion` | Pre-commit checks, quality gates         |
+| `webapp-testing`                 | E2E tests, Playwright                    |
 
 ### Output Format
 
@@ -589,12 +590,3 @@ When reviewing a completed workflow, audit skill usage:
 | 1     | Research-Agent | None                      | `domain-reference`        | ⚠️   |
 | 2     | Test-Writer    | `test-driven-development` | `test-driven-development` | ✅   |
 ```
-
-## Model Recommendations
-
-**Best for this agent**: **Claude Opus 4.5** (3x) — highest reasoning for meta-analysis of workflow patterns.
-
-**Alternatives**:
-
-- **GPT-5.2** (1x): Strong analytical capabilities for process review.
-- **Claude Sonnet 4.5** (1x): Reliable for standard process assessments.

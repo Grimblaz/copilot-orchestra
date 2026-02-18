@@ -3,8 +3,7 @@ name: Issue-Planner
 description: Researches and outlines multi-step plans
 argument-hint: Outline the goal or problem to research
 target: vscode
-tools:
-  [
+tools: [
     "vscode/askQuestions",
     "execute",
     "read",
@@ -16,6 +15,8 @@ tools:
     "github/issue_write",
     "github.vscode-pull-request-github/issue_fetch",
     "github.vscode-pull-request-github/activePullRequest",
+    # Optional: remove if not using Playwright MCP
+    "playwright/*",
   ]
 handoffs:
   - label: Start Implementation
@@ -69,6 +70,7 @@ MANDATORY: Instruct the subagent to work autonomously following <research_instru
 - Check `Documents/Design/` and `Documents/Decisions/` for existing design docs relevant to the task.
 - Pay special attention to instructions and skills made available by the developers to understand best practices and intended usage.
 - If the project has a UI layer, detect UI/presentation-layer impact by checking for UI-specific files (for example, known UI/presentation directories, style assets, or JSX/TSX/Tailwind markup changes), and identify affected routes/pages for per-step visual checkpoints.
+- For backend/non-UI/CLI projects, explicitly skip UI-route checkpoint discovery and note why.
 - Identify missing information, conflicting requirements, or technical unknowns.
 - DO NOT draft a full plan yet — focus on discovery and feasibility.
   </research_instructions>
@@ -98,14 +100,15 @@ The plan should reflect:
 - Parallel-step convergence requirements: Test-Writer triage (`code defect` / `test defect` / `harness/env defect`) and mandatory sign-off before advancing.
 - Since we follow TDD, we should follow red-green-refactor for each step.
 - A larger refactor stage is beneficial; implementers should be encouraged to even take on larger refactors in this stage, as long as they are related to the feature being implemented. This is because it is much easier to do refactors when the context of the change is fresh in the implementer's mind, and it can help reduce technical debt in the long run.
-- Each step should end with the project's quick validation and test commands as defined in `.github/copilot-instructions.md`. Implementers should commit after each passing step: `feat(#N): Step X - description`.
+- Each step should end with the project's quick validation and test commands as defined in `.github/copilot-instructions.md`.
 - Code review and code review response stages should be included, with a mandatory reconciliation loop (Code-Critic → Code-Review-Response, rebuttal rounds for disputes up to loop budget).
 - Define loop budget explicitly for the reconciliation loop (Code-Critic → Code-Review-Response, rebuttal rounds): default **2 rebuttal rounds**, configurable via plan metadata key `review_loop_budget` (or environment variable `REVIEW_LOOP_BUDGET` when available).
 - Selection guideline for loop budget: use 1 for minor wording/nit disputes, 2 for normal mixed findings, and 3 only for high-complexity or high-risk architectural disputes.
 - Deferral handling should be explicit: significant non-blocking improvements (>1 day) should be marked `DEFERRED-SIGNIFICANT` and tracked via automatically created follow-up issues.
 - Include a short post-issue process retrospective checkpoint (slowdowns, late-failing checks, one workflow guardrail improvement).
 - Changes should only be pushed to another issue if they are quite significant.
-- For projects with UI components: UI-touching plans must include `visual_verification: true` in frontmatter and per-step visual checkpoints (affected route(s)/page(s) + AC to verify) so Code-Conductor can run the Visual Verification Gate; backend-only or non-UI plans should set `visual_verification: false` or omit the field to skip that gate.
+- For projects with UI components, UI-touching plans must include `visual_verification: true` in frontmatter and per-step visual checkpoints (affected route(s)/page(s) + AC to verify) so Code-Conductor can run the Visual Verification Gate.
+- For backend/non-UI/CLI projects, skip visual-verification checkpoints and set expectations accordingly.
 
 Present the plan as a **DRAFT**, then **IMMEDIATELY** use #tool:vscode/askQuestions to ask for approval. NEVER end your turn after presenting a draft without calling #tool:vscode/askQuestions — this wastes the user's premium requests by forcing a new turn just to say "looks good."
 
@@ -159,6 +162,7 @@ Rules:
 - NO code blocks — describe changes, link to files/symbols
 - NO questions at the end — ask during workflow via #tool:vscode/askQuestions
 - Include execution metadata in plan steps (mode + requirement contract expectations) so implementers can execute without re-deriving process rules.
-- UI-touching steps must include per-step visual checkpoints with affected route(s)/page(s) and the AC being verified (e.g., `/settings/profile` + "avatar upload preview updates immediately").
+- If the project has a UI layer, UI-touching steps must include per-step visual checkpoints with affected route(s)/page(s) and the AC being verified (e.g., `/settings/profile` + "avatar upload preview updates immediately").
+- For backend/non-UI/CLI projects, omit UI-specific checkpoints and include equivalent non-UI validation steps instead.
 - Keep scannable
   </plan_style_guide>
