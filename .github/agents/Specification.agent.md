@@ -163,12 +163,3 @@ tags: [Optional: List of relevant tags or categories, e.g., `infrastructure`, `p
 **When defining technical architecture:**
 
 - Load `.github/skills/software-architecture/SKILL.md` and follow `.github/architecture-rules.md` for architecture and layer placement
-
-## Model Recommendations
-
-**Best for this agent**: **Claude Opus 4.5** (3x) — highest reasoning depth for formal specification writing.
-
-**Alternatives**:
-
-- **GPT-5.2** (1x): Strong structured output for specification documents.
-- **Gemini 3 Pro** (1x): Good for specifications with visual/UI components.

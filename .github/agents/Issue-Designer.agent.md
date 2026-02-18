@@ -2,8 +2,7 @@
 name: Issue-Designer
 description: "Design exploration and issue management for new features — explores options, documents decisions, updates GitHub issues"
 argument-hint: "Start design work for a new GitHub issue"
-tools:
-  [
+tools: [
     "vscode/openSimpleBrowser",
     "vscode/askQuestions",
     "execute/getTerminalOutput",
@@ -15,6 +14,7 @@ tools:
     "edit",
     "search",
     "web",
+    # Optional: remove if not using Playwright MCP
     "playwright/*",
     "github/*",
   ]
@@ -59,13 +59,13 @@ Before researching domain topics, load the appropriate skill:
 
 - **Domain rules and terminology**: load the project-relevant skill from `.github/skills/` when available
 - **Design trade-offs**: `.github/skills/brainstorming/SKILL.md`
-- **Browser MCP patterns**: `.github/instructions/browser-mcp.instructions.md` (when viewing the running app)
+- **Browser MCP patterns**: `.github/instructions/browser-mcp.instructions.md` (if present)
 
 ### View Current App (Optional)
 
-When the design involves UI changes, new screens, or modifications to existing views, use Playwright MCP to see what currently exists before proposing changes.
+When the design involves UI changes, new screens, or modifications to existing views, and Playwright MCP is available, use Playwright MCP to see what currently exists before proposing changes.
 
-1. **Check dev server**: Verify the project's configured local preview URL is running (see `.github/copilot-instructions.md` and `browser-mcp.instructions.md` for startup details)
+1. **Check dev server**: Verify the project's configured local preview URL is running (see `.github/copilot-instructions.md` and `browser-mcp.instructions.md (if present)` for startup details)
 2. **Navigate**: Use `browser_navigate` to visit relevant routes or screens for the feature under design
 3. **Capture**: Use `browser_take_screenshot` to capture current state; save to `screenshots/` (gitignored, transient)
 4. **Inspect**: Use `browser_snapshot` for accessibility tree / DOM structure when layout details matter
@@ -159,12 +159,3 @@ See [Doc-Keeper](Doc-Keeper.agent.md) for CHANGELOG and NEXT-STEPS updates.
 ---
 
 **Activate with**: `@issue-designer` or `Use issue-designer mode`
-
-## Model Recommendations
-
-**Best for this agent**: **Claude Opus 4.5** (3x) — deepest reasoning for design exploration.
-
-**Alternatives**:
-
-- **GPT-5.2** (1x): Strong for structured design documentation.
-- **Gemini 3 Pro** (1x): Good for UI/UX design exploration.

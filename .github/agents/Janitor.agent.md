@@ -12,9 +12,11 @@ tools:
   - search
   - agent
   - web/githubRepo
+  # Optional: remove if not using Playwright MCP
+  - "playwright/*"
 ---
 
-# Janitor Chat Mode
+# Janitor Agent
 
 ## Overview
 
@@ -363,12 +365,3 @@ Concise and action-oriented. Report what was done, where files moved, what was d
 
 - Reference `.github/skills/verification-before-completion/SKILL.md` for evidence-based verification
 - Run validation commands before claiming cleanup is complete
-
-## Model Recommendations
-
-**Best for this agent**: **Claude Haiku 4.5** (0.33x) — fast and efficient for cleanup and file operations.
-
-**Alternatives**:
-
-- **Gemini 3 Flash** (0.33x): Equally fast for simple cleanup tasks.
-- **GPT-5.1-Codex-Mini** (0.33x): Efficient for repetitive cleanup operations.

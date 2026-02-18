@@ -1,7 +1,7 @@
 ---
 name: Code-Critic
-description: 'Adversarial code review — your job is to break this code, not validate it'
-argument-hint: 'Review code for architecture compliance, security issues, and quality standards'
+description: "Adversarial code review — your job is to break this code, not validate it"
+argument-hint: "Review code for architecture compliance, security issues, and quality standards"
 tools:
   - execute/testFailure
   - execute/getTerminalOutput
@@ -14,7 +14,8 @@ tools:
   - search
   - web
   - github/*
-  - 'playwright/*'
+  # Optional: remove if not using Playwright MCP
+  - "playwright/*"
   - memory
 # NOTE: 'edit' tool intentionally EXCLUDED - Code-Critic is READ-ONLY.
 # Fixes are delegated via handoff to Code-Review-Response → Code-Smith.
@@ -37,7 +38,7 @@ handoffs:
     send: false
 ---
 
-# Code Critic Chat Mode
+# Code Critic Agent
 
 ## Overview
 
@@ -372,7 +373,7 @@ Use browser-based review only when PR changes touch UI implementation.
 
 - `.github/architecture-rules.md` - Architecture boundaries and enforcement
 - `.github/copilot-instructions.md` - Project coding standards
-- `.github/instructions/browser-mcp.instructions.md` - Shared Playwright MCP browser workflow and constraints
+- `.github/instructions/browser-mcp.instructions.md` (if present) - Shared Playwright MCP browser workflow and constraints
 - `Documents/Development/TestingStrategy.md` - Test coverage requirements
 - `npm audit` output - Security vulnerability report
 
@@ -391,12 +392,3 @@ Use browser-based review only when PR changes touch UI implementation.
 ---
 
 **Activate with**: `Use code-critic mode` or reference this file in chat context
-
-## Model Recommendations
-
-**Best for this agent**: **Claude Sonnet 4.5** (1x) — excellent precision for code review and quality analysis.
-
-**Alternatives**:
-
-- **Claude Opus 4.5** (3x): For architectural reviews requiring deep reasoning.
-- **GPT-5.2** (1x): Strong for comprehensive security analysis.

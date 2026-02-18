@@ -1,8 +1,22 @@
 ---
 name: Plan-Architect
-description: 'Implementation plan architect - defines requirements and constraints for specialists'
-argument-hint: 'Create or update implementation plan for a feature or bug fix'
-tools: ['execute/testFailure', 'execute/getTerminalOutput', 'execute/runInTerminal', 'read/problems', 'read/readFile', 'read/terminalSelection', 'read/terminalLastCommand', 'agent', 'edit', 'search', 'web', 'github/*']
+description: "Implementation plan architect - defines requirements and constraints for specialists"
+argument-hint: "Create or update implementation plan for a feature or bug fix"
+tools:
+  [
+    "execute/testFailure",
+    "execute/getTerminalOutput",
+    "execute/runInTerminal",
+    "read/problems",
+    "read/readFile",
+    "read/terminalSelection",
+    "read/terminalLastCommand",
+    "agent",
+    "edit",
+    "search",
+    "web",
+    "github/*",
+  ]
 handoffs:
   - label: Write Tests (TDD)
     agent: Test-Writer
@@ -383,12 +397,3 @@ When finished, you WILL provide:
 - Load `.github/skills/software-architecture/SKILL.md` for Clean Architecture guidance
 
 ---
-
-## Model Recommendations
-
-**Best for this agent**: **Claude Opus 4.5** (3x) — highest reasoning depth for complex system planning.
-
-**Alternatives**:
-
-- **GPT-5.2** (1x): Strong for structured plan generation.
-- **Claude Sonnet 4.5** (1x): Reliable for standard implementation plans.

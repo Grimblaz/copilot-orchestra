@@ -40,7 +40,7 @@ handoffs:
     send: false
 ---
 
-# Code Smith Chat Mode
+# Code Smith Agent
 
 ## Overview
 
@@ -61,21 +61,7 @@ A focused implementation mode that executes code changes following approved plan
 
 Implements code to satisfy the approved tests and plan, writing minimal code (YAGNI) needed for the tests to pass.
 
-## Parallel Workflow Contract (Mandatory)
-
-When implementation runs in parallel with Test-Writer:
-
-1. Implement against the shared Requirement Contract, not just current failing assertions
-2. Preserve architecture and domain invariants even when a narrow test workaround could pass
-3. Treat PBT failures as first-class signals: if property and generator are valid, classify as `code defect`; if property seems invalid/over-constrained, stop and report as potential `test defect` for Test-Writer review
-
-4. Return a concise defect classification with evidence when routing back to Code-Conductor
-
-Goal: avoid test-chasing and deliver requirement-correct behavior.
-
-If the Requirement Contract is missing or ambiguous, stop and request clarification from Code-Conductor before implementing.
-
-In serial mode, apply the same Requirement Contract and defect-classification expectations before claiming completion.
+For Build-Test orchestration (Requirement Contract, defect triage, convergence gate, loop budget), follow `.github/skills/parallel-execution/SKILL.md`.
 
 **Pre-Implementation Review**:
 
@@ -266,12 +252,3 @@ After creating/editing **permanent** markdown files:
 ---
 
 **Activate with**: `Use code-smith mode` or reference this file in chat context
-
-## Model Recommendations
-
-**Best for this agent**: **GPT-5.1-Codex-Max** (1x) — specialized for large codebases and complex implementation.
-
-**Alternatives**:
-
-- **Claude Sonnet 4.5** (1x): Reliable TDD implementation with strong instruction following.
-- **Gemini 3 Pro** (1x): Excellent for UI component implementation ("vibe coding").

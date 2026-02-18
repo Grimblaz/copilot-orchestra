@@ -420,12 +420,3 @@ You MUST maintain focused research scope:
 - Load `.github/skills/brainstorming/SKILL.md` for structured Socratic questioning
 
 ---
-
-## Model Recommendations
-
-**Best for this agent**: **Claude Opus 4.5** (3x) — deepest reasoning for comprehensive technical analysis.
-
-**Alternatives**:
-
-- **GPT-5.2** (1x): Broad knowledge base for external research.
-- **Gemini 3 Pro** (1x): Strong for multimodal research (diagrams, screenshots).
