@@ -98,7 +98,7 @@ Quick checklist before declaring mode for a step:
    - **If no plan exists**: Escalate via `ask_questions` to request plan path/options (with a recommended option). Do not proceed without a plan.
 
 2. **Determine Resume Point & Validate Plan**:
-   - Check `git log --oneline` on the feature branch. Completed steps have commits (`feat(#N): Step X - description`). Resume from the first incomplete step.
+   - Check plan/progress artifacts and branch state to determine completed steps. Resume from the first incomplete step.
    - **Reality check**: Before resuming, verify the plan still matches the codebase. If interfaces moved, files were renamed, or assumptions no longer hold, adapt the plan rather than executing steps that won't land correctly.
 
 3. **Execute Each Step**:
@@ -111,7 +111,6 @@ Quick checklist before declaring mode for a step:
    - **Per-step refactor**: After GREEN, clean up code introduced in that step (extract helpers, reduce duplication, simplify conditionals) — distinct from the dedicated Refactor-Specialist pass
    - **Incremental validation**: Run project validation commands (see `.github/copilot-instructions.md`), then the project test command (for example `npm test` when applicable)
    - **Visual Verification Gate**: For UI-touching steps with `visual_verification: true`, run the canonical procedure in `## Visual Verification Gate (UI-Touching Steps)`
-   - **Commit**: `git add -A && git commit -m "feat(#N): Step X - description"`
    - If specialist does a task outside their responsibility, retry with clearer instructions (max 2 retries)
 
 4. **Create PR (MANDATORY, review-ready gate)**: After all steps complete (including documentation):
@@ -309,7 +308,7 @@ You are expected to follow the plan, but not blindly. A good engineering manager
 **When to adapt without asking**:
 
 - A file the plan references has been renamed or moved → find the new location and proceed
-- A step is redundant (already done, or made unnecessary by a previous step) → skip it, note why in the commit
+- A step is redundant (already done, or made unnecessary by a previous step) → skip it, note why in the progress summary
 - The plan's step ordering creates unnecessary churn (e.g., test step before its dependency exists) → reorder for efficiency
 - A step needs a minor sub-task the plan didn't anticipate (e.g., adding a missing import, updating a type) → include it
 

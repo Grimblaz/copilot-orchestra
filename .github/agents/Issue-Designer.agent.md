@@ -114,7 +114,6 @@ After user confirms decisions (not during exploration):
 - Create/update design docs in `Documents/Design/` or `Documents/Decisions/`
 - No TypeScript, no implementation phases — those belong in Issue-Planner
 - Pseudo-code only when prose is unclear, keep abstract (e.g., "BaseValue × Modifier × ConstraintFactor")
-- Commit: `git add Documents/... && git commit -m "docs: [description]"`
 
 ## Stage 3: Update Issue
 
@@ -124,7 +123,7 @@ Update the GitHub issue body with design outcomes:
 - Acceptance criteria (as checkboxes)
 - Integration/E2E test scenarios identified
 - Testing scope decision with rationale
-- Link to committed design document
+- Link to design document
 
 Add comment: "Design Phase Complete — ready for planning"
 
@@ -134,7 +133,7 @@ Add comment: "Design Phase Complete — ready for planning"
 
 Before ending a design session, verify ALL of the following:
 
-- [ ] **Design document exists**: A design doc has been created or updated in `Documents/Design/` or `Documents/Decisions/` and committed to the branch
+- [ ] **Design document exists**: A design doc has been created or updated in `Documents/Design/` or `Documents/Decisions/`
 - [ ] **GitHub issue updated**: The associated issue body has been updated with design outcomes, acceptance criteria, and a link to the design document (skip only if no associated issue exists)
 - [ ] **Completion comment posted**: A comment has been added to the issue: "Design Phase Complete — ready for planning" (skip only if no associated issue exists)
 

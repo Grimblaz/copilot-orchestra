@@ -100,7 +100,7 @@ The plan should reflect:
 - Parallel-step convergence requirements: Test-Writer triage (`code defect` / `test defect` / `harness/env defect`) and mandatory sign-off before advancing.
 - Since we follow TDD, we should follow red-green-refactor for each step.
 - A larger refactor stage is beneficial; implementers should be encouraged to even take on larger refactors in this stage, as long as they are related to the feature being implemented. This is because it is much easier to do refactors when the context of the change is fresh in the implementer's mind, and it can help reduce technical debt in the long run.
-- Each step should end with the project's quick validation and test commands as defined in `.github/copilot-instructions.md`. Implementers should commit after each passing step: `feat(#N): Step X - description`.
+- Each step should end with the project's quick validation and test commands as defined in `.github/copilot-instructions.md`.
 - Code review and code review response stages should be included, with a mandatory reconciliation loop (Code-Critic → Code-Review-Response, rebuttal rounds for disputes up to loop budget).
 - Define loop budget explicitly for the reconciliation loop (Code-Critic → Code-Review-Response, rebuttal rounds): default **2 rebuttal rounds**, configurable via plan metadata key `review_loop_budget` (or environment variable `REVIEW_LOOP_BUDGET` when available).
 - Selection guideline for loop budget: use 1 for minor wording/nit disputes, 2 for normal mixed findings, and 3 only for high-complexity or high-risk architectural disputes.

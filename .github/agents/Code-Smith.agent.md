@@ -243,7 +243,7 @@ After creating/editing **permanent** markdown files:
 ### When to Lint
 
 - **After creating permanent documentation**: Run auto-fix to ensure consistency
-- **Before committing to `.github/` or `Documents/`**: Include linting in verification steps
+- **Before handoff for `.github/` or `Documents/` changes**: Include linting in verification steps
 - **During PR review**: Mention if linting was applied
 - **Skip for `.copilot-tracking/`**: Work-in-progress files don't require linting
 
