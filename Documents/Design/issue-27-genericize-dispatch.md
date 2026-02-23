@@ -82,9 +82,10 @@ permissions:
 
 jobs:
   notify-downstream:
-    if: vars.DOWNSTREAM_REPOS != ''
+    if: vars.DOWNSTREAM_REPOS != '' && vars.DOWNSTREAM_REPOS != 'null'
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false  # Allow other dispatches to continue if one target fails.
       matrix:
         repo: ${{ fromJSON(vars.DOWNSTREAM_REPOS) }}
     steps:
@@ -92,6 +93,7 @@ jobs:
         env:
           AGENT_SYNC_PAT: ${{ secrets.AGENT_SYNC_PAT }}
           TARGET_REPO: ${{ matrix.repo }}
+          SOURCE_REPO: ${{ github.repository }}
           SOURCE_SHA: ${{ github.sha }}
           EVENT_TYPE: ${{ github.event_name == 'release' && 'agent-release' || 'agent-sync' }}
         shell: bash
@@ -105,7 +107,7 @@ jobs:
             -H "Authorization: Bearer ${AGENT_SYNC_PAT}" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
             "https://api.github.com/repos/${TARGET_REPO}/dispatches" \
-            -d "{\"event_type\":\"${EVENT_TYPE}\",\"client_payload\":{\"source_repo\":\"${{ github.repository }}\",\"sha\":\"${SOURCE_SHA}\"}}"
+            -d "{\"event_type\":\"${EVENT_TYPE}\",\"client_payload\":{\"source_repo\":\"${SOURCE_REPO}\",\"sha\":\"${SOURCE_SHA}\"}}"
 ```
 
 ## Consumer-Side Pattern
