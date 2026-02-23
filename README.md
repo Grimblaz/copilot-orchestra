@@ -1,6 +1,6 @@
 # Copilot Workflow Template
 
-[![Version](https://img.shields.io/badge/version-v1.2.2-blue.svg)](../../releases)
+[![Version](https://img.shields.io/badge/version-v1.3.2-blue.svg)](../../releases)
 [![Ready for Production](https://img.shields.io/badge/status-production%20ready-green.svg)](../../releases)
 
 A multi-agent workflow system for GitHub Copilot, designed to orchestrate AI-assisted software development through specialized agents.
@@ -37,8 +37,8 @@ Get up and running in under 5 minutes:
 **Option B: Clone Directly**
 
 ```bash
-git clone https://github.com/Grimblaz/workflow-template.git
-cd workflow-template
+git clone https://github.com/YOUR-ORG/YOUR-REPO.git
+cd YOUR-REPO
 ```
 
 
@@ -322,8 +322,3 @@ Check [Releases](../../releases) for version history.
 ## License
 
 This project is available for use under the terms specified in the LICENSE file.
-
-## Related
-
-- Originally extracted from [Organizations-of-Elos](https://github.com/Grimblaz-and-Friends/Organizations-of-Elos)
-- Tracking issue: [#77](https://github.com/Grimblaz-and-Friends/Organizations-of-Elos/issues/77)
