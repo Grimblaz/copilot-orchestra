@@ -178,35 +178,29 @@ Before considering work fully complete, verify:
 ## Common Pitfalls to Avoid
 
 1. **Committing tracking files to git**
-
    - `.copilot-tracking/` and `.copilot-tracking-archive/` are gitignored — keep them that way
    - These are agent scaffolding, not team artifacts; the durable record is in GitHub issues, PRs, and `Documents/Design/`
    - If you ever see tracking files in `git status` as untracked, do **not** `git add` them
 
 2. **Using the GitHub file API to edit existing files**
-
    - `mcp_github_create_or_update_file` replaces the **entire file**
    - Passing partial content silently truncates the file in the repo
    - Always use `replace_string_in_file` + `git commit` + `git push` for existing files
 
 3. **Using `Set-Content` / `Out-File` to restore files from git history**
-
    - PowerShell file-write cmdlets may introduce CRLF endings or BOM characters
    - This creates a trivial but visible `+1 -1` diff that VS Code surfaces for review
    - Use `git restore --source=<sha> <file>` instead — git handles encoding correctly
 
 4. **Incomplete documentation updates**
-
    - Causes confusion for future contributors
    - Creates technical debt
 
 5. **Skipping release tags**
-
    - Makes version history unclear
    - Complicates rollback procedures
 
 6. **Leaving stale branches**
-
    - Clutters repository
    - May cause confusion about active work
 
