@@ -140,7 +140,7 @@ Before ending a design session, verify ALL of the following:
 
 If any of these are incomplete, **do not end the session**. Complete them first, then confirm completion to the user.
 
-**Note**: A `Documents/Design/` file is **not** required at this stage — it is committed by Code-Conductor as part of the implementation PR. The issue body is the durable design record used for cloud agent handoffs.
+**Note**: A design doc file under `Documents/Design/` is **not** required during the design phase — it is created and committed by Code-Conductor as part of the implementation PR. The issue body is the durable design record used for cloud agent handoffs.
 
 **Exception**: If the session was purely exploratory (user explicitly said "just brainstorming, no docs needed"), note this exception in the conversation and skip documentation. This must be an explicit user request, not an assumption.
 
