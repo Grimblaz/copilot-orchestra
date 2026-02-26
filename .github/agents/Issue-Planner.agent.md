@@ -11,7 +11,7 @@ tools:
   - edit
   - search
   - web
-  - 'github/*'
+  - "github/*"
   - memory
   - github.vscode-pull-request-github/issue_fetch
   - github.vscode-pull-request-github/activePullRequest
@@ -104,7 +104,7 @@ The plan should reflect:
 - Deferral handling should be explicit: significant non-blocking improvements (>1 day) should be marked `DEFERRED-SIGNIFICANT` and tracked via automatically created follow-up issues.
 - Include a short post-issue process retrospective checkpoint (slowdowns, late-failing checks, one workflow guardrail improvement).
 - Changes should only be pushed to another issue if they are quite significant.
-- For projects with UI components, UI-touching plans must include `visual_verification: true` in frontmatter and per-step visual checkpoints (affected route(s)/page(s) + AC to verify) so Code-Conductor can run the Visual Verification Gate.
+- For projects with UI components, UI-touching plans must include `visual_verification: true` in frontmatter and insert a **dedicated `[VISUAL GATE]` step** immediately after each UI-touching implementation step. Each `[VISUAL GATE]` step must list affected route(s)/page(s) and the specific AC being verified (e.g., `/settings/profile` + "avatar upload preview updates immediately"). These must be **first-class numbered plan steps — not sub-bullets** — so Code-Conductor encounters them as blocking checkpoints in its step iteration loop.
 - For backend/non-UI/CLI projects, skip visual-verification checkpoints and set expectations accordingly.
 
 Present the plan as a **DRAFT**, then **IMMEDIATELY** use #tool:vscode/askQuestions to ask for approval. NEVER end your turn after presenting a draft without calling #tool:vscode/askQuestions — this wastes the user's premium requests by forcing a new turn just to say "looks good."
@@ -170,7 +170,7 @@ Rules:
 - NO code blocks — describe changes, link to files/symbols
 - NO questions at the end — ask during workflow via #tool:vscode/askQuestions
 - Include execution metadata in plan steps (mode + requirement contract expectations) so implementers can execute without re-deriving process rules.
-- If the project has a UI layer, UI-touching steps must include per-step visual checkpoints with affected route(s)/page(s) and the AC being verified (e.g., `/settings/profile` + "avatar upload preview updates immediately").
+- If the project has a UI layer, insert a dedicated **`[VISUAL GATE]`** numbered step immediately after each UI-touching implementation step. Format: `N. [VISUAL GATE] — Route: /path/to/route — AC: {what to verify}`. These are blocking steps; Code-Conductor must not advance past them without completing the Visual Verification Gate or emitting the documented skip warning.
 - For backend/non-UI/CLI projects, omit UI-specific checkpoints and include equivalent non-UI validation steps instead.
 - Keep scannable
   </plan_style_guide>
