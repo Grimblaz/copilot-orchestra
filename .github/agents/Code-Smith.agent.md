@@ -3,16 +3,13 @@ name: Code-Smith
 description: "Focused code implementation following TDD or plan-driven approach"
 argument-hint: "Implement code changes based on tests or plan"
 tools:
+  - execute/testFailure
   - execute/getTerminalOutput
   - execute/runInTerminal
-  - read/terminalLastCommand
-  - read/terminalSelection
+  - read
   - edit
   - search
-  - search/usages
-  - read/problems
-  - search/changes
-  - execute/testFailure
+  - memory
 handoffs:
   - label: Create Plan
     agent: Plan-Architect

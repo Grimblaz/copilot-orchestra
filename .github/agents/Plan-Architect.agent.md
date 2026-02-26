@@ -2,21 +2,7 @@
 name: Plan-Architect
 description: "Implementation plan architect - defines requirements and constraints for specialists"
 argument-hint: "Create or update implementation plan for a feature or bug fix"
-tools:
-  [
-    "execute/testFailure",
-    "execute/getTerminalOutput",
-    "execute/runInTerminal",
-    "read/problems",
-    "read/readFile",
-    "read/terminalSelection",
-    "read/terminalLastCommand",
-    "agent",
-    "edit",
-    "search",
-    "web",
-    "github/*",
-  ]
+tools: [execute/testFailure, execute/getTerminalOutput, execute/runInTerminal, read, agent, edit, search, web, github/*, memory]
 handoffs:
   - label: Write Tests (TDD)
     agent: Test-Writer

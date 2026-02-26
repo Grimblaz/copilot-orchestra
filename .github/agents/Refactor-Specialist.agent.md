@@ -3,24 +3,18 @@ name: Refactor-Specialist
 description: "Proactive code quality hunter - finds and fixes refactoring opportunities"
 argument-hint: "Hunt for refactoring opportunities in modified files and improve code quality"
 tools:
-  - edit
-  - search
+  - execute/testFailure
   - execute/getTerminalOutput
   - execute/runInTerminal
-  - read/terminalLastCommand
-  - read/terminalSelection
-  - sonarqube/*
-  - search/usages
-  - read/problems
-  - search/changes
-  - execute/testFailure
+  - read
+  - agent
+  - edit
+  - search
+  - memory
   - sonarsource.sonarlint-vscode/sonarqube_getPotentialSecurityIssues
   - sonarsource.sonarlint-vscode/sonarqube_excludeFiles
   - sonarsource.sonarlint-vscode/sonarqube_setUpConnectedMode
   - sonarsource.sonarlint-vscode/sonarqube_analyzeFile
-  - agent
-  # Optional: remove if not using Playwright MCP
-  - "playwright/*"
 handoffs:
   - label: Re-Validate Tests
     agent: Test-Writer

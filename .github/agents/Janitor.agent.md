@@ -2,18 +2,7 @@
 name: Janitor
 description: "Cleanup and tech debt remediation specialist"
 argument-hint: "Clean up code, archive completed work, or remediate tech debt"
-tools:
-  - execute/getTerminalOutput
-  - execute/runInTerminal
-  - read/terminalLastCommand
-  - read/terminalSelection
-  - github/*
-  - edit
-  - search
-  - agent
-  - web/githubRepo
-  # Optional: remove if not using Playwright MCP
-  - "playwright/*"
+tools: [execute/getTerminalOutput, execute/runInTerminal, read/readFile, read/terminalSelection, read/terminalLastCommand, agent, edit, search, github, memory]
 ---
 
 # Janitor Agent

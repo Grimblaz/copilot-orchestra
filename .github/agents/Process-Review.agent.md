@@ -2,17 +2,7 @@
 name: Process-Review
 description: "Meta-analysis of workflow execution to identify deviations and improvement opportunities"
 argument-hint: "Analyze workflow execution and identify process improvements"
-tools:
-  [
-    "execute/getTerminalOutput",
-    "execute/runInTerminal",
-    "read/readFile",
-    "read/terminalSelection",
-    "read/terminalLastCommand",
-    "edit",
-    "search",
-    "web",
-  ]
+tools: [execute/getTerminalOutput, execute/runInTerminal, read, edit, search, web, memory]
 handoffs:
   - label: Update Instructions
     agent: Doc-Keeper

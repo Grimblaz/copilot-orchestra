@@ -5,16 +5,13 @@ argument-hint: "Update documentation to match implementation"
 tools:
   - execute/getTerminalOutput
   - execute/runInTerminal
-  - read/readFile
-  - read/terminalSelection
-  - read/terminalLastCommand
+  - read
+  - agent
   - edit
   - search
-  - web/fetch
+  - web
   - github/*
-  - agent
-  # Optional: remove if not using Playwright MCP
-  - "playwright/*"
+  - memory
 handoffs:
   - label: Cleanup & Archive
     agent: Janitor

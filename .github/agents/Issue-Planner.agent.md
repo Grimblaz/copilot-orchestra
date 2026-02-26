@@ -3,21 +3,18 @@ name: Issue-Planner
 description: Researches and outlines multi-step plans
 argument-hint: Outline the goal or problem to research
 target: vscode
-tools: [
-    "vscode/askQuestions",
-    "execute",
-    "read",
-    "agent",
-    "edit",
-    "search",
-    "web",
-    "github/issue_read",
-    "github/issue_write",
-    "github.vscode-pull-request-github/issue_fetch",
-    "github.vscode-pull-request-github/activePullRequest",
-    # Optional: remove if not using Playwright MCP
-    "playwright/*",
-  ]
+tools:
+  - vscode/askQuestions
+  - execute
+  - read
+  - agent
+  - edit
+  - search
+  - web
+  - 'github/*'
+  - memory
+  - github.vscode-pull-request-github/issue_fetch
+  - github.vscode-pull-request-github/activePullRequest
 handoffs:
   - label: Start Implementation
     agent: Code-Conductor

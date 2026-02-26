@@ -2,22 +2,18 @@
 name: Issue-Designer
 description: "Design exploration and issue management for new features — explores options, documents decisions, updates GitHub issues"
 argument-hint: "Start design work for a new GitHub issue"
-tools: [
-    "vscode/openSimpleBrowser",
-    "vscode/askQuestions",
-    "execute/getTerminalOutput",
-    "execute/runInTerminal",
-    "read/readFile",
-    "read/terminalSelection",
-    "read/terminalLastCommand",
-    "agent",
-    "edit",
-    "search",
-    "web",
-    # Optional: remove if not using Playwright MCP
-    "playwright/*",
-    "github/*",
-  ]
+tools:
+  - vscode/openSimpleBrowser
+  - vscode/askQuestions
+  - execute/getTerminalOutput
+  - execute/runInTerminal
+  - read
+  - agent
+  - edit
+  - search
+  - web
+  - github/*
+  - memory
 handoffs:
   - label: Research Details
     agent: Research-Agent
