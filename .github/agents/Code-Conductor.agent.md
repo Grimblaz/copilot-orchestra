@@ -253,13 +253,13 @@ Run this gate as the final step before PR creation (Tier 7, after Code-Critic).
 
 Read the plan's `[CE GATE]` step to identify the customer surface. If no `[CE GATE]` step exists, infer from the change type:
 
-| Surface Type    | Tool / Method                              |
-| --------------- | ------------------------------------------ |
-| Web UI          | Playwright MCP (`browser_navigate` + screenshot) |
-| REST / GraphQL  | `curl` or `httpie` in terminal             |
-| CLI             | Invoke command in terminal with test args  |
-| SDK             | Example invocation in terminal             |
-| Batch / pipeline | Invoke with representative test data      |
+| Surface Type        | Tool / Method                                                        |
+| ------------------- | -------------------------------------------------------------------- |
+| Web UI              | Playwright MCP (`browser_navigate` + screenshot)                     |
+| REST / GraphQL      | `curl` or `httpie` in terminal                                       |
+| CLI                 | Invoke command in terminal with test args                            |
+| SDK                 | Example invocation in terminal                                       |
+| Batch / pipeline    | Invoke with representative test data                                 |
 | No customer surface | Skip with documented reason (`⏭️ CE Gate not applicable — {reason}`) |
 
 ### Scenario Exercise Protocol
@@ -278,15 +278,17 @@ Read the plan's `[CE GATE]` step to identify the customer surface. If no `[CE GA
 When a CE Gate scenario fails:
 
 **Track 1 — Fix the defect (always):**
+
 - Route to Code-Smith (implementation defect) or Test-Writer (test gap) with scenario failure evidence
 - Require regression test for the defect
 - Re-exercise the failing scenario after fix
 - Loop budget: **2 fix-revalidate cycles maximum**, then escalate via `ask_questions` with options: "Retry with different approach", "Skip CE Gate with documented risk", "Abort and investigate manually"
 
 **Track 2 — Systemic analysis (always, after Track 1 fix is complete):**
+
 - Call Process-Review subagent with: the defect description, what scenario revealed it, and which agent/file/instruction likely caused the gap
 - Process-Review will emit a structured CE Gate Defect Analysis (gap description, affected agent/file, recommended fix, ready-to-use issue title + body)
-- If a systemic gap is confirmed: create a follow-up GitHub issue in `Grimblaz/workflow-template` (or fallback to current repo with label `process-gap-upstream`)
+- If a systemic gap is confirmed: create a follow-up GitHub issue in the workflow-template repository (or fallback to current repo with label `process-gap-upstream`)
 - "No systemic gap found" is a valid Process-Review outcome — log it in the PR body
 - Track 2 is non-blocking: do not hold up Track 1 fix or PR creation
 
@@ -300,6 +302,7 @@ When a CE Gate scenario fails:
 ### PR Body CE Gate Entry
 
 Always include in the PR body:
+
 - CE Gate result marker (one of the four markers above)
 - Scenarios exercised (brief list)
 - Track 2 outcome: "Process-Review: no systemic gap found" or link to created follow-up issue

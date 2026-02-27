@@ -2,7 +2,16 @@
 name: Process-Review
 description: "Meta-analysis of workflow execution to identify deviations and improvement opportunities"
 argument-hint: "Analyze workflow execution and identify process improvements"
-tools: [execute/getTerminalOutput, execute/runInTerminal, read, edit, search, web, memory]
+tools:
+  [
+    execute/getTerminalOutput,
+    execute/runInTerminal,
+    read,
+    edit,
+    search,
+    web,
+    memory,
+  ]
 handoffs:
   - label: Update Instructions
     agent: Doc-Keeper
@@ -262,7 +271,7 @@ Get-ChildItem -Recurse -Include *.md | Where-Object {(Select-String -Path $_ -Pa
 
 **Purpose**: Determine whether a CE Gate defect—a customer-facing failure found during Code-Conductor's CE Gate exercise—reveals a systemic process or guidance gap, or is an isolated implementation defect.
 
-**When invoked**: Code-Conductor calls Process-Review as a subagent (via `runSubagent`) immediately upon CE Gate failure, providing the defect description, the failing scenario, and which agent/file/instruction was likely involved.
+**When invoked**: Code-Conductor calls Process-Review as a subagent (via `runSubagent`) for Track 2 systemic analysis after a CE Gate defect has been fixed, providing the defect description, the failing scenario, and which agent/file/instruction was likely involved.
 
 **Analysis Steps**:
 
