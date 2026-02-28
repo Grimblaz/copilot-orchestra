@@ -20,10 +20,6 @@ handoffs:
     agent: Code-Conductor
     prompt: "Start implementation using appropriate sub agents for each step. Follow the plan closely, but if you discover new information that changes the plan, pause and ask for clarification."
     send: false
-  - label: Open in Editor
-    agent: Doc-Keeper
-    prompt: "#createFile the plan as is into an untitled file (`untitled:plan-${camelCaseName}.prompt.md` without frontmatter) for further refinement."
-    send: false
     showContinueOn: false
 ---
 

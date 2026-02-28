@@ -16,13 +16,13 @@ tools:
     "playwright/*",
   ]
 handoffs:
-  - label: Research Details
-    agent: Research-Agent
-    prompt: Perform deep technical research based on design decisions. Gather implementation patterns, analyze project conventions, and evaluate alternative approaches.
-    send: false
   - label: Create Plan
     agent: Issue-Planner
     prompt: Create implementation plan based on completed design work.
+    send: false
+  - label: Research Details
+    agent: Research-Agent
+    prompt: Perform deep technical research based on design decisions. Gather implementation patterns, analyze project conventions, and evaluate alternative approaches.
     send: false
 ---
 
