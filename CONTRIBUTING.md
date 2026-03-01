@@ -21,6 +21,26 @@ Enable the built-in GitHub MCP server for seamless issue and PR workflows:
 }
 ```
 
+To make agents available globally across all VS Code workspaces (not just repos with `.github/agents/`), add:
+
+```json
+{
+  "chat.agentFilesLocations": [
+    "/absolute/path/to/your/workflow-template/.github/agents"
+  ]
+}
+```
+
+Replace the path with the absolute path to where you cloned this repository. This lets you use all 14 agents in any project.
+
+To enable automatic skill discovery from `.github/skills/` (VS Code 1.108+):
+
+```json
+{
+  "chat.useAgentSkills": true
+}
+```
+
 This enables agents to interact directly with GitHub issues and PRs without external MCP server configuration.
 
 ## Ways to Contribute

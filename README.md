@@ -3,322 +3,196 @@
 [![Version](https://img.shields.io/badge/version-v1.4.0-blue.svg)](../../releases)
 [![Ready for Production](https://img.shields.io/badge/status-production%20ready-green.svg)](../../releases)
 
-A multi-agent workflow system for GitHub Copilot, designed to orchestrate AI-assisted software development through specialized agents.
+A multi-agent workflow system for GitHub Copilot that orchestrates AI-assisted software development across specialized agents.
 
-> **Ready to use!** Clone this repository and immediately start working with 15+ specialized AI agents. Complete with TDD workflow skills, implementation templates, and a Spring Boot example project.
+## Quick Start — Two Steps
 
-## Overview
-
-This template provides a proven framework for working with AI coding agents, featuring:
-
-| Agent | Role |
-|-------|------|
-| **Issue Designer** | Picks up issues, prepares environment, creates design docs |
-| **Research Agent** | Performs deep research on proposed changes |
-| **Code Conductor** | Orchestrates implementation via sub-agents |
-| **Code-Smith** | Writes production code |
-| **Test-Writer** | Creates comprehensive tests |
-| **Refactor-Specialist** | Improves code quality and structure |
-| *...and more* | Additional specialized agents for various tasks |
-
-## Quick Start
-
-Get up and running in under 5 minutes:
-
-> **Requirements**: VS Code 1.108+ recommended for automatic skill discovery from `.github/skills/` with `chat.useAgentSkills` enabled. See [CONTRIBUTING.md](CONTRIBUTING.md#setup) for setup details.
-
-### 1. Get the Template
-
-**Option A: Use as GitHub Template**
-
-1. Click **"Use this template"** ΓåÆ **"Create a new repository"**
-2. Clone your new repository
-
-**Option B: Clone Directly**
+### Step 1: Clone or fork this template
 
 ```bash
 git clone https://github.com/YOUR-ORG/YOUR-REPO.git
 cd YOUR-REPO
 ```
 
+Or click **"Use this template"** &rarr; **"Create a new repository"** on GitHub.
 
-### 2. Essential Customization (First-Time Setup)
+### Step 2: Run the setup wizard
 
-Before using agents, customize these key files:
+Type `/setup` in GitHub Copilot Chat and answer the questions. Copilot will fill in `.github/copilot-instructions.md` and `.github/architecture-rules.md` for your project automatically.
 
-| Priority | File | Purpose | Required? |
-|----------|------|---------|-----------|
-| **HIGH** | `.github/copilot-instructions.md` | Your project context & tech stack | Γ£à Yes |
-| **HIGH** | `.github/architecture-rules.md` | Your architecture patterns | Γ£à Yes |
-| Medium | `.github/skills/` | Add domain-specific skills | Recommended |
-| Low | `.github/agents/` | Tweak agent behaviors | Optional |
+> **Prefer to do it manually?** Open `.github/copilot-instructions.md` and `.github/architecture-rules.md` — both are pre-created with `<!-- TODO: ... -->` markers guiding every field. See `examples/` for complete filled-in references.
 
-> ≡ƒôû **See [CUSTOMIZATION.md](CUSTOMIZATION.md)** for detailed step-by-step guidance.
+That's it. You're ready to use agents.
 
-**Quick Setup Checklist:**
+---
 
-- [ ] Create `.github/copilot-instructions.md` (use `examples/spring-boot-microservice/copilot-instructions.md` as reference)
-- [ ] Create `.github/architecture-rules.md` (use `examples/spring-boot-microservice/architecture-rules.md` as reference)
-- [ ] Review `.github/agents/` - familiarize yourself with available agents
-- [ ] Optionally add project-specific skills to `.github/skills/`
+## Using the Agents
 
-### 3. Your First Agent Conversation
+### I want to
 
-Once setup is complete, start using agents immediately:
+| Goal | Start here |
+|------|-----------|
+| Pick up a GitHub issue and design a solution | `@Issue-Designer` |
+| Create an implementation plan for an issue | `@Issue-Planner` |
+| Implement a planned feature end-to-end | `@Code-Conductor` |
+| Review code and identify risks | `@Code-Critic` |
+| Respond to a code review | `@Code-Review-Response` |
+| Clean up completed work / archive tracking files | `@Janitor` |
 
-**Example: Pick up an issue**
+### Core Workflow
 
-```markdown
-@issue-designer
-
-Please pick up issue #42 and prepare the environment for implementation.
+```text
+Issue → @Issue-Designer → @Issue-Planner → @Code-Conductor → PR
 ```
 
+1. **@Issue-Designer** — picks up the issue, explores the design space, updates the issue body with a design
+2. **@Issue-Planner** — creates a step-by-step implementation plan as an issue comment
+3. **@Code-Conductor** — reads the plan, delegates to internal specialist agents, creates a merge-ready PR
 
-**Example: Start implementation**
-
-```markdown
-@code-conductor
-
-I've reviewed the design in Documents/Design/issue-42-design.md.
-Please orchestrate implementation of this feature.
-```
-
-
-**Example: Write tests first**
+### Example: Start a feature from scratch
 
 ```markdown
-@test-writer
-
-Using the TDD workflow skill, please write tests for the UserService.createUser method
-following the specification in the design doc.
+@Issue-Designer Please design issue #42.
 ```
 
+Then, once the design is in the issue:
 
-> ≡ƒÆí **Tip**: The `@agent-name` syntax is a convention. GitHub Copilot Chat will use the agent definitions from `.github/agents/` when you reference them in your prompts.
+```markdown
+@Code-Conductor Issue #42 is designed and planned. Please implement it.
+```
 
-### 4. Start Building
+---
 
-You're ready! The agents will:
+## Agent Reference
 
-- ≡ƒÄ» Follow your architecture rules
-- ≡ƒô¥ Use your project conventions from `copilot-instructions.md`
-- ≡ƒ¢á∩╕Å Apply domain skills when relevant
-- Γ£à Generate implementation plans and track progress
+### Agents you interact with directly (6)
 
-## What's Included
+| Agent | What it does |
+|-------|-------------|
+| **Issue-Designer** | Design exploration and issue management |
+| **Issue-Planner** | Multi-step implementation plan creation |
+| **Code-Conductor** | End-to-end orchestration of implementation |
+| **Code-Critic** | Adversarial code review and risk discovery |
+| **Code-Review-Response** | Adjudicates review feedback and delegates fixes |
+| **Janitor** | Cleanup, archiving, and tech debt tasks |
 
-This template is **production-ready** and includes everything you need to start working with AI agents:
+### Internal agents (called automatically by Code-Conductor)
 
-### ≡ƒñû Agents (15 Specialized)
+These agents are hidden from the picker (`user-invokable: false`) and are used automatically during `@Code-Conductor` workflows:
 
-Complete set of agent definitions in `.github/agents/`:
+Code-Smith, Test-Writer, Refactor-Specialist, Doc-Keeper, Research-Agent, Process-Review, Specification, UI-Iterator
 
-- **Issue-Designer** - Design exploration and issue management for new features
-- **Research-Agent** - Comprehensive technical analysis and pattern discovery
-- **Code-Conductor** - Plan-driven workflow orchestration across implementation steps
-- **Code-Smith** - Focused code implementation using TDD or plan-driven execution
-- **Test-Writer** - Behavior-focused test writing and validation
-- **Refactor-Specialist** - Proactive refactoring and code quality improvement
-- **Plan-Architect** - Implementation plan architecture and specialist constraints
-- **Doc-Keeper** - Documentation finalization and accuracy verification
-- **Code-Critic** - Adversarial code review and risk discovery
-- **Code-Review-Response** - Adjudicates review findings and delegates execution
-- **Janitor** - Cleanup and technical debt remediation
-- **Issue-Planner** - Multi-step planning and implementation outline creation
-- **Process-Review** - Workflow compliance and process improvement analysis
-- **Specification** - Specification document creation and updates
-- **UI-Iterator** - Screenshot-based UI polish and visual iteration
+> See `.github/agents/` for full definitions of all 14 agents.
 
-### ≡ƒÄ» Skills Framework (9 Skills)
+---
 
-Reusable skill definitions in `.github/skills/`:
+## Skills Framework
 
-| Skill | Purpose |
-|-------|---------|
-| **test-driven-development** | TDD process knowledge and workflow guidance |
-| **brainstorming** | Structured Socratic questioning for exploring ideas |
-| **frontend-design** | Distinctive UI design guidance |
-| **webapp-testing** | End-to-end and integration testing for web applications |
-| **ui-testing** | Resilient React component testing |
-| **skill-creator** | Guide for creating new skills |
-| **systematic-debugging** | 4-phase debugging process |
-| **verification-before-completion** | Evidence-based verification checklist |
-| **software-architecture** | Clean Architecture and SOLID principles |
+Skills are domain-specific knowledge packages in `.github/skills/` that agents load on demand:
 
-> **VS Code 1.108+**: Skills are auto-discovered from `.github/skills/` when `chat.useAgentSkills` is enabled, via the `description` frontmatter field.
+| Skill | When it's used |
+|-------|---------------|
+| **test-driven-development** | Writing tests, red-green-refactor |
+| **systematic-debugging** | Investigating complex bugs |
+| **software-architecture** | Evaluating design decisions |
+| **brainstorming** | Exploring requirements or trade-offs |
+| **frontend-design** | Building UI components |
+| **ui-testing** | React component test strategies |
+| **webapp-testing** | Playwright end-to-end tests |
+| **verification-before-completion** | Pre-PR readiness checks |
+| **skill-creator** | Adding new skills to the framework |
 
-### ≡ƒôï Templates & Instructions
+> **VS Code 1.108+**: Skills are auto-discovered from `.github/skills/` when `chat.useAgentSkills` is enabled.
 
-Ready-to-use templates in `.github/`:
+---
 
-- **Implementation Plan Template** - Standard structure for feature implementation
-- **Start Issue Prompt** - Quick-start prompts for issue-designer
-- **Tracking Format Instructions** - Standard output format for agent responses
-- **Post-PR Review Instructions** - Guidelines for after PR review
+## Configuration Files
 
-### ≡ƒ¢á∩╕Å Scripts & Workflows
+| File | Purpose | Status on clone |
+|------|---------|------------------|
+| `.github/copilot-instructions.md` | Project context, tech stack, conventions | Pre-created with TODO markers |
+| `.github/architecture-rules.md` | Layer rules, dependency rules, naming | Pre-created with TODO markers |
+| `.github/agents/*.agent.md` | Agent definitions | Ready to use, customize as needed |
+| `.github/skills/*/SKILL.md` | Domain knowledge | Ready to use, add your own |
 
-Foundation for automation in `.github/`:
+---
 
-- **Validation Scripts** - Template for test/lint validation
-- **CI Workflows** - Template for continuous integration
+## Examples
 
-### ≡ƒôÜ Example Project
+Three complete filled-in examples showing what your config files should look like:
 
-Complete Spring Boot microservice example in `examples/`:
+| Stack | Location |
+|-------|----------|
+| Spring Boot (Java) | `examples/spring-boot-microservice/` |
+| Express (TypeScript) | `examples/nodejs-typescript/` |
+| FastAPI (Python) | `examples/python/` |
 
-- `copilot-instructions.md` - Project context example
-- `architecture-rules.md` - Architecture patterns example
-- `TECH-DEBT.md` - Technical debt tracking template
-- Demonstrates how to adapt the template for your stack
+---
+
+## Global Setup (Optional): Use Agents Across All Repositories
+
+You can make all agents available globally in VS Code — not just in repos that have cloned this template — by adding this setting to your VS Code user settings (`Ctrl+,` &rarr; open `settings.json`):
+
+```json
+{
+  "chat.agentFilesLocations": [
+    "/path/to/your/workflow-template/.github/agents"
+  ]
+}
+```
+
+Replace `/path/to/your/workflow-template` with the absolute path to where you cloned this repo. VS Code will load agent definitions from that folder for all workspaces.
+
+> **Tip**: Use this when you want the workflow agents available in all your projects, even ones that haven't cloned this template. You can also add both a global path and a per-project `.github/agents/` folder — VS Code merges them.
+
+---
+
+## Customization
+
+See **[CUSTOMIZATION.md](CUSTOMIZATION.md)** for:
+
+- How to fill in your project config files
+- Adding domain-specific skills
+- Tweaking agent behaviors
+- Organization-level agent setup
+
+See **[CONTRIBUTING.md](CONTRIBUTING.md)** for recommended VS Code settings.
+
+---
 
 ## Repository Structure
 
 ```text
 .github/
-Γö£ΓöÇΓöÇ agents/              # Agent definitions (15+ specialized agents)
-Γö£ΓöÇΓöÇ instructions/        # Tracking format, PR review guidelines
-Γö£ΓöÇΓöÇ templates/           # Implementation plan templates
-Γö£ΓöÇΓöÇ prompts/             # Execution prompts for agents
-Γö£ΓöÇΓöÇ scripts/             # Validation scripts
-ΓööΓöÇΓöÇ workflows/           # CI/CD workflow templates
-
-.github/skills/          # Reusable skill definitions (9 skills)
-Γö£ΓöÇΓöÇ README.md            # Skills framework documentation
-Γö£ΓöÇΓöÇ test-driven-development/        # Test-Driven Development
-Γö£ΓöÇΓöÇ brainstorming/       # Socratic questioning
-Γö£ΓöÇΓöÇ frontend-design/     # UI design guidance
-Γö£ΓöÇΓöÇ webapp-testing/      # Web app testing guidance
-Γö£ΓöÇΓöÇ ui-testing/          # React component testing
-Γö£ΓöÇΓöÇ skill-creator/       # Creating new skills
-Γö£ΓöÇΓöÇ systematic-debugging/ # 4-phase debugging
-Γö£ΓöÇΓöÇ verification-before-completion/  # Completion checklist
-ΓööΓöÇΓöÇ software-architecture/  # Clean Architecture & SOLID
+├── agents/              # 14 agent definitions
+├── copilot-instructions.md  # Your project context (fill in)
+├── architecture-rules.md    # Your architecture rules (fill in)
+├── instructions/        # Output format and PR review guidelines
+├── prompts/             # setup.prompt.md and start-issue.md
+├── skills/              # 9 reusable skill definitions
+└── templates/           # Implementation plan template
 
 examples/
-ΓööΓöÇΓöÇ spring-boot-microservice/  # Complete example project
+├── spring-boot-microservice/   # Java / Spring Boot example
+├── nodejs-typescript/          # TypeScript / Express example
+└── python/                     # Python / FastAPI example
 
 Documents/
-Γö£ΓöÇΓöÇ Design/              # Design documents (created by agents)
-Γö£ΓöÇΓöÇ Decisions/           # Architecture Decision Records (ADRs)
-ΓööΓöÇΓöÇ Development/         # Project documentation templates
+├── Design/              # Design documents (created by agents)
+└── Decisions/           # Architecture Decision Records
 ```
 
-## Key Concepts
-
-### Agents
-
-Agents are specialized AI personas defined in `.github/agents/`. Each agent has:
-
-- A specific role and expertise
-- Defined responsibilities
-- Interaction patterns with other agents
-
-### Skills
-
-Skills are domain-specific knowledge packages in `.github/skills/`. They provide:
-
-- Contextual information for agents
-- Best practices for specific workflows
-- Examples and patterns to follow
-
-### Instructions
-
-Instructions in `.github/instructions/` guide agent behavior:
-
-- Output formats (tracking, documentation)
-- Review processes
-- Quality standards
-
-## Customization
-
-**≡ƒôû [Read the Complete Customization Guide](CUSTOMIZATION.md)** for step-by-step instructions.
-
-### Quick Reference: Files to Customize
-
-| File | What to Customize | When |
-| ------ | ------------------- | ------ |
-| `.github/copilot-instructions.md` | Project overview, tech stack, conventions | **Before first use** |
-| `.github/architecture-rules.md` | Layer structure, package organization, dependency rules | **Before first use** |
-| `.github/skills/your-domain/` | Domain-specific patterns, examples, best practices | As needed |
-| `.github/agents/*.md` | Agent behaviors, responsibilities, interaction patterns | Optional refinement |
-| `.github/templates/*.md` | Implementation plan structure, issue templates | Optional refinement |
-| `.github/workflows/*.yml` | CI/CD pipelines, automation | When setting up CI |
-
-### Technology-Specific Adaptation
-
-All examples in this template use **Java/Spring Boot** conventions. When adapting for other stacks:
-
-- **Node.js/Express**: Replace test commands (`./gradlew test` ΓåÆ `npm test`), adjust layer patterns
-- **Python/Django**: Update architecture rules for Django patterns (views, models, serializers)
-- **Go**: Adapt package structure conventions, replace build commands
-- **.NET/C#**: Update for .NET patterns (Controllers, Services, Repositories)
-
-The **conceptual structure** (agents, skills, workflows) remains the same - only the concrete examples change.
-
-> ≡ƒÆí **Tip**: Use the Spring Boot example in `examples/spring-boot-microservice/` as a reference for how to structure your own technology-specific customization.
-
-## Design Philosophy
-
-### Standalone Template with Manual Sync
-
-This template follows a **copy-and-adapt** model:
-
-- No automatic updates to consumer repositories
-- Versioned releases (tags) for upgrade reference points
-- Each project maintains ownership of customizations
-- Improvements flow back via PRs to this template
-
-### Why This Approach?
-
-1. **Independence** - Your project isn't blocked by template changes
-2. **Flexibility** - Adapt freely to your specific needs
-3. **Stability** - Upgrade on your schedule
-4. **Control** - You decide what changes to incorporate
-
-## Organization-Level Setup
-
-You can define shared Agent definitions at the organization level in either:
-
-- An organization `.github-private` repository
-- An organization `.github` repository
-
-For organization repositories, place definitions in an `agents/` folder at repository root.
-
-Organization-level Agents apply across repositories in that organization. Repository-level Agents in this template (`.github/agents/`) can override organization defaults when project-specific behavior is needed.
-
-## Example Projects
-
-This template includes example configurations for:
-
-- **Spring Boot Microservice** - Layered architecture (Controller ΓåÆ Service ΓåÆ Repository)
-
-> **Note**: All concrete examples throughout this template (test commands, quality gates, code patterns) use **Java/Spring Boot** conventions. When adapting for other stacks (Node.js, Python, etc.), replace these with your framework's equivalents while keeping the same conceptual structure.
-
-The examples demonstrate how agents and skills work in practice, serving as a reference for adaptation to your specific technology stack.
+---
 
 ## Contributing
 
-We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
-
-Ways to contribute:
+See [CONTRIBUTING.md](CONTRIBUTING.md). Ways to help:
 
 - Report issues with agent definitions
-- Share improvements to prompts
+- Share prompt or workflow improvements
 - Add new skill definitions
-- Improve documentation
-
-## Versioning
-
-This project uses semantic versioning:
-
-- **Major** - Breaking changes to agent interfaces
-- **Minor** - New agents, skills, or features
-- **Patch** - Bug fixes and documentation
-
-Check [Releases](../../releases) for version history.
+- Improve the examples
 
 ## License
 
-This project is available for use under the terms specified in the LICENSE file.
+Available under the terms in the LICENSE file.

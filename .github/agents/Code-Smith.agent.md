@@ -2,6 +2,7 @@
 name: Code-Smith
 description: "Focused code implementation following TDD or plan-driven approach"
 argument-hint: "Implement code changes based on tests or plan"
+user-invokable: false
 tools:
   - execute/testFailure
   - execute/getTerminalOutput
@@ -12,7 +13,7 @@ tools:
   - memory
 handoffs:
   - label: Create Plan
-    agent: Plan-Architect
+    agent: Issue-Planner
     prompt: No plan exists. Create implementation plan with test coverage mapping and detailed specifications.
     send: false
   - label: Request Test Review

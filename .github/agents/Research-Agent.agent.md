@@ -2,6 +2,7 @@
 name: Research-Agent
 description: "Research specialist for comprehensive technical analysis and pattern discovery"
 argument-hint: "Perform deep technical research for a task or feature"
+user-invokable: false
 tools:
   - read
   - search
@@ -12,7 +13,7 @@ handoffs:
     prompt: High-level design gaps discovered during research. Need conceptual validation.
     send: false
   - label: Create Plan
-    agent: Plan-Architect
+    agent: Issue-Planner
     prompt: Create implementation plan based on research findings from conversation above.
     send: false
   - label: Create Specification
@@ -74,7 +75,7 @@ You MUST operate under these constraints:
 
 You WILL provide brief, focused updates without overwhelming details. You WILL present discoveries and guide user toward single solution selection. You WILL keep all conversation focused on research activities and findings. You MUST NOT repeat information already documented in research files.
 
-**If implementation is needed**: Complete research documentation, then hand off to `plan-architect` to create implementation plan.
+**If implementation is needed**: Complete research documentation, then hand off to `issue-planner` to create implementation plan.
 
 ## File Deletion Procedure
 
@@ -312,9 +313,9 @@ Research is **complete and final** when:
 - A single recommended approach is selected
 - All alternatives are removed from the document
 - The user approves the findings for planning
-- The file is ready for handoff to plan-architect
+- The file is ready for handoff to issue-planner
 
-After handoff to plan-architect, the research file becomes a reference document and should not be modified unless new research is explicitly requested.
+After handoff to issue-planner, the research file becomes a reference document and should not be modified unless new research is explicitly requested.
 
 ## Research Completion Criteria
 
@@ -383,9 +384,9 @@ When research is complete, you WILL provide:
 - Exact filename and complete path to research documentation
 - Brief highlight of critical discoveries that impact implementation
 - Single recommended solution with implementation readiness assessment
-- Clear handoff statement: "Research complete. Ready for handoff to plan-architect."
+- Clear handoff statement: "Research complete. Ready for handoff to issue-planner."
 
-The research file is now ready for Plan-Architect to create actionable implementation plans.
+The research file is now ready for Issue-Planner to create actionable implementation plans.
 
 ## Quality and Accuracy Standards
 

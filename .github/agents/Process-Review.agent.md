@@ -2,6 +2,7 @@
 name: Process-Review
 description: "Meta-analysis of workflow execution to identify deviations and improvement opportunities"
 argument-hint: "Analyze workflow execution and identify process improvements"
+user-invokable: false
 tools:
   [
     execute/getTerminalOutput,
@@ -18,7 +19,7 @@ handoffs:
     prompt: Implement the approved process improvements from the review above. Update agent instructions, plan-tracking guidelines, and related documentation.
     send: false
   - label: Revise Planning
-    agent: Plan-Architect
+    agent: Issue-Planner
     prompt: Update planning templates and strategies based on the process review findings above.
     send: false
   - label: Continue Work
@@ -84,7 +85,7 @@ Performs retrospective analysis of development process to improve future executi
 - Compare actual execution vs intended workflow (plan files vs git history)
 - Identify agent boundary violations (e.g., code-smith writing tests)
 - Flag premature phase transitions (e.g., implementing before RED tests)
-- Detect role confusion (e.g., plan-architect providing pseudo-code)
+- Detect role confusion (e.g., issue-planner providing pseudo-code)
 - Detect CE Gate defects that reveal systemic process gaps (e.g., CE Gate scenario fails due to missing guidance in an agent instruction file, insufficient plan detail, or uncovered edge case not caught by earlier validation tiers)
 
 **Workflow Efficiency Analysis**:
@@ -159,7 +160,7 @@ Performs retrospective analysis of development process to improve future executi
 
 - ❌ During active feature implementation (wait for completion)
 - ❌ For code review (use code-critic instead)
-- ❌ For planning new features (use plan-architect)
+- ❌ For planning new features (use issue-planner)
 - ❌ For bug fixes (not a process issue)
 
 ---
@@ -427,7 +428,7 @@ Emit exactly this structure when returning results to Code-Conductor:
 
 - Add explicit RED state validation
 - Strengthen test-writer → code-smith handoff
-- Create TDD checklist for plan-architect
+- Create TDD checklist for issue-planner
 
 ### Scenario 2: Agent Confusion
 
@@ -507,7 +508,7 @@ Emit exactly this structure when returning results to Code-Conductor:
 **Handoffs**:
 
 - **To doc-keeper**: Implement approved improvements
-- **To plan-architect**: Update planning templates
+- **To issue-planner**: Update planning templates
 - **To team**: Share findings in retrospective
 
 **Artifacts**:
