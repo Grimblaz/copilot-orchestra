@@ -6,7 +6,7 @@ applyTo: "**"
 
 ## Overview
 
-Multi-agent workflow system for GitHub Copilot. Provides 14 specialized agent definitions, 11 skills, instruction files, and prompt templates that orchestrate AI-assisted software development.
+Multi-agent workflow system for GitHub Copilot. Provides specialized agents, skills, instruction files, and prompt templates that orchestrate AI-assisted software development.
 
 ## Technology Stack
 

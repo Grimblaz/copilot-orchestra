@@ -4,7 +4,7 @@ This guide explains how to configure the workflow template for your project.
 
 ## Quick Option: Setup Wizard
 
-Open GitHub Copilot Chat, press **`@`**, choose the **`setup`** prompt, and answer the questions. Copilot will generate your config files automatically.
+Open GitHub Copilot Chat, run the **`/setup`** command, and answer the questions. Copilot will generate your config files automatically.
 
 ## Manual Option: Create the Config Files
 

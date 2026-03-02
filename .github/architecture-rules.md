@@ -4,15 +4,15 @@ These rules define the structural constraints for the Copilot Workflow Template.
 
 ## Directory Structure
 
-| Directory                | Purpose                                                | Allowed Contents                              |
-| ------------------------ | ------------------------------------------------------ | --------------------------------------------- |
-| `.github/agents/`        | Agent definitions                                      | `*.agent.md` files with YAML frontmatter      |
-| `.github/skills/{name}/` | Domain-specific knowledge                              | `SKILL.md` with frontmatter, supporting files |
-| `.github/instructions/`  | Shared rules loaded by agents                          | `*.instructions.md` files                     |
-| `.github/prompts/`       | User-invokable prompt templates                        | `*.prompt.md` files with YAML frontmatter     |
-| `Documents/Design/`      | Design documents (committed with implementation PRs)   | `issue-{N}-{slug}.md`                         |
-| `Documents/Decisions/`   | Standalone decision records                            | Markdown files                                |
-| `examples/`              | Example configurations for different tech stacks       | Subdirectories per stack                      |
+| Directory                | Purpose                                              | Allowed Contents                                               |
+| ------------------------ | ---------------------------------------------------- | -------------------------------------------------------------- |
+| `.github/agents/`        | Agent definitions                                    | `*.agent.md` files with YAML frontmatter                      |
+| `.github/skills/{name}/` | Domain-specific knowledge                            | `SKILL.md` with frontmatter, supporting files                 |
+| `.github/instructions/`  | Shared rules loaded by agents                        | `*.instructions.md` files                                     |
+| `.github/prompts/`       | Prompt files and workflow templates                  | `*.prompt.md` with frontmatter; supporting `*.md` templates   |
+| `Documents/Design/`      | Design documents (committed with implementation PRs) | `issue-{N}-{slug}.md`                                         |
+| `Documents/Decisions/`   | Standalone decision records                          | Markdown files                                                 |
+| `examples/`              | Example configurations for different tech stacks     | Subdirectories per stack                                       |
 
 ## Dependency Rules
 
@@ -26,7 +26,7 @@ These rules define the structural constraints for the Copilot Workflow Template.
 
 ### Forbidden
 
-- Internal agents (`user-invokable: false`) must NOT appear in user-facing agent `handoffs` lists as entry points
+- Internal agents (`user-invokable: false`) must NOT be directly user-invokable; they MAY appear in agent `handoffs` lists as subagents
 - Agents must NOT reference deleted agents (e.g., Plan-Architect) — validate with `grep`
 - Skills must NOT contain agent logic — they provide knowledge, not orchestration
 - No agent may auto-commit — all commits are manual by the user
@@ -49,7 +49,7 @@ Must live in `.github/skills/{skill-name}/SKILL.md`
 
 ### Instruction Files (`.instructions.md`)
 
-Must use `applyTo` frontmatter to scope where they apply.
+May use `applyTo` frontmatter to scope where they apply; if omitted, applies generally.
 Must live in `.github/instructions/`
 
 ## Naming Conventions

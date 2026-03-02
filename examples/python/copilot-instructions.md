@@ -31,7 +31,7 @@ Layered architecture with strict top-down dependency flow:
 │                    Models                        │
 │          (SQLAlchemy ORM / Pydantic)            │
 └─────────────────────────────────────────────────┘
-````
+```
 
 ## Directory Structure
 
@@ -128,7 +128,4 @@ poetry install && poetry run ruff check .
 
 - [Architecture Rules](architecture-rules.md)
 - [TDD Workflow](../../.github/skills/test-driven-development/SKILL.md)
-
-```
-
-```
+````

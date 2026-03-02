@@ -99,6 +99,8 @@ Skills are domain-specific knowledge packages in `.github/skills/` that agents l
 | **frontend-design** | Building UI components |
 | **ui-testing** | React component test strategies |
 | **webapp-testing** | Playwright end-to-end tests |
+| **parallel-execution** | Running parallel/serial implementation lanes |
+| **property-based-testing** | Incremental randomized property verification |
 | **verification-before-completion** | Pre-PR readiness checks |
 | **skill-creator** | Adding new skills to the framework |
 
@@ -164,12 +166,12 @@ See **[CONTRIBUTING.md](CONTRIBUTING.md)** for recommended VS Code settings.
 
 ```text
 .github/
-├── agents/              # 14 agent definitions
+├── agents/              # Agent definitions
 ├── copilot-instructions.md  # Your project context (generate via /setup)
 ├── architecture-rules.md    # Your architecture rules (generate via /setup)
 ├── instructions/        # Output format and PR review guidelines
 ├── prompts/             # setup.prompt.md and start-issue.md
-├── skills/              # 9 reusable skill definitions
+├── skills/              # Skill definitions
 └── templates/           # Implementation plan template
 
 examples/

@@ -36,4 +36,4 @@ Once you've provided all answers above, I will:
 2. **Generate `.github/architecture-rules.md`** — create this file with layer structure, dependency rules, testing rules, and naming conventions based on your architecture style and conventions
 3. **Confirm** what was created so you can review or adjust
 
-> **Note**: If these files already exist, I'll replace them with your new answers. If you're unsure about any question, give your best guess — you can always edit the files manually afterward. See `examples/` for complete filled-in references (spring-boot-microservice for Java, nodejs-typescript for TypeScript, python for Python).
+> **Note**: If these files already exist, I'll ask you before overwriting — you can choose to overwrite, or I'll create draft files like `.github/copilot-instructions.new.md` for you to compare and merge manually. If you're unsure about any question, give your best guess — you can always edit the files manually afterward. See `examples/` for complete filled-in references (spring-boot-microservice for Java, nodejs-typescript for TypeScript, python for Python).

@@ -151,7 +151,7 @@ Adjust the branch naming pattern to match your project:
 After completing setup with this prompt:
 
 1. **Issue-Designer** → **Issue-Planner**: Pass issue details for planning
-2. **Issue-Planner** → **Code-Conductor**: Pass completed implementation plan
+2. **Issue-Planner** → **Code-Conductor**: Issue-Planner posts the implementation plan as an authoritative GitHub issue comment; Code-Conductor reads from the issue comments to execute
 3. **Code-Conductor** → **Specialized Agents**: Execute phases sequentially
 
 ### Tracking File Format
