@@ -2,7 +2,7 @@
 name: UI-Iterator
 description: "Systematic UI polish through screenshot-based iteration"
 argument-hint: "Polish [PageName] or Polish [ComponentName] [iterations]"
-user-invokable: false
+user-invokable: true
 tools:
   - edit
   - search
