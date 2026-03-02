@@ -8,7 +8,7 @@ For the best experience with this workflow template:
 
 ### Required
 
-- **VS Code 1.107+** (November 2025 release or later)
+- **VS Code 1.107+** (November 2025 release or later) — required for custom agents
 - GitHub Copilot extension
 
 ### Recommended Settings
@@ -18,6 +18,26 @@ Enable the built-in GitHub MCP server for seamless issue and PR workflows:
 ```json
 {
   "github.copilot.chat.githubMcpServer.enabled": true
+}
+```
+
+To make agents available globally across all VS Code workspaces (not just repos with `.github/agents/`), add:
+
+```json
+{
+  "chat.agentFilesLocations": [
+    "/absolute/path/to/your/workflow-template/.github/agents"
+  ]
+}
+```
+
+Replace the path with the absolute path to where you cloned this repository. This makes all agents available globally — 6 user-facing agents in the chat picker, plus 8 internal subagents used automatically by Code-Conductor.
+
+To enable automatic skill discovery from `.github/skills/` (VS Code 1.108+):
+
+```json
+{
+  "chat.useAgentSkills": true
 }
 ```
 

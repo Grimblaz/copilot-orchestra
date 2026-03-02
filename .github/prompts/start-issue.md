@@ -79,7 +79,7 @@ When picking up a new issue:
    - Dependencies: [CUSTOMIZE: Specify agent responsible for dependency checks] can check dependencies
    - Branch creation: Issue-Designer or Code-Conductor
    - Tracking: Issue-Designer sets up tracking
-   - Planning: Plan-Architect creates implementation plan
+   - Planning: Issue-Planner creates implementation plan
 
 3. **Document blockers**: If any dependency or setup issue is found, document it in the issue comments before proceeding.
 
@@ -150,8 +150,8 @@ Adjust the branch naming pattern to match your project:
 
 After completing setup with this prompt:
 
-1. **Issue-Designer** → **Plan-Architect**: Pass implementation plan template
-2. **Plan-Architect** → **Code-Conductor**: Pass completed implementation plan
+1. **Issue-Designer** → **Issue-Planner**: Pass issue details for planning
+2. **Issue-Planner** → **Code-Conductor**: Issue-Planner posts the implementation plan as an authoritative GitHub issue comment; Code-Conductor reads from the issue comments to execute
 3. **Code-Conductor** → **Specialized Agents**: Execute phases sequentially
 
 ### Tracking File Format
