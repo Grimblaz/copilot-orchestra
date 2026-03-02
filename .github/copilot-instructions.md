@@ -60,7 +60,7 @@ No build step. This is a configuration/documentation template.
 
 ```bash
 # Validate no broken references
-grep -r "Plan-Architect" .github/ --include="*.md" | wc -l  # should be 0
+grep -r "Plan-Architect" .github/ --include="*.md" | grep -v "copilot-instructions.md" | wc -l  # should be 0
 
 # Check agent count
 ls .github/agents/*.agent.md | wc -l  # should be 13
