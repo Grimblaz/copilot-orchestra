@@ -61,11 +61,14 @@ The workflow-template includes a `SessionStart` hook that detects stale feature 
 
 **Setup — two steps:**
 
-**Step 1**: Add to your user or workspace VS Code settings:
+**Step 1**: Add to your user VS Code settings (`settings.json`):
 
 ```json
-"chat.hookFilesLocations": ["/absolute/path/to/workflow-template/.github/hooks"]
+"chat.hookFilesLocations": ["/absolute/path/to/workflow-template/.github/hooks"],
+"chat.agentFilesLocations": ["/absolute/path/to/workflow-template/.github/agents"]
 ```
+
+`chat.agentFilesLocations` makes all workflow agents available in every repository without copying them. `chat.hookFilesLocations` enables the session cleanup hook.
 
 > **Windows path**: Use forward slashes or escaped backslashes in the JSON value, e.g. `"C:/Users/you/workflow-template/.github/hooks"` or `"C:\\Users\\you\\workflow-template\\.github\\hooks"`.
 
