@@ -17,6 +17,16 @@
 
 $ErrorActionPreference = 'SilentlyContinue'
 
+if (-not $env:WORKFLOW_TEMPLATE_ROOT) {
+    [pscustomobject]@{
+        hookSpecificOutput = [pscustomobject]@{
+            hookEventName     = 'SessionStart'
+            additionalContext = 'WORKFLOW_TEMPLATE_ROOT is not set. Set this environment variable to your local workflow-template repo path so the SessionStart hook can locate its scripts.'
+        }
+    } | ConvertTo-Json -Depth 3 -Compress
+    exit 1
+}
+
 function Write-NoOp {
     Write-Output '{}'
 }
@@ -172,19 +182,24 @@ function Get-TrackingLines {
     return $out
 }
 
+# Safe root: single-quoted in emitted commands handles $ and " characters in the path
+$safeRoot = $env:WORKFLOW_TEMPLATE_ROOT -replace "'", "''"
+
 # Helper: emit cleanup command lines for tracking-file items
 function Get-TrackingCommands {
     param([array]$Items)
     $out = @()
+    $out += '# Run in a PowerShell (pwsh) terminal:'
     foreach ($item in $Items) {
         if ($item.IssueId -ne 'unknown') {
             if ($item.BranchName) {
                 foreach ($b in $item.AllBranches) {
-                    $out += "pwsh .github/scripts/post-merge-cleanup.ps1 -IssueNumber $($item.IssueId) -FeatureBranch '$($b -replace "'", "''")'"
+                    $safeB = $b -replace "'", "''"
+                    $out += "pwsh '$safeRoot/.github/scripts/post-merge-cleanup.ps1' -IssueNumber $($item.IssueId) -FeatureBranch '$safeB'"
                 }
             }
             else {
-                $out += "pwsh .github/scripts/post-merge-cleanup.ps1 -IssueNumber $($item.IssueId) -SkipRemoteDelete -SkipLocalDelete  # branch not found locally; archives tracking files only"
+                $out += "pwsh '$safeRoot/.github/scripts/post-merge-cleanup.ps1' -IssueNumber $($item.IssueId) -SkipRemoteDelete -SkipLocalDelete  # branch not found locally; archives tracking files only"
             }
         }
         else {
@@ -206,7 +221,8 @@ if ($null -ne $staleBranch -and $cleanupNeeded.Count -eq 0) {
     $lines += 'To clean up, run:'
     $lines += '```powershell'
     if ($staleBranch.IssueId) {
-        $lines += "pwsh .github/scripts/post-merge-cleanup.ps1 -IssueNumber $($staleBranch.IssueId) -FeatureBranch '$escaped'"
+        $lines += '# Run in a PowerShell (pwsh) terminal:'
+        $lines += "pwsh '$safeRoot/.github/scripts/post-merge-cleanup.ps1' -IssueNumber $($staleBranch.IssueId) -FeatureBranch '$escaped'"
     }
     else {
         $lines += "git checkout '$escapedDefault' && git pull && git branch -d '$escaped'  # use -D to force if already confirmed merged"
@@ -231,7 +247,8 @@ elseif ($null -ne $staleBranch -and $cleanupNeeded.Count -gt 0) {
     $lines += 'To clean up, run:'
     $lines += '```powershell'
     if ($staleBranch.IssueId) {
-        $lines += "pwsh .github/scripts/post-merge-cleanup.ps1 -IssueNumber $($staleBranch.IssueId) -FeatureBranch '$escaped'"
+        $lines += '# Run in a PowerShell (pwsh) terminal:'
+        $lines += "pwsh '$safeRoot/.github/scripts/post-merge-cleanup.ps1' -IssueNumber $($staleBranch.IssueId) -FeatureBranch '$escaped'"
         if ($dedupedCleanup.Count -gt 0) {
             $lines += (Get-TrackingCommands -Items $dedupedCleanup)
         }

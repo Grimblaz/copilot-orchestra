@@ -55,6 +55,70 @@ To share agents across all repositories in your org:
 - Place agent files in an `agents/` folder at the root of your org's `.github` or `.github-private` repository
 - Repository-level agents in `.github/agents/` override org defaults
 
+### 6. Session Cleanup Hook (Optional)
+
+The workflow-template includes a `SessionStart` hook that detects stale feature branches and leftover tracking files after a PR is merged, and prompts you to run cleanup at the start of your next VS Code Copilot session.
+
+**Setup — two steps:**
+
+**Step 1**: Add to your user VS Code settings (`settings.json`):
+
+```json
+{
+  "chat.hookFilesLocations": ["/absolute/path/to/workflow-template/.github/hooks"],
+  "chat.agentFilesLocations": ["/absolute/path/to/workflow-template/.github/agents"],
+  "chat.agentSkillsLocations": ["/absolute/path/to/workflow-template/.github/skills"],
+  "chat.instructionsFilesLocations": {
+    "/absolute/path/to/workflow-template/.github/instructions": true
+  },
+  "chat.promptFilesLocations": {
+    "/absolute/path/to/workflow-template/.github/prompts": true
+  }
+}
+```
+
+| Setting | What it enables |
+|---|---|
+| `chat.hookFilesLocations` | Session cleanup hook (detects stale branches after PR merge) |
+| `chat.agentFilesLocations` | All workflow agents available in every repository |
+| `chat.agentSkillsLocations` | All workflow skills available in every repository |
+| `chat.instructionsFilesLocations` | Shared instruction files apply across all your repositories |
+| `chat.promptFilesLocations` | Shared prompt files (e.g. `/setup`) available in every repository |
+
+> **Windows path**: Use forward slashes or escaped backslashes in the JSON value, e.g. `"C:/Users/you/workflow-template/.github/hooks"` or `"C:\\Users\\you\\workflow-template\\.github\\hooks"`. Apply the same format to all five settings above.
+
+**Step 2**: Set the `WORKFLOW_TEMPLATE_ROOT` environment variable to the absolute path of your local workflow-template clone. Without this, the hook will display an error message instead of running.
+
+**Windows (permanent — recommended)**:
+
+Set via System Properties > Advanced > Environment Variables, or from an elevated PowerShell session:
+
+```powershell
+[System.Environment]::SetEnvironmentVariable('WORKFLOW_TEMPLATE_ROOT', 'C:\path\to\workflow-template', 'User')
+```
+
+This persists across all sessions, including VS Code launched from the Start Menu or GUI.
+
+**Windows (PowerShell profile — session-scope only)**:
+
+Add to your PowerShell profile (`$PROFILE`):
+
+```powershell
+$env:WORKFLOW_TEMPLATE_ROOT = "C:\path\to\workflow-template"
+```
+
+> **Note**: Profile-set variables are only available in shells where the profile is loaded. VS Code launched from the Start Menu or a desktop shortcut may not run your PowerShell profile, causing the hook to display a "not set" error. Use the permanent approach above if this happens.
+
+**macOS/Linux (shell profile)**:
+
+```bash
+export WORKFLOW_TEMPLATE_ROOT="/path/to/workflow-template"
+```
+
+**What it does**: On each VS Code session start, the hook checks whether your current branch's remote has been deleted (indicating a merged PR) or whether `.copilot-tracking/` files exist for merged issues. If cleanup is needed, it prompts you to confirm before running `post-merge-cleanup.ps1`.
+
+**Requires**: PowerShell 7+ (`pwsh`) installed on PATH and VS Code 1.109.3+.
+
 ## Troubleshooting
 
 **Agents not following instructions?**

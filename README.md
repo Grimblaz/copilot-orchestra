@@ -18,9 +18,14 @@ Or click **"Use this template"** &rarr; **"Create a new repository"** on GitHub.
 
 ### Step 2: Run the setup wizard
 
-Type `/setup` in GitHub Copilot Chat and answer the questions. Copilot will generate `.github/copilot-instructions.md` and `.github/architecture-rules.md` tailored to your project.
+Type `/setup` in GitHub Copilot Chat. It runs in two stages:
 
-> **Prefer to do it manually?** Create `.github/copilot-instructions.md` and `.github/architecture-rules.md` yourself. See `examples/` for complete filled-in references showing the expected format.
+- **Stage 1 — User setup** (one-time): sets `WORKFLOW_TEMPLATE_ROOT`, adds `chat.hookFilesLocations`, `chat.agentFilesLocations`, `chat.agentSkillsLocations`, `chat.instructionsFilesLocations`, and `chat.promptFilesLocations` to VS Code settings so agents, skills, instructions, prompts, and the cleanup hook are available across all your repositories.
+- **Stage 2 — Repo setup**: answers 14 questions about your project and generates `.github/copilot-instructions.md` and `.github/architecture-rules.md` tailored to your codebase.
+
+If you've already done Stage 1 for another repo, skip straight to Stage 2.
+
+> **Prefer to do it manually?** Create `.github/copilot-instructions.md` and `.github/architecture-rules.md` yourself. See `examples/` for complete filled-in references showing the expected format. For user-level setup, follow the instructions in `CUSTOMIZATION.md`.
 
 That's it. You're ready to use agents.
 
