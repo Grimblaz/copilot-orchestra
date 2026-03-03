@@ -106,7 +106,7 @@ The workflow-template includes a `SessionStart` hook that detects stale feature 
 
 **Windows (permanent — recommended)**:
 
-Set via System Properties > Advanced > Environment Variables, or from an elevated PowerShell session:
+Set via System Properties > Advanced > Environment Variables, or from a PowerShell terminal:
 
 ```powershell
 [System.Environment]::SetEnvironmentVariable('WORKFLOW_TEMPLATE_ROOT', 'C:\path\to\workflow-template', 'User')
@@ -143,11 +143,11 @@ When you run `/setup` and opt into Phase 5, the wizard can generate starter file
 | `.gitignore` additions | Appends workflow-template tracking dirs (`/.copilot-tracking/`, `/.copilot-tracking-archive/`) and optional entries (`screenshots/`, `/.playwright-mcp/`) — additive only, never removes existing lines |
 | `.vscode/settings.json` | Editor defaults: `formatOnSave`, `files.exclude`, `search.exclude` |
 | `.vscode/extensions.json` | Empty recommendations array for you to populate |
-| `.vscode/mcp.json` *(web projects)* | Playwright MCP config for browser automation in CE Gate scenarios |
+| `.vscode/mcp.json` *(web projects)* | Playwright MCP config for browser automation (UI iteration, visual testing, CE Gate verification) |
 | `.github/instructions/browser-mcp.instructions.md` *(web projects)* | Dev server startup rules for Playwright MCP, with your port and run command substituted |
 | `Documents/` structure | Creates `Design/`, `Decisions/`, `Development/` subdirectories |
 
-If any file already exists, Phase 5 asks before overwriting (`.vscode/settings.json`) or skips silently (`.vscode/extensions.json`). `.gitignore` additions are always additive — no existing lines are removed.
+If any file already exists, Phase 5 asks before overwriting (`.vscode/settings.json`, `.vscode/mcp.json`) or skips silently (`.vscode/extensions.json`). `.gitignore` additions are always additive — no existing lines are removed.
 
 ## Troubleshooting
 

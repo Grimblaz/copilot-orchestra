@@ -30,6 +30,7 @@ Never use any of the following to write or modify file content:
 - `Add-Content`
 - `New-Item` with `-Value`
 - `echo something > file.txt` or `echo something >> file.txt`
+- `.NET static IO methods: [System.IO.File]::WriteAllText(), ::AppendAllText(), ::WriteAllLines(), ::WriteAllBytes() — same silent encoding risks`
 
 These PowerShell commands silently corrupt files through encoding issues (e.g., UTF-16 BOM), incorrect line endings (CRLF where LF is expected), or data truncation. Even when they appear to succeed, the resulting files may break parsers, linters, and downstream tooling.
 
@@ -41,8 +42,8 @@ These PowerShell commands silently corrupt files through encoding issues (e.g., 
 
 When any agent discovers an out-of-scope or non-blocking improvement during its work:
 
-- **≤ 4 hours effort**: Fix in the current PR if the change is low-risk and does not expand scope significantly; otherwise defer.
-- **> 4 hours effort (significant)**: Create a follow-up GitHub issue **immediately** using `gh issue create`, then continue with in-scope work. Do not block the current PR on the deferred improvement.
+- **< 1 day effort**: Address within the current task (or current PR if one is open) if the change is low-risk and does not expand scope significantly; otherwise defer.
+- **> 1 day effort (significant)**: Create a follow-up GitHub issue **immediately** using `gh issue create`, then continue with in-scope work. Do not block the current PR on the deferred improvement.
 
 ### 2b. Priority Label Requirement
 
@@ -55,6 +56,14 @@ gh issue create --title "..." --body "..." --label "priority: medium"
 # WRONG — missing priority label:
 gh issue create --title "..." --body "..."
 ```
+
+> **Prerequisite — Priority labels must exist in the target repository.**
+> If they do not yet exist, run these commands once per repository:
+> ```powershell
+> gh label create "priority: high"   --color "#D93F0B" --description "Critical — must fix this sprint"
+> gh label create "priority: medium" --color "#FBCA04" --description "Strong improvement — schedule soon"
+> gh label create "priority: low"    --color "#0075CA" --description "Nice-to-have — defer or batch"
+> ```
 
 #### Priority Labels
 

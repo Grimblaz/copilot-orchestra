@@ -58,17 +58,17 @@ No build step. This is a configuration/documentation template.
 
 ### Commands
 
-```bash
+```powershell
 # Validate no broken references
-grep -r "Plan-Architect" .github/ --include="*.md" | grep -v "copilot-instructions.md" | grep -v "architecture-rules.md" | wc -l  # should be 0
+(Get-ChildItem -Path .github -Recurse -Filter "*.md" | Where-Object { $_.Name -notmatch "copilot-instructions|architecture-rules" } | Select-String "Plan-Architect").Count  # should be 0
 
 # Check agent count
-ls .github/agents/*.agent.md | wc -l  # should be 13
+(Get-ChildItem .github/agents/*.agent.md).Count  # should be 13
 ```
 
 ## Quick-validate (used by agents before every PR)
 
-```bash
-grep -r "Plan-Architect" .github/ --include="*.md" | grep -v "copilot-instructions.md" | grep -v "architecture-rules.md" | wc -l  # 0
-grep -r "Janitor" .github/ --include="*.md" | grep -v "copilot-instructions.md" | grep -v "architecture-rules.md" | wc -l  # 0
+```powershell
+(Get-ChildItem -Path .github -Recurse -Filter "*.md" | Where-Object { $_.Name -notmatch "copilot-instructions|architecture-rules" } | Select-String "Plan-Architect").Count  # should be 0
+(Get-ChildItem -Path .github -Recurse -Filter "*.md" | Where-Object { $_.Name -notmatch "copilot-instructions|architecture-rules" } | Select-String "Janitor").Count  # should be 0
 ```

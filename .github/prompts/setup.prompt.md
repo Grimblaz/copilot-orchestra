@@ -1,5 +1,5 @@
 ---
-agent: ask
+mode: ask
 description: "Interactive setup wizard — 6 phases. Phase 0 checks prerequisites, Phase 1 configures your machine (one-time), Phases 2–4 configure this repo, Phase 5 generates project scaffolding. Skip any phase you've already completed."
 ---
 
@@ -17,7 +17,7 @@ Run the following checks automatically before asking any questions. Report all r
 
 | Check | Command | Minimum |
 |-------|---------|---------|
-| VS Code version | Open *Help > About* | 1.109.3 |
+| VS Code version | `code --version` | 1.109.3 |
 | PowerShell (pwsh) | `pwsh --version` in terminal | 7.0+ |
 | Git | `git --version` in terminal | any recent version |
 | GitHub CLI (gh) | `gh --version` in terminal | optional, recommended for issue operations |
@@ -99,6 +99,8 @@ Replace `<your-path>` with the absolute path from Step 1.1.
 
 ---
 
+**Working directory check**: Before Phase 2, display the current working directory (using `Get-Location` or `pwd`) and confirm: "About to configure the project at: **{cwd}**. Is this your intended target repository? (yes / provide correct path)" If the user provides a different path, change directory to that path before continuing.
+
 ## Phase 2 — Project Basics
 
 > **Skip gate**: Check whether `.github/copilot-instructions.md` exists in the current workspace.
@@ -135,7 +137,7 @@ Collect all answers before proceeding to Phase 4.
 
 ## Phase 4 — Commands
 
-> **Note**: No skip gate — command answers are used to generate both config files and scaffolding in Phase 5.
+> **Skip gate**: If Phase 2 was skipped AND Phase 3 was skipped AND Phase 5 will be skipped (ask: "Will you skip Phase 5 scaffolding?"), offer to skip Phase 4: "Since no config files will be generated, you can skip Phase 4 command questions. Enter 'skip' to continue, or press Enter to answer them now." If skipped, note Phase 4 as skipped in the Setup Summary.
 
 9. **Build command** — How do you build? (e.g., `npm run build`)
 10. **Run command** — How do you start the dev server or application? (e.g., `npm run dev`, `./gradlew bootRun`)
@@ -220,6 +222,7 @@ Ask: "Is this a web project with a browser-based dev server?" Options: (a) Yes, 
 
 If yes:
 - Ask: "What port does your dev server run on?" (default: infer from run command in Phase 4, or suggest 3000)
+- Check whether `.vscode/mcp.json` already exists. If it exists, ask: "`.vscode/mcp.json` already exists. Overwrite with Playwright MCP defaults, or skip?" If skip → skip 5d entirely.
 - Generate `.vscode/mcp.json`:
 
 ```json
@@ -292,9 +295,11 @@ Use the answers from Phases 2, 3, and 4 to fill in:
 
 Follow the format in `examples/nodejs-typescript/copilot-instructions.md` (or the appropriate stack example). Include all standard sections: Overview, Technology Stack, Architecture, Key Conventions, Build & Run, Quick-Validate.
 
+> **If Phase 3 was skipped**: Omit the Architecture section from the generated `copilot-instructions.md` and add a comment: `# Architecture: see .github/architecture-rules.md`. Do not hallucinate architecture details — leave those details to the existing rules file.
+
 **If Phase 3 was completed or regenerated** → Generate `.github/architecture-rules.md`:
 
-Use Phase 3 answers to fill in layer structure, dependency rules, testing rules, and naming conventions.
+Use Phase 3 answers to fill in layer structure, dependency rules, testing rules, and naming conventions. Follow the format in `examples/nodejs-typescript/architecture-rules.md` (or the appropriate stack example). Include all standard sections: Layer Architecture, Dependency Rules, Testing Rules, File & Naming Conventions.
 
 **If pre-existing files were present and user chose to regenerate** → Overwrite the existing file with the new content.
 

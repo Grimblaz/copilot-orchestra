@@ -24,7 +24,7 @@ Type `/setup` in GitHub Copilot Chat. It runs in six phases with skip gates:
 - **Phase 1** — One-time user setup: sets `WORKFLOW_TEMPLATE_ROOT` and adds agents, skills, hooks, and instructions to your VS Code settings. Skip if already configured.
 - **Phase 2** — Collects project basics (name, language, framework, database). Skip if `copilot-instructions.md` already exists.
 - **Phase 3** — Collects architecture and conventions. Skip if `architecture-rules.md` already exists.
-- **Phase 4** — Collects build, run, test, and validate commands.
+- **Phase 4** — Collects build, run, test, lint, and quick-validate commands.
 - **Phase 5** — Generates project scaffolding (`.gitignore` additions, `.vscode/` defaults, `Documents/` structure). Opt-in.
 
 > **Prefer to do it manually?** Create `.github/copilot-instructions.md` and `.github/architecture-rules.md` yourself. See `examples/` for complete filled-in references. For user-level setup, follow [CUSTOMIZATION.md](CUSTOMIZATION.md).
@@ -176,8 +176,10 @@ See **[CONTRIBUTING.md](CONTRIBUTING.md)** for recommended VS Code settings.
 ├── agents/              # Agent definitions
 ├── copilot-instructions.md  # Your project context (generate via /setup)
 ├── architecture-rules.md    # Your architecture rules (generate via /setup)
+├── hooks/               # Session lifecycle hooks (SessionStart)
 ├── instructions/        # Output format and PR review guidelines
 ├── prompts/             # setup.prompt.md and start-issue.md
+├── scripts/             # Post-merge cleanup and session detector
 ├── skills/              # Skill definitions
 └── templates/           # Implementation plan template
 
@@ -188,7 +190,8 @@ examples/
 
 Documents/
 ├── Design/              # Design documents (created by agents)
-└── Decisions/           # Architecture Decision Records
+├── Decisions/           # Architecture Decision Records
+└── Development/         # Testing strategy and development guides
 ```
 
 ---
