@@ -16,9 +16,13 @@ cd YOUR-REPO
 
 Or click **"Use this template"** &rarr; **"Create a new repository"** on GitHub.
 
+> **Note**: Creating from the template is optional. `/setup` works in any repo via shared prompts (`chat.promptFilesLocations`). If your workspace is brand-new and empty, don't worry — Phase 0 will automatically create a `README.md` placeholder for you. (VS Code's workspace context provider crashes on zero-file workspaces; Phase 0 handles this.)
+
 ### Step 2: Run the setup wizard
 
 Type `/setup` in GitHub Copilot Chat. It runs in six phases with skip gates:
+
+> **Recommended model**: Claude Opus — the setup wizard benefits from deep reasoning for architecture and tech stack decisions. *(o3 or GPT-4o also work well if Opus is unavailable.)*
 
 - **Phase 0** — Auto-detects prerequisites (VS Code version, pwsh, git, gh CLI)
 - **Phase 1** — One-time user setup: sets `WORKFLOW_TEMPLATE_ROOT` and adds agents, skills, hooks, and instructions to your VS Code settings. Skip if already configured.
