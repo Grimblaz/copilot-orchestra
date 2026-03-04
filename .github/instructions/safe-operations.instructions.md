@@ -54,7 +54,7 @@ gh issue create --title "..." --body "..." --label "priority: medium"
 
 # WRONG — missing priority label:
 gh issue create --title "..." --body "..."
-````
+```
 
 > **Prerequisite — Priority labels must exist in the target repository.**
 > If they do not yet exist, run these commands once per repository:
