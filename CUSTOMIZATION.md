@@ -6,9 +6,11 @@ This guide explains how to configure the workflow template for your project.
 
 Open GitHub Copilot Chat, run the **`/setup`** command. Setup runs in six phases:
 
+> **Recommended model**: Claude Opus — the setup wizard benefits from deep reasoning for architecture and tech stack decisions.
+
 | Phase | What it does | Skip available? |
 |-------|-------------|------------------|
-| **Phase 0** — Prerequisites | Auto-detects VS Code version, pwsh, git, and gh CLI | No — runs automatically |
+| **Phase 0** — Prerequisites | Auto-detects VS Code version, pwsh, git, and gh CLI; checks for empty workspace (creates `README.md` placeholder if needed) and wrong workspace | No — runs automatically |
 | **Phase 1** — User Setup | Sets `WORKFLOW_TEMPLATE_ROOT` and VS Code settings (one-time, machine-level) | Yes — skips if already configured |
 | **Phase 2** — Project Basics | Collects project name, language, framework, database | Yes — skips if `copilot-instructions.md` already exists |
 | **Phase 3** — Architecture | Collects architecture style, conventions, build tool | Yes — skips if `architecture-rules.md` already exists |
@@ -16,6 +18,8 @@ Open GitHub Copilot Chat, run the **`/setup`** command. Setup runs in six phases
 | **Phase 5** — Scaffolding | Generates `.gitignore` additions, `.vscode/` defaults, `Documents/` structure | Yes — opt-in |
 
 If you've already completed user setup (Phase 1) for another repo, the wizard detects this and skips straight to Phase 2.
+
+> **Note**: `/setup` works in any repo — creating from the GitHub template is optional. If your workspace is brand-new and completely empty, don't worry — Phase 0 will automatically create a `README.md` placeholder. (VS Code's workspace context provider crashes on zero-file workspaces; Phase 0 handles this.)
 
 ## Manual Option: Create the Config Files
 

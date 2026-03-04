@@ -1,5 +1,5 @@
 ---
-mode: ask
+agent: agent
 description: "Interactive setup wizard — 6 phases. Phase 0 checks prerequisites, Phase 1 configures your machine (one-time), Phases 2–4 configure this repo, Phase 5 generates project scaffolding. Skip any phase you've already completed."
 ---
 
@@ -11,7 +11,33 @@ Setup has six phases. Each phase includes a skip gate so you can jump to exactly
 
 ---
 
+> **Before you start**
+> - Run `/setup` in your **target project workspace** (the repo you want to configure) — not inside the workflow-template repo itself.
+> - If your workspace is brand-new and completely empty, create at least one file first (e.g., a `README.md`) before running `/setup`. VS Code's workspace context provider will crash on a zero-file workspace.
+> - **Recommended model**: Claude Opus — this wizard benefits from deep reasoning for architecture and tech stack decisions.
+
 ## Phase 0 — Prerequisites Check (automatic)
+
+Before running version checks, perform these two workspace pre-flight checks:
+
+**Pre-flight check 0 — Working directory display**
+
+Display the current working directory (using `Get-Location` or `pwd`) and confirm: "You are running `/setup` in: **{cwd}**. Is this your intended target repository? (yes / provide correct path)" If the user provides a different path, `cd` to that path before continuing to checks 1 and 2.
+
+**Pre-flight check 1 — Empty workspace**
+
+List the user-visible (non-hidden) files in the workspace root, excluding `.git/`. If no such files exist:
+- Create a `README.md` file with placeholder content (e.g., `# Project`).
+- Inform the user: "Your workspace was empty — I've created a `README.md` placeholder so VS Code's context provider can function. You can update this file with your project name after setup."
+- Continue to the version checks below.
+
+**Pre-flight check 2 — Wrong workspace**
+
+Check whether `.github/agents/` exists and contains 10 or more `.agent.md` files. If it does:
+- Warn: "⚠️ This workspace looks like the workflow-template repo itself, not a target project. `/setup` should be run in the repo you want to configure, not in the template."
+- Ask: "Would you like to continue anyway (e.g., you're intentionally reconfiguring this repo), or stop here?"
+- If the user chooses to stop: end the wizard.
+- If the user chooses to continue: proceed with version checks.
 
 Run the following checks automatically before asking any questions. Report all results clearly, warn on anything missing or outdated, then continue to Phase 1.
 
@@ -119,11 +145,16 @@ Answer these questions about the project:
 
 1. **Project name** — What is this project called? (e.g., "Order Service")
 2. **What does it do?** — 1–2 sentences describing the purpose. (e.g., "REST API that manages customer orders for an e-commerce platform.")
-3. **Primary language + version** — (e.g., TypeScript 5.x, Java 21, Python 3.12)
-4. **Framework + version** — (e.g., Express 4.x, Spring Boot 3.2, FastAPI 0.110, none)
-5. **Database** — (e.g., PostgreSQL 15, MongoDB 7, SQLite, none)
+3. **Primary language + version** — (e.g., TypeScript 5.x, Java 21, Python 3.12) *(or say "not sure" for help choosing)*
+   > *Not sure?* If the user indicates uncertainty, ask 2–3 clarifying questions about their project (e.g., team experience, deployment target, performance needs). Then use the project description from question 2 to generate 2–3 language recommendations with reasoning and pros/cons. Use `ask_questions` for the user to select. Experienced users who answer directly skip this step.
 
-Collect all answers before proceeding to Phase 3.
+4. **Framework + version** — (e.g., Express 4.x, Spring Boot 3.2, FastAPI 0.110, none) *(or say "not sure" for help choosing)*
+   > *Not sure?* If the user indicates uncertainty, generate 2–3 framework recommendations based on the language chosen in question 3 and the project description from question 2. Include reasoning and pros/cons. Use `ask_questions` for selection.
+
+5. **Database** — (e.g., PostgreSQL 15, MongoDB 7, SQLite, none) *(or say "not sure" for help choosing)*
+   > *Not sure?* If the user indicates uncertainty, generate 2–3 database recommendations based on the project type, scale, and stack from prior answers. Include reasoning and pros/cons. Use `ask_questions` for selection.
+
+Once all Phase 2 questions have been answered (including any "Not sure?" branches), proceed to Phase 3.
 
 ---
 
@@ -323,6 +354,8 @@ Use Phase 3 answers to fill in layer structure, dependency rules, testing rules,
 > **Alternative for conflicts**: If the user is unsure about overwriting, offer to create `.github/copilot-instructions.new.md` as a draft for manual comparison and merging.
 
 > **Reference**: See `examples/` for three complete filled-in examples showing format and depth: `examples/spring-boot-microservice/` (Java), `examples/nodejs-typescript/` (TypeScript), `examples/python/` (Python).
+
+**If Phase 0 auto-created a `README.md` placeholder** → Update that file's heading from `# Project` to `# {project name from Phase 2 Q1}`.
 
 ---
 
