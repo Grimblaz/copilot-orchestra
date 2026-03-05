@@ -23,7 +23,7 @@ New rule appended to the rules list (after "Keep scannable"):
 > files, or issues with signal phrases like "replace X with Y" or "migrate from A to B"
 > — Step 1 of the plan MUST be an exhaustive repo scan producing the authoritative
 > file list. The issue author's file list must not be trusted as complete.
-> Example: `Select-String -Path ".github/**/*.md",".github/**/*.json" -Recurse -Pattern "old-pattern"`
+> Example: `Get-ChildItem -Path "." -Recurse -Include "*.md","*.json" | Select-String -Pattern "old-pattern"`
 
 **Scope**: `.github/agents/Issue-Planner.agent.md`, `<plan_style_guide>` rules section only.
 
