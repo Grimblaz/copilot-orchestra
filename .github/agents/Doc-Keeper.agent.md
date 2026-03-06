@@ -89,6 +89,7 @@ Keep all documentation accurate, up-to-date, and free of obsolete content. Value
 - All dev docs reflect current state, design docs use correct terminology
 - No "TBD"/"not yet implemented", entity schemas match code, formulas match
 - File paths validated, cross-references checked, obsolete content removed
+- **Agent file edits**: when modifying any `.agent.md` body content, verify that the `tools:` frontmatter covers every capability the body now describes (e.g., if the body says the agent writes files, `edit` must appear in `tools:`)
 
 **Goal**: Obsolete documentation is worse than no documentation - value deletion as much as addition.
 
