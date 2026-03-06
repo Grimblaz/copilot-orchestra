@@ -20,6 +20,24 @@ These rules apply whenever any agent uses terminal commands or file tools to rea
 | Delete a file         | `Remove-Item` (terminal)                                  |
 | Archive/move a file   | `Move-Item` (terminal)                                    |
 
+### Read-Only & Computable Operations
+
+For operations that only inspect state or compute values, **always prefer dedicated VS Code tools over terminal commands**. Terminal commands trigger a "Run command?" confirmation dialog and return unstructured text — dedicated tools provide structured, typed outputs without interruption.
+
+| Operation                      | Preferred Method            | Do NOT use terminal for           |
+| ------------------------------ | --------------------------- | --------------------------------- |
+| Inspect changed files / diffs  | `get_changed_files`         | `git diff` (working-tree; cross-branch diff is permitted in terminal), `git status` |
+| Read file content              | `read_file`                 | `Get-Content`, `cat`              |
+| Search for text in files       | `grep_search`               | `Select-String`, `grep`, `git grep` |
+| List directory contents        | `list_dir` or `file_search` | `Get-ChildItem`, `ls`             |
+| Check file/directory existence | `file_search`               | `Test-Path`                       |
+| Arithmetic / coordinate math   | Agent reasoning directly    | `node -e`, `python -c`, `pwsh -c` |
+| Semantic / concept search      | `semantic_search`           | —                                 |
+
+**Rule**: If an operation does not write, delete, or run a build/test/CLI command, use a dedicated VS Code tool. Reserve `run_in_terminal` for: build commands, test runners, file move/delete operations, `gh` CLI calls, git workflow operations (commit, push, checkout, branch), and project validation commands (e.g., quick-validate checks in `.github/copilot-instructions.md`).
+
+---
+
 ### FORBIDDEN PowerShell Write Commands
 
 Never use any of the following to write or modify file content:
