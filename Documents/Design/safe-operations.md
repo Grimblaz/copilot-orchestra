@@ -1,0 +1,55 @@
+# Safe Operations Design
+
+## Purpose
+
+`safe-operations.instructions.md` establishes two categories of safety guardrails that apply to all agents in this workflow:
+
+1. **File operation safety** — Prevents silent file corruption by banning PowerShell write commands and directing agents to dedicated VS Code tools, including a read-only tool preference sub-rule that eliminates unnecessary terminal dialogs.
+2. **Issue creation rules** — Ensures every automatically-created GitHub issue carries a priority label and that non-blocking improvements are triaged consistently rather than silently dropped or scope-creeping the current PR.
+
+## Scope
+
+These instructions are global — they apply to every agent in the pipeline whenever it reads, writes, or moves files, or when it creates GitHub issues via `gh issue create`. Individual agents (Code-Critic, Research-Agent, Process-Review) layer stricter read-only constraints on top of this baseline; these instructions set the floor.
+
+---
+
+## Design Decisions
+
+### File Write Safety (Section 1)
+
+- PowerShell write commands (`Set-Content`, `Out-File`, `Add-Content`, `New-Item -Value`, redirect operators, and .NET static IO methods) silently corrupt files through encoding issues (e.g., UTF-16 BOM), CRLF line endings, or data truncation — even when they appear to succeed.
+- Silent corruption breaks parsers, linters, and downstream tooling in ways that are hard to detect and painful to debug.
+- The correct tools are designated per-operation: `create_file` for new files, `replace_string_in_file` / `multi_replace_string_in_file` for edits, `read_file` for reads, and `Remove-Item` / `Move-Item` (terminal) for delete and archive operations where no dedicated tool exists.
+
+### Read-Only & Computable Operations (Section 1, added in issue #67)
+
+- Using `run_in_terminal` for read-only operations (file discovery, text search, existence checks, arithmetic) triggers a "Run command?" confirmation dialog that interrupts automated workflows without adding any safety value.
+- Terminal commands also return unstructured text, while dedicated VS Code tools return structured, typed outputs that agents can reason over directly without parsing.
+- A preferred-method table maps seven common inspection operations to their correct VS Code tools, with explicit "Do NOT use terminal for" columns to make the anti-pattern concrete.
+- Arithmetic and coordinate math are explicitly included as computable operations: agents should use their own reasoning rather than spawning a shell subprocess for trivial calculations.
+- The sub-rule covers the same spirit as the write-safety rule — use the right tool for the job — but for the read and inspect side of the operation spectrum.
+
+### Issue Creation Rules (Section 2)
+
+- Issues created without a priority label are invisible in triage and cannot be scheduled; the label requirement ensures every follow-up issue is actionable from creation.
+- The improvement-first decision rule gives agents a deterministic fork: small changes (< 1 day) may be folded into the current PR if low-risk and in-scope; larger changes (> 1 day) must immediately become tracked issues rather than being silently deferred or scope-creeping the ongoing PR.
+- The default priority for automatically-created follow-up issues is `priority: medium`, preventing agents from defaulting to high-severity labels for speculative improvements.
+- Three priority label definitions (`priority: high`, `priority: medium`, `priority: low`) are included with recommended colors and descriptions so any new repository can bootstrap the label set with a single copy-paste block.
+
+---
+
+## Exception Rationale
+
+The Rule paragraph in the Read-Only & Computable Operations subsection ends with an explicit allow-list for `run_in_terminal`. Two of those categories need particular explanation:
+
+**`git workflow operations` (commit, push, checkout, branch)**
+These are inherently stateful operations that modify repository state; no dedicated VS Code tool exposes them. Excluding them from the guardrail is necessary because the alternative — blocking all terminal git use — would prevent agents from completing any PR workflow step.
+
+**`project validation commands` (e.g., quick-validate checks in `.github/copilot-instructions.md`)**
+The quick-validate commands in `copilot-instructions.md` use `Get-ChildItem` + `Select-String` pipelines to verify that retired agent names have been fully purged from the repo. These are pre-defined, deterministic, and already documented as a mandatory pre-PR step. Without this carve-out, the guardrail would conflict with both copilot-instructions.md (which specifies these commands) and Code-Conductor's existing policy (`"Only use read/search tools for investigation and run_in_terminal for validation commands."`). The exemption preserves those two documents as the authority on project-level validation scripts; the guardrail only restricts ad-hoc terminal discovery that has a direct tool equivalent.
+
+---
+
+## Source
+
+- Issue #67: [feat: add read-only tool preference guardrail](https://github.com/Grimblaz/workflow-template/issues/67)
