@@ -20,7 +20,7 @@ Each skill should use this flow:
 
 This keeps prompts concise while preserving depth when needed.
 
-## Available Skills (9)
+## Available Skills (12)
 
 | Skill | Purpose | Status |
 | ----- | ------- | ------ |
@@ -33,6 +33,9 @@ This keeps prompts concise while preserving depth when needed.
 | `ui-testing` | Resilient React component testing | ✅ Included |
 | `verification-before-completion` | Evidence-based verification checklist | ✅ Included |
 | `webapp-testing` | Playwright E2E setup and stability patterns | ✅ Included |
+| `parallel-execution` | Build-test orchestration: parallel/serial lanes with convergence gates | ✅ Included |
+| `property-based-testing` | Incremental randomized property-based verification | ✅ Included |
+| `browser-canvas-testing` | VS Code native browser tool behavior for canvas games | ✅ Included |
 
 ## How to Use a Skill
 

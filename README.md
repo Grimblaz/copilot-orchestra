@@ -112,6 +112,7 @@ Skills are domain-specific knowledge packages in `.github/skills/` that agents l
 | **property-based-testing** | Incremental randomized property verification |
 | **verification-before-completion** | Pre-PR readiness checks |
 | **skill-creator** | Adding new skills to the framework |
+| **browser-canvas-testing** | Canvas game browser interaction (VS Code native tools) |
 
 > **VS Code 1.108+**: Skills are auto-discovered from `.github/skills/` when `chat.useAgentSkills` is enabled.
 

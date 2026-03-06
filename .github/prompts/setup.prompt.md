@@ -314,6 +314,15 @@ Use tools in this priority order:
 - Close browser sessions when done.
 - Stop any dev server process started by the agent if the task no longer needs it.
 - Avoid leaving orphaned browser or server processes.
+
+## Canvas interaction
+
+`clickElement` is selector-based only — it has **no coordinate or position parameter**. It cannot target objects rendered inside a `<canvas>` element.
+
+For canvas games (Phaser 3, WebGL, etc.), use `runPlaywrightCode` with `page.mouse.click(cssX, cssY)`:
+
+- Convert game-space coordinates to CSS page coordinates via `getBoundingClientRect()`
+- Load `.github/skills/browser-canvas-testing/SKILL.md` for the full formula and worked example
 ```
 
 Replace `{PORT}` with the user's dev server port, `{FRAMEWORK}` with the framework name from Phase 2, and `{RUN_COMMAND}` with the run command from Phase 4.
