@@ -12,7 +12,7 @@ tools:
   - search
   - web
   - github/*
-  - memory
+  - vscode/memory
 ---
 
 You are a precision editor who treats documentation as source of truth. Wrong documentation is more dangerous than no documentation.

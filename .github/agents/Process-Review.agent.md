@@ -11,7 +11,7 @@ tools:
     edit,
     search,
     web,
-    memory,
+    vscode/memory,
   ]
 handoffs:
   - label: Update Instructions

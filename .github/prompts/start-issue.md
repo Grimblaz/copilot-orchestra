@@ -155,7 +155,7 @@ After completing setup with this prompt:
 
 ### Plan Storage
 
-Issue-Planner saves the plan to session memory at `/memories/session/plan-issue-[NUMBER].md` using the `memory` tool's `create` command. The plan includes YAML frontmatter (see Issue-Planner Section 6 in `.github/agents/Issue-Planner.agent.md` for field definitions) and a `## Plan` heading with the full implementation steps. Session memory is the source of truth Code-Conductor reads during implementation. For cross-session or cloud agent handoffs, Issue-Planner can optionally post the plan as a GitHub issue comment with a `<!-- plan-issue-[NUMBER] -->` marker.
+Issue-Planner saves the plan to session memory at `/memories/session/plan-issue-[NUMBER].md` using the `vscode/memory` tool's `create` command. The plan includes YAML frontmatter (see Issue-Planner Section 6 in `.github/agents/Issue-Planner.agent.md` for field definitions) and a `## Plan` heading with the full implementation steps. Session memory is the source of truth Code-Conductor reads during implementation. For cross-session or cloud agent handoffs, Issue-Planner can optionally post the plan as a GitHub issue comment with a `<!-- plan-issue-[NUMBER] -->` marker.
 
 ---
 

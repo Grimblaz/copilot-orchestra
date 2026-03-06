@@ -12,8 +12,8 @@ tools:
   - search
   - web
   - github/*
-  - memory
-  - todo
+  - vscode/memory
+  - vscode/todo
   # Native browser tools (VS Code 1.110+, enabled via workbench.browser.enableChatTools) — primary CE Gate path for web UI surfaces
   - "browser/openBrowserPage"
   - "browser/readPage"
@@ -103,7 +103,7 @@ Quick checklist before declaring mode for a step:
    - If planning is unnecessary, explicitly note "Step 0 skipped: no planning transition required" and continue.
 
 1. **Locate Plan & Context**:
-   - Find plan using this lookup chain: (1) session memory — `view /memories/session/plan-issue-{ID}.md` via the `memory` tool; (2) GitHub issue comments — use `mcp_github_issue_read` with `method: get_comments` to find a comment containing `<!-- plan-issue-{ID} -->`; (3) escalate via `#tool:vscode/askQuestions` if neither found
+   - Find plan using this lookup chain: (1) session memory — `view /memories/session/plan-issue-{ID}.md` via the `vscode/memory` tool; (2) GitHub issue comments — use `mcp_github_issue_read` with `method: get_comments` to find a comment containing `<!-- plan-issue-{ID} -->`; (3) escalate via `#tool:vscode/askQuestions` if neither found
    - Read design details from the **issue body** (Issue-Designer outputs full design to the issue body)
    - Look for supporting docs in `Documents/Design/`, `Documents/Decisions/`, `.copilot-tracking/research/` — read whatever exists for additional context
    - Check `.github/skills/` for relevant domain expertise

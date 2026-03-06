@@ -10,7 +10,7 @@ tools:
   - read
   - edit
   - search
-  - memory
+  - vscode/memory
 handoffs:
   - label: Create Plan
     agent: Issue-Planner

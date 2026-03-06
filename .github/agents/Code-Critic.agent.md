@@ -26,7 +26,7 @@ tools:
   - "browser/runPlaywrightCode"
   # Optional: Playwright MCP fallback — uncomment if using @playwright/mcp instead
   # - "playwright/*"
-  - memory
+  - vscode/memory
 # NOTE: 'edit' tool intentionally EXCLUDED - Code-Critic is READ-ONLY.
 # Fixes are delegated via handoff to Code-Review-Response → Code-Smith.
 handoffs:
