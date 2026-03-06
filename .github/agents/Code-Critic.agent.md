@@ -229,9 +229,13 @@ Performs a final review for architecture, security, and overall quality.
 
 ## Review Perspectives
 
-Every review MUST cover all 7 perspectives in sequence:
+Every review MUST address all 7 perspectives in sequence, using the **"When to apply" gate** for each:
+- **In scope** (gate triggered): apply the full checklist for that perspective.
+- **Out of scope** (gate not triggered): return a single-line `⏭️ N/A` marker. Do not expand the section with checklist items.
 
 ### 1. Architecture Perspective
+
+**When to apply**: PR includes source code files (`.ts`, `.tsx`, `.cs`, `.py`, etc.), scripts, or runtime configuration. For documentation-only PRs (`.md`/`.instructions.md`/`.agent.md` files only): skip §1b and §1c entirely; apply the §1 checklist only to verify documentation does not misrepresent architectural constraints.
 
 - [ ] Project architecture compliance (see `.github/architecture-rules.md`)
 - [ ] Dependencies follow documented layer direction (e.g., interface/adapters into domain/core logic)
@@ -239,6 +243,8 @@ Every review MUST cover all 7 perspectives in sequence:
 - [ ] Layer boundaries respected
 
 ### 1b. Integration Wiring Verification
+
+**When to apply**: PR adds new source code components. Skip for documentation-only PRs.
 
 For any **new component** (class, modifier, processor, service):
 
@@ -249,6 +255,8 @@ For any **new component** (class, modifier, processor, service):
 **Red flag**: If a new class is only imported in test files, it's not wired into production code.
 
 ### 1c. Data Integration Verification (CRITICAL)
+
+**When to apply**: PR adds new data fields, constants, or maps in source code. Skip for documentation-only PRs.
 
 For any **new data field, constant, or map** added:
 
@@ -269,12 +277,16 @@ For any **new data field, constant, or map** added:
 
 ### 2. Security Perspective
 
+**When to apply**: PR includes source code files, scripts, or configuration with authentication/authorization/data-handling concerns. For documentation-only PRs: return `⏭️ N/A — no runtime code in this PR` and skip checklist items.
+
 - [ ] No hardcoded secrets or credentials
 - [ ] Input validation present
 - [ ] Sensitive data not logged
 - [ ] Authentication/authorization checks
 
 ### 3. Performance Perspective
+
+**When to apply**: PR includes source code files or configuration affecting runtime execution paths. For documentation-only PRs: return `⏭️ N/A — no runtime code in this PR` and skip checklist items.
 
 - [ ] Algorithm complexity appropriate (no O(n²) where O(n) possible)
 - [ ] No unnecessary re-renders or computations
@@ -283,6 +295,8 @@ For any **new data field, constant, or map** added:
 
 ### 4. Pattern Perspective
 
+**When to apply**: PR includes source code files. For documentation-only PRs: skip code-specific checklist items; DRY across documentation sections (content repetition, contradictory guidance) remains in scope as a documentation pattern concern.
+
 - [ ] Design patterns used correctly
 - [ ] Anti-patterns avoided (God classes, spaghetti)
 - [ ] DRY principle followed
@@ -290,6 +304,8 @@ For any **new data field, constant, or map** added:
 - [ ] UI tests query by `aria-label`/behavior, NOT DOM structure (see `.github/skills/ui-testing/SKILL.md`)
 
 ### 5. Simplicity Perspective
+
+**When to apply**: All change types, including documentation-only PRs. For documentation: evaluate clarity, precision, and the absence of unnecessary complexity in explanations and examples.
 
 - [ ] No over-engineering
 - [ ] Code readable and self-documenting
@@ -346,6 +362,12 @@ Use browser-based review only when PR changes touch UI implementation.
 
 - Browser-derived findings use the same `Issue` / `Concern` / `Nit` categories
 - Browser-derived findings follow the same evidence standards as all other findings
+
+**Compact N/A rule**: For any perspective whose **"When to apply" gate is not triggered**, replace the entire section with a single line:
+```
+### ⏭️ [Perspective Name]: N/A — [reason, e.g. "no runtime code in this PR"]
+```
+Do not include checklist items. This eliminates output bloat without reducing coverage on in-scope perspectives.
 
 **Output Format**:
 

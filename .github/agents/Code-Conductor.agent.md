@@ -177,6 +177,18 @@ Use this loop for code review phases to drive evidence-based alignment before ex
 
 Each pass is an **independent invocation** of Code-Critic — not a duplicate. LLM-based review has inherent coverage variance: the same code surface reviewed separately will surface complementary issues. Multiple passes increase defect detection probability without changing the review scope.
 
+**Change-type classification (before composing pass prompts)**:
+
+Classify the PR change type using `git diff --name-only main..HEAD` and include the classification in each pass prompt:
+
+| Change type | Condition | Active perspectives |
+|---|---|---|
+| `documentation-only` | All changed files are `.md`, `.instructions.md`, `.prompt.md`, or `.agent.md` | Simplicity (§5), Documentation Script Audit (§7), Patterns doc-clarity angle (§4 partial) |
+| `mixed` | Changed files include both source/scripts AND docs | All 7 perspectives |
+| `code` (default) | Changed files include source code, scripts, or runtime config | All 7 perspectives |
+
+Include in each pass prompt: `"Change type: {classification}. Per Code-Critic's 'When to apply' gates, mark out-of-scope perspectives as ⏭️ N/A — do not expand them."` For `documentation-only` reviews, include only the changed files in the file reading list — do not include supporting context files.
+
 - Launch all 3 passes **in parallel** as independent subagent invocations.
 - Label each call: `"This is adversarial review pass N of M. Conduct your review independently. Prior passes have already been run. Look for anything they may have missed."`
 - Do NOT skip passes because a prior pass "already covered" the code. That reasoning defeats the purpose.
