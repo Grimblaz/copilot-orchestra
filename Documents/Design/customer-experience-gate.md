@@ -71,3 +71,68 @@ When the CE Gate reveals a defect:
 | `.github/agents/Issue-Planner.agent.md` | `[VISUAL GATE]` → `[CE GATE]`; `visual_verification` → `ce_gate` |
 | `.github/agents/Issue-Designer.agent.md` | Customer surface + CE Gate readiness section added |
 | `.github/agents/Process-Review.agent.md` | CE Gate trigger + Track 2 analysis format + subagent note added |
+
+---
+
+## Intent Verification (Issue #72 Extension)
+
+Issue #72 extended the CE Gate to evaluate **intent** as a second dimension alongside functional verification. A change can pass all functional scenarios while still missing the design intent described in the issue.
+
+### What Intent Verification Adds
+
+Code-Conductor now judges two dimensions after exercising scenarios:
+
+1. **Functional** — does each scenario behave as expected from a customer perspective? (unchanged)
+2. **Intent match** — does the implementation achieve the design intent the issue described?
+
+### Intent Match Levels
+
+| Level | Criteria |
+|-------|----------|
+| **strong** | Behavior matches the design, user-facing language is clear and specific, flow follows the intended path |
+| **partial** | Behavior works but user path diverges from intent; feedback is generic where the design specified contextual messaging; or edge case handling is rough |
+| **weak** | Feature works but is difficult to discover or use without documentation; or error states show technical details instead of user guidance; or flow contradicts the stated user experience |
+
+**Default is `strong`** — only downgrade when a specific, articulable criterion is violated. "Feels off" is not sufficient evidence.
+
+### Updated Markers
+
+The passing markers now include an intent match level:
+
+- `✅ CE Gate passed — intent match: strong` — all scenarios pass, design intent fully achieved
+- `✅ CE Gate passed — intent match: partial` — functional pass; intent partially achieved (in-PR fix by default)
+- `✅ CE Gate passed — intent match: weak` — functional pass; intent not met (in-PR fix by default)
+- `✅ CE Gate passed after fix — intent match: {strong|partial|weak}` — defects found and resolved within loop budget
+
+### Intent Deficiency Routing
+
+`partial` and `weak` intent matches are ✅ passes (not failures) but do require action. They route through the existing Two-Track Defect Response:
+
+- **Track 1**: By default, route to Code-Smith with the specific rubric criterion violated and the design intent reference. When the deficiency would require a new design decision to define a fix (e.g., the core interaction model contradicts the design intent and cannot be corrected by a targeted code change), Code-Conductor may defer to a follow-up issue instead — judgment call, default is fix in-PR.
+- **Track 2**: Always invoke Process-Review, including when taking the follow-up-issue path. Track 2 for intent deficiencies uses the `intent mismatch` classification option.
+
+### Surface-Specific Verification
+
+Intent criteria are surface-dependent. A surface-specific table in Code-Conductor identifies *what* to evaluate per surface type; the rubric translates those observations into the strong/partial/weak level.
+
+### Design Decisions (Issue #72)
+
+| # | Decision | Choice | Rationale |
+|---|----------|--------|-----------|
+| D12 | Intent as second CE Gate dimension | Rate intent match (strong/partial/weak) alongside functional pass/fail | Functional pass alone does not guarantee the right user experience; intent provides a direct check against design goals |
+| D13 | Default intent level | `strong` unless a specific criterion is violated | Prevents speculative downgrades; requires articulable evidence before emitting partial/weak |
+| D14 | Intent deficiency routing | Through existing Two-Track (Track 1 in-PR default; Track 2 always) | Reuses the same escalation and systemic-analysis path; no new routing mechanism needed |
+| D15 | `Design Intent` field in `[CE GATE]` plan step | Code-Conductor reads it as the primary intent reference (supersedes re-reading the full issue body) | Issue-Planner already distills the intent into the plan step; Code-Conductor should consume it directly |
+
+### Files Changed (Issue #72)
+
+| File | Change |
+|---|---|
+| `.github/agents/Code-Conductor.agent.md` | Intent Match Rubric + Surface-Specific Intent Verification table added; markers updated with intent match levels; intent deficiency routing added to Two-Track; Step 2 updated to read `Design Intent` field from plan step first |
+| `.github/agents/Process-Review.agent.md` | `intent mismatch` added as third Classification option; `Failing scenario` field renamed to `Triggering scenario`; "When invoked" updated to cover all three Track 2 invocation paths |
+| `.github/agents/Issue-Planner.agent.md` | `[CE GATE]` step template updated with `Design Intent` field |
+| `.github/agents/Issue-Designer.agent.md` | CE Gate readiness step 4 split into Functional and Intent scenario types; step 5 added to identify and summarize design intent reference for `[CE GATE]` plan step |
+| `.github/copilot-instructions.md` | CE Gate description updated to include "design-intent verification" |
+| `CLAUDE.md` | CE Gate description updated to include "design-intent verification" |
+| `Documents/Design/customer-experience-gate.md` | Intent match architecture documented: D15 decision, Intent Match Rubric, Surface-Specific Intent Verification, Two-Track intent deficiency routing |
+| `.claude/commands/implement.md` | `after fix` marker variant added; placeholder notation standardized to `{strong\|partial\|weak}`; intent evaluation updated to reference `[CE GATE]` Design Intent field |
