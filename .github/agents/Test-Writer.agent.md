@@ -15,7 +15,7 @@ tools:
     agent,
     edit,
     search,
-    memory,
+    vscode/memory,
   ]
 handoffs:
   - label: Implement Code

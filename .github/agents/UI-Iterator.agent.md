@@ -16,7 +16,7 @@ tools:
   - vscode/openSimpleBrowser
   - web
   - vscode/extensions
-  - todo
+  - vscode/todo
   # Native browser tools (VS Code 1.110+, enabled via workbench.browser.enableChatTools) — primary path
   - "browser/openBrowserPage"
   - "browser/readPage"
@@ -29,7 +29,7 @@ tools:
   - "browser/runPlaywrightCode"
   # Optional: Playwright MCP fallback — uncomment if using @playwright/mcp instead
   # - "playwright/*"
-  - memory
+  - vscode/memory
   - agent
 handoffs:
   - label: Implement UI Changes

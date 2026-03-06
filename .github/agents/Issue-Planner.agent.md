@@ -12,7 +12,7 @@ tools:
   - search
   - web
   - "github/*"
-  - memory
+  - vscode/memory
   - github.vscode-pull-request-github/issue_fetch
   - github.vscode-pull-request-github/activePullRequest
 handoffs:
@@ -132,7 +132,7 @@ Keep iterating until explicit approval or handoff.
 
 ## 6. Persist Plan
 
-Approval was given in Section 5. Save the plan to session memory at `/memories/session/plan-issue-{id}.md` using the `memory` tool (`create` command). If the file already exists (e.g., second approval after refinement), use `delete` followed by `create` to replace the full plan. Session memory is the source of truth for same-conversation execution.
+Approval was given in Section 5. Save the plan to session memory at `/memories/session/plan-issue-{id}.md` using the `vscode/memory` tool (`create` command). If the file already exists (e.g., second approval after refinement), use `delete` followed by `create` to replace the full plan. Session memory is the source of truth for same-conversation execution.
 
 Format with a `## Plan` heading and include the full plan content with YAML metadata block at the top:
 

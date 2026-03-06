@@ -12,8 +12,8 @@ tools: [
     "search",
     "web",
     "github/*",
-    "memory",
-    "todo",
+    "vscode/memory",
+    "vscode/todo",
     # Native browser tools (VS Code 1.110+, enabled via workbench.browser.enableChatTools) — for browser verification during review response
     "browser/openBrowserPage",
     "browser/readPage",
