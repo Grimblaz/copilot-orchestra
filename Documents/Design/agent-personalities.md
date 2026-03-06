@@ -33,7 +33,7 @@ Code-Conductor's existing `## Ownership Principles` (7 principles) is the refere
 Three insertion strategies were used across the 12 specialist agents:
 
 - **Clean insert** (5 agents — Doc-Keeper, Issue-Designer, Process-Review, Test-Writer, UI-Iterator): New identity + principles block inserted after frontmatter, before the `# {Agent} Agent` heading. No existing content removed.
-- **Fragment replacement** (4 agents — Code-Smith, Issue-Planner, Research-Agent, Specification): Existing partial identity text replaced with standardized block. Semantic constraints preserved as principles (e.g., Issue-Planner's planning-only responsibility, Research-Agent's read-only constraint).
+- **Fragment replacement** (4 agents — Code-Smith, Issue-Planner, Research-Agent, Specification): Existing partial identity text replaced with standardized block. Semantic constraints preserved as principles (e.g., Issue-Planner's planning-only responsibility, Research-Agent's write-scoped constraint (`.copilot-tracking/research/` only)).
 - **Stance-preserving insert** (3 agents — Code-Critic, Code-Review-Response, Refactor-Specialist): Personality inserted before existing stance section. Stance sections remain intact and reinforce the personality.
 
 ---

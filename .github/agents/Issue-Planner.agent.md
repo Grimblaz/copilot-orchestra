@@ -150,7 +150,7 @@ After saving to session memory, immediately use #tool:vscode/askQuestions to ask
 
 - **No (default)**: Session memory only. Plan is available for the current conversation. Session memory is cleared when this conversation ends — choose **Yes** for multi-session work.
 - **Yes**: Post the plan as a GitHub issue comment using the MCP `mcp_github_add_issue_comment` tool, with `<!-- plan-issue-{id} -->` as the first line of the body. Recommended for cross-session work or cloud agent handoff.
-  </workflow>
+</workflow>
 
 <plan_style_guide>
 
