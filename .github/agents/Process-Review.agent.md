@@ -282,7 +282,7 @@ Get-ChildItem -Recurse -Include *.md | Where-Object {(Select-String -Path $_ -Pa
 
 **Purpose**: Determine whether a CE Gate defect or intent mismatch—a customer-facing failure or design intent shortfall found during Code-Conductor's CE Gate exercise—reveals a systemic process or guidance gap, or is an isolated implementation defect.
 
-**When invoked**: Code-Conductor calls Process-Review as a subagent (via `runSubagent`) for Track 2 systemic analysis after a CE Gate defect has been fixed, providing the defect description, the failing scenario, and which agent/file/instruction was likely involved.
+**When invoked**: Code-Conductor calls Process-Review as a subagent (via `runSubagent`) for Track 2 systemic analysis after an in-PR fix, when Track 1 is deferred to a follow-up issue, or when an intent mismatch is found with no functional defect requiring a fix; providing the defect or mismatch description, the triggering scenario, and which agent/file/instruction was likely involved.
 
 **Analysis Steps**:
 
@@ -297,7 +297,7 @@ Emit exactly this structure when returning results to Code-Conductor:
 ```
 ## CE Gate Defect Analysis
 
-**Failing scenario**: [description from Code-Conductor]
+**Triggering scenario**: [description from Code-Conductor]
 **Classification**: [isolated implementation defect | intent mismatch | systemic process gap]
 **Gap description**: [what guidance was missing or insufficient — or "N/A, no systemic gap found"]
 **Affected file/instruction**: [file path and section — or "N/A"]
