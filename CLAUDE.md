@@ -25,7 +25,7 @@ Issue → @Issue-Designer → @Issue-Planner → @Code-Conductor → PR
 
 - **User-facing agents** (5): Issue-Designer, Issue-Planner, Code-Conductor, Code-Critic, Code-Review-Response
 - **Internal agents** (8): Called automatically by Code-Conductor as subagents (`user-invokable: false`)
-- **Skills** (11): Loaded on demand by agents from `.github/skills/`
+- **Skills** (12): Loaded on demand by agents from `.github/skills/`
 - **Instructions** (4): Shared rules loaded by agents from `.github/instructions/`
 
 ## Key Conventions
@@ -81,6 +81,7 @@ Read the relevant `SKILL.md` when working in that domain:
 | property-based-testing | `.github/skills/property-based-testing/SKILL.md` | Incremental randomized property verification |
 | verification-before-completion | `.github/skills/verification-before-completion/SKILL.md` | Pre-PR readiness checks |
 | skill-creator | `.github/skills/skill-creator/SKILL.md` | Adding new skills to the framework |
+| browser-canvas-testing | `.github/skills/browser-canvas-testing/SKILL.md` | Canvas game browser interaction (VS Code native tools) |
 
 ## Shared Instructions
 
