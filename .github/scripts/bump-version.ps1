@@ -64,8 +64,8 @@ $readmeContent      = [System.IO.File]::ReadAllText($readme)
 # --- Extract current versions ---
 $pluginVersion      = [regex]::Match($pluginContent,      '"version":\s*"([\d.]+)"').Groups[1].Value
 $marketplaceMatches = [regex]::Matches($marketplaceContent, '"version":\s*"([\d.]+)"')
-if ($marketplaceMatches.Count -lt 2) {
-    Fail "Expected 2 'version' fields in marketplace.json, found $($marketplaceMatches.Count)"
+if ($marketplaceMatches.Count -ne 2) {
+    Fail "Expected exactly 2 'version' fields in marketplace.json, found $($marketplaceMatches.Count)"
 }
 $marketplaceVersion1 = $marketplaceMatches[0].Groups[1].Value
 $marketplaceVersion2 = $marketplaceMatches[1].Groups[1].Value
@@ -75,11 +75,11 @@ $readmeVersion      = [regex]::Match($readmeContent, 'version-v([\d.]+)-blue').G
 $allVersions = [ordered]@{
     'plugin.json'                      = $pluginVersion
     'marketplace.json (metadata)'      = $marketplaceVersion1
-    'marketplace.json (compatibility)' = $marketplaceVersion2
+    'marketplace.json (plugin version)' = $marketplaceVersion2
     'README.md'                        = $readmeVersion
 }
 
-$distinctVersions = $allVersions.Values | Sort-Object -Unique
+$distinctVersions = @($allVersions.Values | Sort-Object -Unique)
 if ($distinctVersions.Count -gt 1) {
     $detail = ($allVersions.GetEnumerator() | ForEach-Object { "$($_.Key)=$($_.Value)" }) -join ', '
     Fail "Version drift detected: $detail" -Hint 'Fix the inconsistency manually before bumping.'
@@ -88,6 +88,9 @@ if ($distinctVersions.Count -gt 1) {
 $currentVersion = $distinctVersions[0]
 if ($currentVersion -eq '') {
     Fail 'Could not extract version from files — check that version strings match the pattern "version": "MAJOR.MINOR.PATCH"'
+}
+if ($currentVersion -notmatch '^\d+\.\d+\.\d+$') {
+    Fail "Extracted version '$currentVersion' is not in MAJOR.MINOR.PATCH format — check version strings in tracked files"
 }
 Write-Host "Current version: ${Yellow}$currentVersion${Reset}"
 
@@ -104,16 +107,18 @@ if ($DryRun) {
 # --- Live update ---
 Write-Host "Bumping version: ${Yellow}$currentVersion${Reset} → ${Green}$Version${Reset}"
 
+$utf8NoBom = [System.Text.UTF8Encoding]::new($false)
+
 $updatedPlugin = $pluginContent -replace '"version":\s*"[\d.]+"', "`"version`": `"$Version`""
-[System.IO.File]::WriteAllText($pluginJson, $updatedPlugin)
+[System.IO.File]::WriteAllText($pluginJson, $updatedPlugin, $utf8NoBom)
 Write-Host "  ${Green}✓${Reset} Updated .github/plugin/plugin.json"
 
 $updatedMarketplace = $marketplaceContent -replace '"version":\s*"[\d.]+"', "`"version`": `"$Version`""
-[System.IO.File]::WriteAllText($marketplaceJson, $updatedMarketplace)
+[System.IO.File]::WriteAllText($marketplaceJson, $updatedMarketplace, $utf8NoBom)
 Write-Host "  ${Green}✓${Reset} Updated .github/plugin/marketplace.json (2 occurrences)"
 
 $updatedReadme = $readmeContent -replace 'version-v[\d.]+-blue', "version-v$Version-blue"
-[System.IO.File]::WriteAllText($readme, $updatedReadme)
+[System.IO.File]::WriteAllText($readme, $updatedReadme, $utf8NoBom)
 Write-Host "  ${Green}✓${Reset} Updated README.md"
 
 Write-Host "${Green}✓${Reset} Version bumped to $Version across 4 occurrences in 3 files"
