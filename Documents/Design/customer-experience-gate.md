@@ -80,7 +80,7 @@ Issue #72 extended the CE Gate to evaluate **intent** as a second dimension alon
 
 ### What Intent Verification Adds
 
-Code-Conductor now judges two dimensions after exercising scenarios:
+Code-Conductor exercises scenarios and captures evidence on two dimensions; Code-Critic (CE prosecution mode) evaluates that evidence adversarially; Code-Review-Response judges:
 
 1. **Functional** — does each scenario behave as expected from a customer perspective? (unchanged)
 2. **Intent match** — does the implementation achieve the design intent the issue described?
@@ -149,7 +149,7 @@ D1 (above) was updated: Code-Conductor no longer evaluates CE scenarios internal
 
 1. **Code-Conductor exercises scenarios** — navigates the surface, captures evidence (screenshots, response bodies, CLI output)
 2. **Code-Critic evaluates adversarially** — runs in CE prosecution mode (`"Use CE review perspectives"`)
-3. **Code-Critic runs defense** — challenges its own prosecution findings
+3. **Code-Critic is invoked for defense** — in a separate pass, it challenges the prosecution findings
 4. **Code-Review-Response judges** — rules on each finding, emits score summary, delegates fixes
 
 This change was motivated by the "fox-guarding-henhouse" finding in issue #96: Code-Conductor was both the executor and judge of CE quality, creating a conflict of interest.

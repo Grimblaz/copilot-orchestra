@@ -389,10 +389,10 @@ Always include the adversarial review score summary table from the judge's score
 ```markdown
 ## Adversarial Review Scores
 
-| Stage | Prosecutor | Defense | Judge rulings |
-|-------|-----------|---------|---------------|
-| Code Review | {pts} pts ({N} sustained) | {pts} pts ({N} disproved, {N} rejected) | {N} rulings |
-| CE Review | {pts} pts ({N} sustained) | {pts} pts | {N} ruling(s) |
+| Stage       | Prosecutor                | Defense                                 | Judge rulings |
+| ----------- | ------------------------- | --------------------------------------- | ------------- |
+| Code Review | {pts} pts ({N} sustained) | {pts} pts ({N} disproved, {N} rejected) | {N} rulings   |
+| CE Review   | {pts} pts ({N} sustained) | {pts} pts ({N} disproved, {N} rejected) | {N} ruling(s) |
 ```
 
 If a stage did not run (e.g., CE Gate not applicable), note it as `⏭️ N/A`.

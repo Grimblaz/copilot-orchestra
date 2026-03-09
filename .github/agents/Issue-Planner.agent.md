@@ -124,6 +124,7 @@ Before presenting the plan for approval, call Code-Critic as a subagent to stres
 **Challenges are non-blocking** — they are presented alongside the plan for user consideration. This prosecution pass is single-pass (not the 3-pass parallel protocol used for code review).
 
 After incorporating or dismissing prosecution findings, complete the full pipeline:
+
 - Call Code-Critic with `"Use defense review perspectives"` and pass the prosecution findings ledger. Code-Critic will produce a Defense Report conceding, disproving, or marking each finding as insufficient-to-disprove.
 - Call Code-Review-Response (judge) with both the prosecution ledger and the Defense Report. Code-Review-Response will rule on each finding, emit a score summary, and identify any accepted items to incorporate into the plan.
 

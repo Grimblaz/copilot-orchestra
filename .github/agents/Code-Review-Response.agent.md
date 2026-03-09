@@ -77,7 +77,7 @@ For review workflows, receive the prosecution findings ledger AND the defense re
 
 **Convergence rule**: All findings reach a final disposition (✅ SUSTAINED / ❌ DEFENSE SUSTAINED / 🔄 SIGNIFICANT / 📋 TECH DEBT) before implementation begins.
 
-> **Vocabulary note**: The judgment protocol uses `SUSTAINED / DEFENSE SUSTAINED` for prosecution vs. defense rulings. The delegation workflow uses `ACCEPT / REJECT / DEFERRED-SIGNIFICANT`. These map directly: SUSTAINED = ACCEPT, DEFENSE SUSTAINED = REJECT, SIGNIFICANT/TECH DEBT = DEFERRED-SIGNIFICANT. Judgment vocabulary appears in the score summary; delegation vocabulary appears in execution decisions.
+> **Vocabulary note**: The judgment protocol uses `SUSTAINED / DEFENSE SUSTAINED` for prosecution vs. defense rulings. The delegation workflow uses `ACCEPT / REJECT / DEFERRED-SIGNIFICANT / TECH-DEBT`. These map directly: SUSTAINED = ACCEPT, DEFENSE SUSTAINED = REJECT, SIGNIFICANT (clear improvement, in-scope but >1 day effort) = DEFERRED-SIGNIFICANT, TECH DEBT (existing quality debt, out of scope for this cycle) = TECH-DEBT (tracked separately). Both DEFERRED-SIGNIFICANT and TECH-DEBT route to a follow-up issue but are kept distinct. Judgment vocabulary appears in the score summary; delegation vocabulary appears in execution decisions.
 
 ### Execution Posture (Balanced Policy)
 
@@ -112,7 +112,7 @@ Behavior:
 
 2.5. Build a review ledger keyed by GitHub comment/review IDs and judge only those ledger items.
 
-3. **Proxy prosecution**: Call Code-Critic with `"Score and represent GitHub review"` marker, passing the review ledger. Code-Critic validates and scores each item (1/5/10 pts per severity). Output: scored prosecution ledger. Do not add net-new findings at this step.
+3. **Proxy prosecution**: Call Code-Critic with `"Score and represent GitHub review"` marker, passing the review ledger. Code-Critic validates and scores each item (1/5/10 pts per severity). Output: scored prosecution ledger. Do not add net-new findings at this step. Exception: Code-Critic may raise `NEW-CRITICAL` items per its proxy prosecution mode rules for critical correctness/security blockers; these are valid findings and must be judged.
 4. **Defense pass**: Call Code-Critic with `"Use defense review perspectives"` marker, passing the prosecution ledger.
 5. **Judge**: Receive prosecution ledger + defense report, apply the Single-Shot Judgment Protocol per this agent's rules, and emit a score summary.
 6. **Share details with the user before asking for approval**: quote or summarize each finding, state verification evidence, disposition, and score.

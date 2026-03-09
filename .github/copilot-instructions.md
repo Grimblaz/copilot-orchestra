@@ -56,7 +56,7 @@ This repo uses a **scored prosecution → defense → judge pipeline** across al
 - 1 Code-Critic defense pass over the merged findings ledger
 - 1 Code-Review-Response judge pass with confidence scoring + score summary
 
-**Design/plan review** (1× prosecution, 1× defense, 1× judge): invoked by Issue-Designer, Issue-Planner, or via start-issue.md. Single-pass prosecution, then defense and judge.
+**Design/plan review** (1× prosecution, 1× defense, 1× judge): full pipeline invoked by Issue-Planner or via start-issue.md. Issue-Designer runs prosecution only (non-blocking, no defense or judge step).
 
 **CE review**: Code-Conductor exercises scenarios and captures evidence; Code-Critic then reviews adversarially (CE prosecution → defense → judge).
 

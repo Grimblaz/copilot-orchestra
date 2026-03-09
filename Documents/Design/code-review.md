@@ -187,12 +187,22 @@ Code-Conductor invokes →
 
 **Design/plan review** (1× each):
 
+*Issue-Planner (full pipeline)*:
+
 ```text
-Issue-Designer / Issue-Planner invokes →
+Issue-Planner (or start-issue.md) invokes →
   Code-Critic (prosecution, design perspectives, 1 pass)
     → Code-Critic (defense, 1 pass)
       → Code-Review-Response (judge)
         → Score summary returned
+```
+
+*Issue-Designer (prosecution only)*:
+
+```text
+Issue-Designer invokes →
+  Code-Critic (prosecution, design perspectives, 1 pass)
+    → (stops here — no defense or judge step)
 ```
 
 **CE review**:

@@ -123,7 +123,7 @@ Design Review Mode is for reviewing designs and implementation plans — not cod
 
 ### Single-Pass Constraint
 
-Design review uses **one prosecution pass** — not the 3-pass parallel protocol used for code review. The single-pass constraint applies to prosecution only. After prosecution, callers (Issue-Planner, Issue-Designer) invoke Code-Critic again with `"Use defense review perspectives"` over the prosecution findings, then call Code-Review-Response as judge. Full pipeline: 1 prosecution pass → 1 defense pass → 1 judge pass.
+Design review uses **one prosecution pass** — not the 3-pass parallel protocol used for code review. The single-pass constraint applies to prosecution only. After prosecution, callers (Issue-Planner or equivalent orchestrators) invoke Code-Critic again with `"Use defense review perspectives"` over the prosecution findings, then call Code-Review-Response as judge. Full pipeline: 1 prosecution pass → 1 defense pass → 1 judge pass. Note: Issue-Designer runs prosecution only — it does not invoke defense or judgment.
 
 ### Design Review Perspectives (3)
 
@@ -200,7 +200,7 @@ The GitHub reviewer is the prosecutor. Your job is to validate and score their f
 2. For each GitHub comment, validate the claim and assign prosecution severity + points:
    - `critical` / `high` finding → significant (10 pts)
    - `medium` finding → medium (5 pts)
-   - `low` / nit → minor (1 pt)
+   - `low` / nit → minor (1 pt) — assign 1 pt for ledger completeness even if stylistic; pure advisory nits with no defect pattern may be noted informational-only only if the GitHub comment itself is explicitly labeled "nit" and raises no correctness concern
 3. No-net-new constraint: do NOT introduce findings the GitHub reviewer did not raise. Exception: `NEW-CRITICAL` security/correctness blockers that are impossible to ignore — mark explicitly and justify.
 
 **Output**: A scored findings ledger (identical format to code prosecution), attributed to the GitHub reviewer. This ledger is the input to the defense pass.
@@ -245,7 +245,7 @@ Argument: {why prosecution is wrong, or why defense concedes}
 Findings reviewed: N
 Disproved: X | Conceded: Y | Insufficient: Z
 Points claimed: {sum of disproved finding values}
-Points at risk: {-2× sum of disproved finding values if judge rejects all}
+Points at risk: {-2× sum of disproved finding values if judge rejects the disproofs}
 ```
 
 **Read-only constraint**: Defense Mode is read-only — no file edits. Reading code and exercising browser tools for verification is permitted. Source/config file modifications are forbidden.
