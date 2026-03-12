@@ -41,6 +41,7 @@ For each step in the plan:
 Run all validation checks together and report all failures before fixing:
 - Quick-validate commands (see `.github/copilot-instructions.md`), lint/typecheck, and the full test suite — run as a combined pass
 - Fix all failures, then re-run to confirm
+- _(For projects with slow test suites, see `.github/copilot-instructions.md` for the targeted→full split override.)_
 
 ### 4. Refactor
 
