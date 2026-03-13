@@ -443,7 +443,7 @@ rework_cycles: {N}
 
 **Verdict mapping**: `✅ Sustained` findings → `judge_accepted`; `❌ Defense sustained` findings → `judge_rejected`; `📋 DEFERRED-SIGNIFICANT` findings → `judge_deferred`. Count each verdict type from the judge's score summary table.
 
-**`rework_cycles`**: Count of fix-revalidate loops after routing accepted review findings to specialists. Each route-to-specialist → implement → re-validate cycle = 1. If no findings accepted, `rework_cycles: 0`.
+**`rework_cycles`**: Count of fix-revalidate loops after routing accepted review findings to specialists (code review fix loops only — not CE Gate loops). Each route-to-specialist → implement → re-validate cycle = 1. If no findings accepted, `rework_cycles: 0`.
 
 ---
 

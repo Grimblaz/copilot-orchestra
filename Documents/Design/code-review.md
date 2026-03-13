@@ -311,9 +311,9 @@ stages:
 
 In addition to the human-readable score table and the tracking-file YAML, Code-Conductor includes a machine-parseable pipeline metrics block in the PR body. This block is a hidden HTML comment containing flat YAML:
 
-```yaml
+```markdown
 <!-- pipeline-metrics
-prosecution_findings: N          # post-dedup total; equals pass_1+pass_2+pass_3
+prosecution_findings: N          # post-dedup total; equals pass_1_findings+pass_2_findings+pass_3_findings
 pass_1_findings: N               # findings credited to pass 1
 pass_2_findings: N               # findings credited to pass 2
 pass_3_findings: N               # findings credited to pass 3
@@ -330,7 +330,7 @@ rework_cycles: N                 # code review fix loops only (not CE Gate loops
 
 **Purpose**: Enables cross-PR analytics (e.g., per-pass marginal yield: does pass 3 justify its cost?). Invisible in rendered Markdown. Parseable via `Select-String -Pattern "pipeline-metrics"`.
 
-**Deduplication credit**: When the same finding appears in multiple prosecution passes, the earliest pass gets credit (lowest pass number). `pass_1 + pass_2 + pass_3 = prosecution_findings`.
+**Deduplication credit**: When the same finding appears in multiple prosecution passes, the earliest pass gets credit (lowest pass number). `pass_1_findings + pass_2_findings + pass_3_findings = prosecution_findings` (code prosecution only; in proxy prosecution, per-pass fields are `n/a`).
 
 **User scoring** (async, non-blocking) — post a GitHub issue comment:
 
