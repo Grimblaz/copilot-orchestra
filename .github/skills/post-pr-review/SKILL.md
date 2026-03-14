@@ -47,9 +47,7 @@ Get-ChildItem .copilot-tracking -Recurse -File |
 - Files moved to `.copilot-tracking-archive/{year}/{month}/issue-{ID}/`
 - No tracking files remain in `.copilot-tracking/research/` for this issue
 
-> **Automation**: The `SessionStart` hook detects stale tracking files and prompts you at the start of your next VS Code session — cleanup requires one manual confirmation. You can also run the script directly: `pwsh "$env:WORKFLOW_TEMPLATE_ROOT/.github/scripts/post-merge-cleanup.ps1" -IssueNumber {ID} -FeatureBranch feature/issue-{ID}-description`
->
-> **Note**: The hook fires every session start until cleanup is run (by design — persistent reminder).
+> **Automation**: The `session-startup` instruction detects stale tracking files and prompts you at the start of your next conversation — cleanup requires one confirmation. You can also run the script directly: `pwsh "$env:WORKFLOW_TEMPLATE_ROOT/.github/scripts/post-merge-cleanup.ps1" -IssueNumber {ID} -FeatureBranch feature/issue-{ID}-description`
 
 ### 2. Update Documentation
 
@@ -140,28 +138,32 @@ git push origin --delete feature/issue-{ID}-description
 
 **Note**: Some projects auto-delete branches on PR merge. Verify your project settings.
 
-> **Automation**: Branch deletion is also handled by `.github/scripts/post-merge-cleanup.ps1` when invoked via the `SessionStart` hook cleanup flow (see Section 1 above).
+> **Automation**: Branch deletion is also handled by `.github/scripts/post-merge-cleanup.ps1` when invoked via the session-startup instruction cleanup flow (see Section 1 above).
 
 ### 6. Strategic Assessment (Pre-Merge)
 
 **Action**: Before approving a PR, evaluate strategic alignment on three dimensions.
 
 **Design Alignment**:
+
 - Does the implementation match the design doc (`Documents/Design/{domain}.md`)?
 - Are any design decisions reversed or partially implemented?
 - If the design doc doesn't exist yet, does the implementation align with the issue's stated goals?
 
 **Roadmap Integration**:
+
 - Does this change fit the project's stated direction?
 - Any unintended coupling introduced that will constrain future work?
 - Are there deprecations triggered or migration concerns created?
 
 **Long-Term Implications**:
+
 - Tech debt introduced — is it tracked (labeled issue or comment)?
 - Are there performance, scale, or maintenance concerns not covered in tests?
 - Would this pass the "6-month-later developer" readability test?
 
 **Output**: Emit one of:
+
 - `✅ Strategic assessment: aligned` — no concerns
 - `⚠️ Strategic assessment: concerns noted` — list specific items; may block PR
 - `⏭️ Strategic assessment: skipped — {reason}` — e.g., documentation-only change
