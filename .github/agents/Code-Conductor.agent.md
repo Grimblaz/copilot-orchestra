@@ -255,13 +255,15 @@ When the review originated from GitHub (proxy prosecution pipeline), Code-Conduc
 - ≥1 accepted finding was Critical or High severity
 - Any accepted fix modifies control flow — defined as: adding/changing/removing `if`/`else`/`switch` branches, loop structure changes (`for`/`while`/`forEach` — bounds, iteration variable, or `break`/`continue`), guard clause additions/removals, try/catch restructuring, early returns, or conditional short-circuit reordering (`&&`/`||` guard reordering) — inspect the fix diff computed in Diff scoping below to evaluate this condition.
 
-Skip if no findings were accepted and applied (post-judgment: all REJECT or DEFERRED-SIGNIFICANT, no fixes committed).
+Skip if no findings were accepted and applied (post-judgment: all REJECT or DEFERRED-SIGNIFICANT, no fixes applied).
 
 **Evaluation ordering**: Condition 1 (severity) is evaluable immediately from the main-review judge output. Condition 2 (control flow) requires the fix diff and is evaluated after Diff scoping below — if condition 1 does not trigger alone, proceed through Tier 1 re-validation and Diff scoping before making the final skip decision.
 
 **Tier 1 re-validation** — After specialists apply fixes, re-run Tier 1 validation (build + lint/typecheck + tests). If Tier 1 fails, route the failure via the Failure Triage Rule and resolve it before proceeding.
 
-**Diff scoping** — After Tier 1 passes, compute the fix diff: `git diff HEAD -- {files touched by specialists}` isolates the review-fix changes (the original implementation was committed by the user before this phase; only specialist fix changes are uncommitted, so HEAD points to the pre-fix commit and the diff captures only review fixes). Pass those files and hunks in each prosecution prompt. Code-Critic runs in normal code prosecution mode (no marker) with the constrained input. Include the original PR change-type classification in each post-fix prosecution prompt (same requirement as main review pass prompts).
+**Diff scoping prerequisite** — Before running the diff recipe, verify the git state: the original implementation MUST be committed (verify with `git status` — only specialist fix files should appear as modified). If uncommitted implementation changes are present, instruct the user to commit them before proceeding.
+
+**Diff scoping** — After Tier 1 passes and the prerequisite is verified, compute the fix diff: `git diff HEAD -- {files touched by specialists}` isolates the review-fix changes (HEAD points to the pre-fix commit; only uncommitted specialist fix changes are captured). Pass those files and hunks in each prosecution prompt. Code-Critic runs in normal code prosecution mode (no marker) with the constrained input. Include the original PR change-type classification in each post-fix prosecution prompt (same requirement as main review pass prompts).
 
 **Pipeline** — 3 parallel prosecution passes (diff-scoped) → merge deduplicated ledger → 1 defense pass → 1 judge pass (Code-Review-Response). Same protocol as main review, smaller input scope.
 
@@ -437,10 +439,10 @@ Always include the adversarial review score summary table from the judge's score
 ```markdown
 ## Adversarial Review Scores
 
-| Stage       | Prosecutor                | Defense                                 | Judge rulings |
-| ----------- | ------------------------- | --------------------------------------- | ------------- |
-| Code Review | {pts} pts ({N} sustained) | {pts} pts ({N} disproved, {N} rejected) | {N} rulings   |
-| CE Review   | {pts} pts ({N} sustained) | {pts} pts ({N} disproved, {N} rejected) | {N} ruling(s) |
+| Stage           | Prosecutor                | Defense                                 | Judge rulings |
+| --------------- | ------------------------- | --------------------------------------- | ------------- |
+| Code Review     | {pts} pts ({N} sustained) | {pts} pts ({N} disproved, {N} rejected) | {N} rulings   |
+| CE Review       | {pts} pts ({N} sustained) | {pts} pts ({N} disproved, {N} rejected) | {N} ruling(s) |
 | Post-fix Review | {pts} pts ({N} sustained) | {pts} pts ({N} disproved, {N} rejected) | {N} ruling(s) |
 ```
 
@@ -478,7 +480,9 @@ postfix_rework_cycles: {N}
 
 **Default values**: `0` for numeric fields when the stage ran but found nothing. `n/a` for categorical fields when the stage was skipped entirely (e.g., `ce_gate_result: not-applicable`, `ce_gate_intent: n/a` when `ce_gate: false`). `ce_gate_defects_found: n/a` when the CE Gate did not run (`ce_gate: false` or `⏭️ CE Gate not applicable`). For proxy prosecution (GitHub review intake): `pass_1_findings`, `pass_2_findings`, `pass_3_findings` → `n/a` (3-pass structure replaced by proxy pass); route total findings count to `prosecution_findings` only. `postfix_*` numeric fields default to `0` when post-fix review was triggered but found nothing; `n/a` when not triggered (`postfix_triggered: false`). Set `postfix_triggered: true` when trigger conditions are met and post-fix prosecution executes (regardless of whether any findings were accepted). Set `postfix_triggered: false` when the skip rule applies or trigger criteria are not satisfied.
 
-**Verdict mapping**: `✅ Sustained` findings → `judge_accepted`; `❌ Defense sustained` findings → `judge_rejected`; `📋 DEFERRED-SIGNIFICANT` findings → `judge_deferred`. For post-fix prosecution: use `postfix_judge_accepted`, `postfix_judge_rejected`, `postfix_judge_deferred` respectively. Count each verdict type from the judge's score summary table.
+**Verdict mapping**: Map verdicts from the judge's score summary table to the corresponding metric fields:
+- **Main review**: `✅ Sustained` → `judge_accepted`; `❌ Defense sustained` → `judge_rejected`; `📋 DEFERRED-SIGNIFICANT` → `judge_deferred`
+- **Post-fix review**: `✅ Sustained` → `postfix_judge_accepted`; `❌ Defense sustained` → `postfix_judge_rejected`; `📋 DEFERRED-SIGNIFICANT` → `postfix_judge_deferred`
 
 **`rework_cycles`**: Count of fix-revalidate loops after routing accepted review findings to specialists (main review fix loops only — not CE Gate loops or post-fix review loops; those are tracked in `postfix_rework_cycles`). Each route-to-specialist → implement → re-validate cycle = 1. If no findings accepted, `rework_cycles: 0`.
 
