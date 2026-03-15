@@ -1,5 +1,7 @@
 # Session Startup Instructions
 
+> **Reference only**: The operational session startup check is inline in `.github/copilot-instructions.md` (Section: "Session Startup Check"). This file documents detailed edge cases and rationale. Agents should follow the inline check; use this file for deeper context.
+
 ## Purpose
 
 Instruct agents to run the session-cleanup detector at the start of every conversation. This replaces the VS Code `SessionStart` hook, which was retired in issue #109 due to unreliable firing across different repos. The detector is implemented in `.github/scripts/session-cleanup-detector.ps1` and identifies stale tracking files left over from merged pull requests.

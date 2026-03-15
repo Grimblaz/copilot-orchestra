@@ -101,7 +101,7 @@ For **macOS/Linux**:
 export WORKFLOW_TEMPLATE_ROOT="/path/to/workflow-template"
 ```
 
-> **Important**: VS Code launched from the Start Menu or a desktop shortcut may not run your PowerShell profile. Use the permanent approach to ensure `WORKFLOW_TEMPLATE_ROOT` is always available — the session-startup instruction silently skips if the variable is not set.
+> **Important**: VS Code launched from the Start Menu or a desktop shortcut may not run your PowerShell profile. Use the permanent approach to ensure `WORKFLOW_TEMPLATE_ROOT` is always available — the Session Startup Check (in `copilot-instructions.md`) silently skips if the variable is not set.
 
 **Step 1.2** — Show the VS Code settings to add to your user `settings.json` (`Ctrl+,` → open `settings.json`):
 
