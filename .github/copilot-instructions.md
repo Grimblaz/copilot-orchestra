@@ -72,6 +72,37 @@ This repo uses a **scored prosecution → defense → judge pipeline** across al
 - `"Use CE review perspectives"` — CE prosecution
 - `"Score and represent GitHub review"` — proxy prosecution
 
+## Session Startup Check
+
+At the start of every new conversation, **before responding to the user's first message**, run the session-cleanup detector:
+
+### Step 1 — Check prerequisites
+
+If `$env:WORKFLOW_TEMPLATE_ROOT` is not set, skip the entire check silently and continue with the user's request.
+
+### Step 2 — Run the detector
+
+```powershell
+pwsh -NoProfile -NonInteractive -File "$env:WORKFLOW_TEMPLATE_ROOT/.github/scripts/session-cleanup-detector.ps1"
+```
+
+### Step 3 — Parse output
+
+- Output is `{}` → continue silently, no prompt
+- Output contains `hookSpecificOutput` → stale state found; proceed to Step 4
+
+### Step 4 — Prompt the user
+
+Present the `additionalContext` field from the output to the user using `#tool:vscode/askQuestions` with two options: "Yes — run cleanup" and "No — skip for now".
+
+### Step 5 — Run cleanup (only if confirmed)
+
+Execute the PowerShell code block from `additionalContext` in the terminal. Report what was cleaned up when complete.
+
+Continue with the user's original request regardless of whether cleanup was run, skipped, or declined.
+
+> **Silent skip conditions**: Skip the entire check when `$env:WORKFLOW_TEMPLATE_ROOT` is not set, `pwsh` is not available, or the script produces non-JSON output. See `.github/instructions/session-startup.instructions.md` for full edge case details.
+
 ## Build & Run
 
 No build step. This is a configuration/documentation template.

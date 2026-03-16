@@ -24,7 +24,7 @@ This template supports two distribution models:
 
 2. Open Extensions view (`Ctrl+Shift+X`), search `@agentPlugins workflow-template`, install.
 
-> **Note**: If you use the plugin, you will not receive automatic loading of `.github/instructions/` files (including the session-startup instruction). For those features, use the clone/fork model instead.
+> **Note**: If you use the plugin, you will not receive automatic loading of `.github/instructions/` files. The session-startup check (which requires `WORKFLOW_TEMPLATE_ROOT`) is a clone/fork-only feature. For full instruction support, use the clone/fork model and enable `chat.instructionsFilesLocations`.
 
 ---
 
@@ -102,7 +102,7 @@ To share agents across all repositories in your org:
 >
 > The steps below are the manual equivalent — follow them if you prefer to configure without the wizard, or if you need to adjust an existing configuration.
 
-The workflow-template includes a `session-startup` instruction (`.github/instructions/session-startup.instructions.md`) that tells agents to check for stale feature branches and leftover tracking files at the start of each conversation. When cleanup is needed, the agent prompts you to confirm before running cleanup.
+The workflow-template includes a session startup check (inline in `copilot-instructions.md`) that tells agents to check for stale feature branches and leftover tracking files at the start of each conversation. When cleanup is needed, the agent prompts you to confirm before running cleanup. The full edge-case details are in `.github/instructions/session-startup.instructions.md` (detailed reference only — the check itself runs from `copilot-instructions.md`).
 
 **Setup — two steps:**
 
@@ -130,9 +130,9 @@ The workflow-template includes a `session-startup` instruction (`.github/instruc
 
 > **Windows path**: Use forward slashes or escaped backslashes in the JSON value, e.g. `"C:/Users/you/workflow-template/.github/instructions"`. Apply the same format to all four settings above.
 >
-> **Migration note**: If you previously configured `chat.hookFilesLocations`, you can safely remove it — hooks have been replaced by the `session-startup` instruction file.
+> **Migration note**: If you previously configured `chat.hookFilesLocations`, you can safely remove it — hooks have been replaced by the session startup check (inline in `copilot-instructions.md`).
 
-**Step 2**: Set the `WORKFLOW_TEMPLATE_ROOT` environment variable to the absolute path of your local workflow-template clone. Without this, the session-startup instruction will not be able to run cleanup scripts.
+**Step 2**: Set the `WORKFLOW_TEMPLATE_ROOT` environment variable to the absolute path of your local workflow-template clone. Without this, the session startup check will not be able to run cleanup scripts.
 
 **Windows (permanent — recommended)**:
 
