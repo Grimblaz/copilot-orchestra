@@ -65,7 +65,7 @@ else {
 # ---------------------------------------------------------------------------
 # 3. Fetch merged PRs
 # ---------------------------------------------------------------------------
-$prListJson = gh pr list --state merged --limit $Limit --json number,mergedAt,body @repoArgs
+$prListJson = gh pr list --state merged --limit $Limit --json number, mergedAt, body @repoArgs
 if ($LASTEXITCODE -ne 0) {
     Write-Output "error: Failed to fetch merged PR list (gh exit code $LASTEXITCODE): $prListJson"
     exit 1
@@ -363,57 +363,73 @@ Write-Output "  prosecutor:"
 Write-Output ("    overall_sustain_rate: {0:F2}" -f $overallSustainRate)
 Write-Output "    sufficient_data: $($overallSufficient.ToString().ToLower())"
 if ($v2IssuesAnalyzed -gt 0) {
-Write-Output "    by_category:"
+    Write-Output "    by_category:"
 
-foreach ($cat in $knownCategories) {
-    Write-Output "      ${cat}:"
-    if ($categoryData.ContainsKey($cat)) {
-        $cd = $categoryData[$cat]
-        $catSustainRate = if ($cd.effectiveCount -gt 0) { $cd.sustained / $cd.effectiveCount } else { 0.0 }
-        $catSufficient = $cd.effectiveCount -ge 15.0
-        Write-Output "        findings: $($cd.findings)"
+    foreach ($cat in $knownCategories) {
+        Write-Output "      ${cat}:"
+        if ($categoryData.ContainsKey($cat)) {
+            $cd = $categoryData[$cat]
+            $catSustainRate = if ($cd.effectiveCount -gt 0) { $cd.sustained / $cd.effectiveCount } else { 0.0 }
+            $catSufficient = $cd.effectiveCount -ge 15.0
+            Write-Output "        findings: $($cd.findings)"
+            Write-Output ("        effective_count: {0:F1}" -f $cd.effectiveCount)
+            Write-Output ("        sustain_rate: {0:F2}" -f $catSustainRate)
+            Write-Output "        sufficient_data: $($catSufficient.ToString().ToLower())"
+        }
+        else {
+            Write-Output "        findings: 0"
+            Write-Output "        effective_count: 0.0"
+            Write-Output "        sustain_rate: 0.00"
+            Write-Output "        sufficient_data: false"
+        }
+    }
+
+    Write-Output "  defense:"
+    Write-Output "    defense_findings_count: $defenseTotalCount"
+    Write-Output ("    defense_effective_count: {0:F1}" -f $defenseTotal)
+    $defenseSufficientData = $defenseTotal -ge 5.0
+    Write-Output "    defense_sufficient_data: $($defenseSufficientData.ToString().ToLower())"
+    Write-Output ("    defense_success_rate: {0:F2}" -f $defenseSuccessRate)
+    Write-Output ("    defense_challenge_rate: {0:F2}" -f $defenseChallengeRate)
+    Write-Output ("    overreach_rate: {0:F2}" -f $overreachRate)
+    Write-Output "  judge:"
+    Write-Output "    confidence_calibration:"
+
+    foreach ($level in @('high', 'medium', 'low')) {
+        $cd = $confidenceData[$level]
+        # sustain_rate: renamed from 'accuracy' which was misleading
+        $sustainRate = if ($cd.effectiveCount -gt 0) { $cd.sustained / $cd.effectiveCount } else { 0.0 }
+        $levelSufficient = $cd.effectiveCount -ge 5
+        Write-Output "      ${level}:"
+        Write-Output "        sufficient_data: $($levelSufficient.ToString().ToLower())"
+        Write-Output ("        sustain_rate: {0:F2}" -f $sustainRate)
+        Write-Output "        count: $($cd.count)"
         Write-Output ("        effective_count: {0:F1}" -f $cd.effectiveCount)
-        Write-Output ("        sustain_rate: {0:F2}" -f $catSustainRate)
-        Write-Output "        sufficient_data: $($catSufficient.ToString().ToLower())"
     }
-    else {
-        Write-Output "        findings: 0"
-        Write-Output "        effective_count: 0.0"
-        Write-Output "        sustain_rate: 0.00"
-        Write-Output "        sufficient_data: false"
+
+    Write-Output "    bias_direction: $biasDirection"
+    Write-Output "  by_review_stage:"
+    Write-Output "    review_stage_untagged: $reviewStageUntagged"
+    $knownStages = @('main', 'postfix', 'ce')
+    foreach ($stage in $knownStages) {
+        Write-Output "    ${stage}:"
+        if ($stageData.ContainsKey($stage)) {
+            $sd = $stageData[$stage]
+            $stageSustainRate = if ($sd.effectiveCount -gt 0) { $sd.effectiveSustained / $sd.effectiveCount } else { 0.0 }
+            Write-Output "      findings: $($sd.findings)"
+            Write-Output "      sustained: $($sd.sustained)"
+            Write-Output ("      effective_count: {0:F1}" -f $sd.effectiveCount)
+            Write-Output ("      sustain_rate: {0:F2}" -f $stageSustainRate)
+        }
+        else {
+            Write-Output "      findings: 0"
+            Write-Output "      sustained: 0"
+            Write-Output "      effective_count: 0.0"
+            Write-Output "      sustain_rate: 0.00"
+        }
     }
-}
-
-Write-Output "  defense:"
-Write-Output "    defense_findings_count: $defenseTotalCount"
-Write-Output ("    defense_effective_count: {0:F1}" -f $defenseTotal)
-$defenseSufficientData = $defenseTotal -ge 5.0
-Write-Output "    defense_sufficient_data: $($defenseSufficientData.ToString().ToLower())"
-Write-Output ("    defense_success_rate: {0:F2}" -f $defenseSuccessRate)
-Write-Output ("    defense_challenge_rate: {0:F2}" -f $defenseChallengeRate)
-Write-Output ("    overreach_rate: {0:F2}" -f $overreachRate)
-Write-Output "  judge:"
-Write-Output "    confidence_calibration:"
-
-foreach ($level in @('high', 'medium', 'low')) {
-    $cd = $confidenceData[$level]
-    # sustain_rate: renamed from 'accuracy' which was misleading
-    $sustainRate = if ($cd.effectiveCount -gt 0) { $cd.sustained / $cd.effectiveCount } else { 0.0 }
-    $levelSufficient = $cd.effectiveCount -ge 5
-    Write-Output "      ${level}:"
-    Write-Output "        sufficient_data: $($levelSufficient.ToString().ToLower())"
-    Write-Output ("        sustain_rate: {0:F2}" -f $sustainRate)
-    Write-Output "        count: $($cd.count)"
-    Write-Output ("        effective_count: {0:F1}" -f $cd.effectiveCount)
-}
-
-Write-Output "    bias_direction: $biasDirection"
-Write-Output "  by_review_stage:"
-Write-Output "    review_stage_untagged: $reviewStageUntagged"
-$knownStages = @('main', 'postfix', 'ce')
-foreach ($stage in $knownStages) {
-    Write-Output "    ${stage}:"
-    if ($stageData.ContainsKey($stage)) {
+    foreach ($stage in ($stageData.Keys | Where-Object { $knownStages -notcontains $_ } | Sort-Object)) {
+        Write-Output "    ${stage}:"
         $sd = $stageData[$stage]
         $stageSustainRate = if ($sd.effectiveCount -gt 0) { $sd.effectiveSustained / $sd.effectiveCount } else { 0.0 }
         Write-Output "      findings: $($sd.findings)"
@@ -421,22 +437,6 @@ foreach ($stage in $knownStages) {
         Write-Output ("      effective_count: {0:F1}" -f $sd.effectiveCount)
         Write-Output ("      sustain_rate: {0:F2}" -f $stageSustainRate)
     }
-    else {
-        Write-Output "      findings: 0"
-        Write-Output "      sustained: 0"
-        Write-Output "      effective_count: 0.0"
-        Write-Output "      sustain_rate: 0.00"
-    }
-}
-foreach ($stage in ($stageData.Keys | Where-Object { $knownStages -notcontains $_ } | Sort-Object)) {
-    Write-Output "    ${stage}:"
-    $sd = $stageData[$stage]
-    $stageSustainRate = if ($sd.effectiveCount -gt 0) { $sd.effectiveSustained / $sd.effectiveCount } else { 0.0 }
-    Write-Output "      findings: $($sd.findings)"
-    Write-Output "      sustained: $($sd.sustained)"
-    Write-Output ("      effective_count: {0:F1}" -f $sd.effectiveCount)
-    Write-Output ("      sustain_rate: {0:F2}" -f $stageSustainRate)
-}
 }
 else {
     Write-Output "  has_finding_data: false"
