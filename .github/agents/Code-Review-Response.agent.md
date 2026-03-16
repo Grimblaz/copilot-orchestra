@@ -171,8 +171,8 @@ After all rulings, emit a score summary table:
 
 **Non-code-prosecution mode** (CE review, design review, proxy prosecution — Pass column always `—`):
 
-| Finding     | Pass | Prosecution (severity, pts) | Defense verdict | Ruling               | Confidence | Points  |
-| ----------- | ---- | --------------------------- | --------------- | -------------------- | ---------- | ------- |
+| Finding     | Pass | Prosecution (severity, pts) | Defense verdict | Ruling                   | Confidence | Points    |
+| ----------- | ---- | --------------------------- | --------------- | ------------------------ | ---------- | --------- |
 | F1: {title} | —    | {severity} ({pts} pts)      | conceded        | ✅ Sustained             | high       | P+{pts}   |
 | F2: {title} | —    | {severity} ({pts} pts)      | disproved       | ❌ Defense sustained     | medium     | D+{pts}   |
 | F3: {title} | —    | {severity} ({pts} pts)      | disproved       | ✅ Prosecution sustained | high       | D-{2×pts} |
@@ -197,6 +197,35 @@ After all rulings, emit a score summary table:
 - `critical` / `high` → 10 pts
 - `medium` → 5 pts
 - `low` → 1 pt
+
+### Structured Judge Rulings Block
+
+After the Markdown score summary table, also emit a machine-parseable HTML comment block for pipeline consumption. Emit one entry per finding, in the same order as the Markdown table:
+
+```yaml
+<!-- judge-rulings
+- id: F1
+  judge_ruling: sustained
+  judge_confidence: high
+  points_awarded: P+10
+- id: F2
+  judge_ruling: defense-sustained
+  judge_confidence: medium
+  points_awarded: D+5
+- id: F3
+  judge_ruling: sustained
+  judge_confidence: high
+  points_awarded: D-10
+-->
+```
+
+**Field values**:
+
+- `judge_ruling`: `sustained` (prosecution wins) | `defense-sustained` (defense wins)
+- `judge_confidence`: `high` | `medium` | `low`
+- `points_awarded`: use `P+{pts}` for sustained findings, `D+{pts}` for defense-sustained, `D-{2×pts}` for rejected-disproof penalty
+
+**Fallback note**: If this block cannot be emitted (e.g., context-window constraints), Code-Conductor will parse the Markdown score summary table as fallback. Always emit this block when possible.
 
 ## 🚨 CRITICAL: Verify Before Accepting
 
