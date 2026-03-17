@@ -24,15 +24,15 @@ These rules apply whenever any agent uses terminal commands or file tools to rea
 
 For operations that only inspect state or compute values, **always prefer dedicated VS Code tools over terminal commands**. Terminal commands trigger a "Run command?" confirmation dialog and return unstructured text — dedicated tools provide structured, typed outputs without interruption.
 
-| Operation                      | Preferred Method            | Do NOT use terminal for                                                             |
-| ------------------------------ | --------------------------- | ----------------------------------------------------------------------------------- |
-| Inspect changed files / diffs  | `get_changed_files`         | `git diff` (working-tree; cross-branch diff is permitted in terminal), `git status` |
-| Read file content              | `read_file`                 | `Get-Content`, `cat`                                                                |
-| Search for text in files       | `grep_search`               | `Select-String`, `grep`, `git grep`                                                 |
-| List directory contents        | `list_dir` or `file_search` | `Get-ChildItem`, `ls`                                                               |
+| Operation                      | Preferred Method                                                                  | Do NOT use terminal for                                                             |
+| ------------------------------ | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| Inspect changed files / diffs  | `get_changed_files`                                                               | `git diff` (working-tree; cross-branch diff is permitted in terminal), `git status` |
+| Read file content              | `read_file`                                                                       | `Get-Content`, `cat`                                                                |
+| Search for text in files       | `grep_search`                                                                     | `Select-String`, `grep`, `git grep`                                                 |
+| List directory contents        | `list_dir` or `file_search`                                                       | `Get-ChildItem`, `ls`                                                               |
 | Check file/directory existence | `file_search` (glob-based; use exact-path pattern and check for non-empty result) | `Test-Path`                                                                         |
-| Arithmetic / coordinate math   | Agent reasoning directly    | `node -e`, `python -c`, `pwsh -c`                                                   |
-| Semantic / concept search      | `semantic_search`           | —                                                                                   |
+| Arithmetic / coordinate math   | Agent reasoning directly                                                          | `node -e`, `python -c`, `pwsh -c`                                                   |
+| Semantic / concept search      | `semantic_search`                                                                 | —                                                                                   |
 
 > **Exception**: The "Do NOT use" restrictions above apply to ad-hoc discovery. Project validation commands explicitly permitted in the Rule below (e.g., quick-validate checks in `.github/copilot-instructions.md`) may use `Get-ChildItem`, `Select-String`, and similar terminal commands.
 
@@ -64,7 +64,13 @@ When any agent discovers an out-of-scope or non-blocking improvement during its 
 - **< 1 day effort**: Address within the current task (or current PR if one is open) if the change is low-risk and does not expand scope significantly; otherwise defer.
 - **> 1 day effort (significant)**: Create a follow-up GitHub issue **immediately** using `gh issue create`, then continue with in-scope work. Do not block the current PR on the deferred improvement.
 
-**Output capture**: After `gh issue create` succeeds, capture the returned issue URL. Do not re-run the command if it already returned a URL. If terminal output is unclear or truncated, verify via `gh issue list --search "{title}" --state open` before retrying. Output capture is the primary defense against rapid re-submission (e.g., terminal retry when output was swallowed); search-based deduplication (Section 2c) cannot prevent sub-second re-submissions due to GitHub's search index propagation delay.
+**Output capture**: After `gh issue create` succeeds, capture the returned issue URL. Do not re-run the command if it already returned a URL. If terminal output is unclear or truncated, verify by listing recent open issues before retrying:
+
+```powershell
+gh issue list --limit 5 --state open --json number,title --jq '.[] | "\(.number): \(.title)"'
+```
+
+Scan the output for an exact title match. If a match is found, the issue was created — do not re-run. This uses the list API (not the search index) and is not subject to propagation delay. Output capture is the primary defense against rapid re-submission (e.g., terminal retry when output was swallowed); search-based deduplication (Section 2c) cannot prevent sub-second re-submissions due to GitHub's search index propagation delay.
 
 ### 2b. Priority Label Requirement
 
@@ -99,15 +105,16 @@ gh issue create --title "..." --body "..."
 
 ### 2c. Deduplication Check (Mandatory)
 
-Before every `gh issue create`, search for existing issues with similar titles:
+Before every `gh issue create`, search for existing open issues with matching titles or key terms from the title:
 
 ```powershell
 # REQUIRED — search before creating:
+# Extract 2-4 distinctive words from the title, e.g. for "Add deduplication guard to issue creation protocol" use "deduplication guard issue creation"
 gh issue list --search "{key phrase from title}" --state open --json number,title --jq '.[] | "\(.number): \(.title)"'
 ```
 
 If a matching issue exists, do NOT create a duplicate. Instead, reference the existing issue number in the current work context (PR body, review notes, or tracking file).
 
-> **Exception**: Skip when the title contains a machine-generated unique identifier (e.g., commit SHA, UUID) that guarantees no collision.
+> **Exception**: Skip when the title contains a high-entropy machine-generated unique identifier — specifically a full commit SHA (40 hex chars) or UUID v4 (128-bit random) — that guarantees no collision. Short tokens, sequential IDs, and timestamps do not qualify.
 
 > **Note on search-index timing**: GitHub's search index has a propagation delay (typically seconds to minutes). The dedup search cannot prevent sub-second re-submissions — that failure mode is addressed by output capture (Section 2a). This search guards against independent code-path convergence (the same topic created by separate agents on different branches or sessions).

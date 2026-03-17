@@ -410,7 +410,7 @@ When a functional defect or intent deficiency is found:
 **Track 2 — Systemic analysis (always, after Track 1 fix is complete or when taking the follow-up-issue path):**
 
 - Call Process-Review subagent with: the defect description, what scenario revealed it, and which agent/file/instruction likely caused the gap
-- Process-Review will emit a structured CE Gate Defect Analysis (gap description, affected agent/file, recommended fix, ready-to-use issue title + body) — **Code-Conductor creates the issue** using Process-Review's ready-to-use title and body; Process-Review does not create GitHub issues itself
+- Process-Review will emit a structured CE Gate Defect Analysis (gap description, affected agent/file, recommended fix, ready-to-use issue title + body) — if a systemic gap is confirmed, **Code-Conductor creates the issue** using Process-Review's ready-to-use title and body; Process-Review does not create GitHub issues itself
 - If a systemic gap is confirmed: create a follow-up GitHub issue in the workflow-template repository (or fallback to current repo with label `process-gap-upstream`)
 - "No systemic gap found" is a valid Process-Review outcome — log it in the PR body
 - Track 2 is non-blocking: do not hold up Track 1 fix or PR creation
