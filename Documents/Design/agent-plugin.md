@@ -93,7 +93,7 @@ VS Code loads agents, skills, and prompt files **additively** from all configure
 **Not affected** (plugin does not distribute these):
 
 - `chat.instructionsFilesLocations` — safe to keep alongside the plugin; the plugin does not distribute `.github/instructions/` files
-- `chat.promptFilesLocations` — safe to keep alongside the plugin; the plugin does not distribute prompt files
+- `chat.promptFilesLocations` — likely safe to keep alongside the plugin; the plugin distributes prompt files as slash `commands` (not via `promptFilesLocations`), and VS Code 1.110 is expected to deduplicate slash commands by ID, though this is unconfirmed for the experimental plugin system
 
 **Mitigation**: Use only one distribution source for agents and skills — either the plugin OR a clone/global path, not both. See CUSTOMIZATION.md for guidance on choosing a distribution model.
 
@@ -115,9 +115,9 @@ Plugin users relying on `post-pr-review` skill Step 1 (preferred cleanup script)
 
 | Gap | Workaround |
 |-----|------------|
-| Missing `.github/instructions/` | Add `chat.instructionsFilesLocations` pointing to your clone — this is safe to combine with the plugin since plugin does not distribute instruction files |
+| Missing `.github/instructions/` | Clone the repo first (if you haven't already), then add `chat.instructionsFilesLocations` pointing to the clone — this is safe to combine with the plugin since the plugin does not distribute instruction files |
 | Missing `.github/scripts/` (cleanup script) | Use the manual archive method documented in the `post-pr-review` skill |
-| Choosing between plugin and clone | See [CUSTOMIZATION.md — Distribution Options](../CUSTOMIZATION.md#distribution-options) for a decision guide |
+| Choosing between plugin and clone | See [CUSTOMIZATION.md — Distribution Options](../../CUSTOMIZATION.md#distribution-options) for a decision guide |
 
 ---
 
