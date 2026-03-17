@@ -43,7 +43,7 @@ To enable automatic skill discovery from `.github/skills/` (VS Code 1.108+):
 
 This enables agents to interact directly with GitHub issues and PRs without external MCP server configuration.
 
-> **Note**: If you also use the workflow-template plugin (via `chat.plugins.marketplaces`), do not add `chat.agentFilesLocations` or `chat.agentSkillsLocations` — this creates duplicate agents in the chat picker. See [CUSTOMIZATION.md — Troubleshooting](CUSTOMIZATION.md#troubleshooting) for fix steps.
+> **Note**: If you also use the workflow-template plugin (via `chat.plugins.marketplaces`), do not add `chat.agentFilesLocations` — this creates duplicate agents in the chat picker. See [CUSTOMIZATION.md — Troubleshooting](CUSTOMIZATION.md#troubleshooting) for fix steps.
 
 ### Session Startup Check
 

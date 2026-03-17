@@ -82,10 +82,10 @@ Before proceeding, check whether the user has the workflow-template plugin alrea
 
 **If the command returns `True`** (plugin is installed): inform the user:
 
-> "It looks like you have the workflow-template plugin installed (`workflow-template` found in your VS Code settings). Adding `chat.agentFilesLocations` or `chat.agentSkillsLocations` at the same time will cause duplicate agents to appear in the chat picker.
+> "It looks like you have the workflow-template plugin installed (`workflow-template` found in your VS Code settings). Adding `chat.agentFilesLocations` at the same time will cause duplicate agents to appear in the chat picker.
 >
-> **Option 1 — Keep plugin, skip agent/skill settings (recommended if you just want to use the workflow)**:
-> Continue Phase 1, but in Step 1.2 only add `chat.instructionsFilesLocations` and `chat.promptFilesLocations`. Skip `chat.agentFilesLocations` and `chat.agentSkillsLocations` (the plugin already provides those). If `chat.agentFilesLocations` or `chat.agentSkillsLocations` are already present in your `settings.json` from a previous setup, **remove them now** — they conflict with the plugin and will cause duplicates regardless of which settings you add next.
+> **Option 1 — Keep plugin, skip agent settings (recommended if you just want to use the workflow)**:
+> Continue Phase 1, but in Step 1.2 only add `chat.instructionsFilesLocations` and `chat.promptFilesLocations`. Skip `chat.agentFilesLocations` (the plugin already provides that). If `chat.agentFilesLocations` is already present in your `settings.json` from a previous setup, **remove it now** — it conflicts with the plugin and will cause duplicates regardless of which settings you add next.
 >
 > **Option 2 — Uninstall plugin, use full clone settings (use this if you want to customize agents or add project-specific instructions)**:
 > Continue with all four settings. First uninstall the plugin from the Extensions view (`Ctrl+Shift+X`, search `@agentPlugins workflow-template`, uninstall). This gives you local editable copies of all agents and skills.
