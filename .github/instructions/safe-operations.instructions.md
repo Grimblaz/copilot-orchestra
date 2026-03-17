@@ -64,6 +64,8 @@ When any agent discovers an out-of-scope or non-blocking improvement during its 
 - **< 1 day effort**: Address within the current task (or current PR if one is open) if the change is low-risk and does not expand scope significantly; otherwise defer.
 - **> 1 day effort (significant)**: Create a follow-up GitHub issue **immediately** using `gh issue create`, then continue with in-scope work. Do not block the current PR on the deferred improvement.
 
+**Output capture**: After `gh issue create` succeeds, capture the returned issue URL. Do not re-run the command if it already returned a URL. If terminal output is unclear or truncated, verify via `gh issue list --search "{title}" --state open` before retrying. Output capture is the primary defense against rapid re-submission (e.g., terminal retry when output was swallowed); search-based deduplication (Section 2c) cannot prevent sub-second re-submissions due to GitHub's search index propagation delay.
+
 ### 2b. Priority Label Requirement
 
 Every `gh issue create` command run by any agent **MUST** include a `--label` flag specifying a priority. Issues created without a priority label are non-compliant.
@@ -94,3 +96,18 @@ gh issue create --title "..." --body "..."
 | `priority: low`    | Nice-to-have — cosmetic or optional   | Cosmetic, optional, or speculative work                       |
 
 **Default for automatically-created follow-up issues**: `priority: medium`
+
+### 2c. Deduplication Check (Mandatory)
+
+Before every `gh issue create`, search for existing issues with similar titles:
+
+```powershell
+# REQUIRED — search before creating:
+gh issue list --search "{key phrase from title}" --state open --json number,title --jq '.[] | "\(.number): \(.title)"'
+```
+
+If a matching issue exists, do NOT create a duplicate. Instead, reference the existing issue number in the current work context (PR body, review notes, or tracking file).
+
+> **Exception**: Skip when the title contains a machine-generated unique identifier (e.g., commit SHA, UUID) that guarantees no collision.
+
+> **Note on search-index timing**: GitHub's search index has a propagation delay (typically seconds to minutes). The dedup search cannot prevent sub-second re-submissions — that failure mode is addressed by output capture (Section 2a). This search guards against independent code-path convergence (the same topic created by separate agents on different branches or sessions).
