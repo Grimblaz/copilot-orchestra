@@ -36,6 +36,22 @@ These instructions are global — they apply to every agent in the pipeline when
 - The default priority for automatically-created follow-up issues is `priority: medium`, preventing agents from defaulting to high-severity labels for speculative improvements.
 - Three priority label definitions (`priority: high`, `priority: medium`, `priority: low`) are included with recommended colors and descriptions so any new repository can bootstrap the label set with a single copy-paste block.
 
+### Deduplication Check (Section 2c)
+
+Two confirmed duplicate-issue failure modes motivated a mandatory pre-creation search guard:
+
+- **Terminal double-submission** (#122/#123): an agent ran `gh issue create` twice in rapid succession (e.g., terminal output was truncated on the first call, so the agent re-issued the command). The second call created a duplicate before the first was visible in search results.
+- **Dual code-path convergence** (#100/#101): two independent sessions (separate agents on different branches) each identified the same improvement and created matching issues without knowledge of each other.
+
+The design uses two complementary defenses rather than one, because neither alone is sufficient:
+
+1. **Output capture (primary defense)**: after `gh issue create` returns a URL, the agent records it and does not re-run the command. This is the only reliable guard against sub-second re-submission — GitHub's search index has a propagation delay measured in seconds to minutes, so search-based deduplication cannot distinguish a missing issue from an issue that has not yet been indexed.
+2. **Pre-creation search (secondary defense)**: before every `gh issue create`, agents run `gh issue list --search` to catch cross-session convergence where two separate sessions independently decide to report the same problem.
+
+`--state open` is used (not `--state all`) to avoid false positives from completed issues: a closed issue with the same title represents resolved prior work, not a collision. Matching against a closed issue would incorrectly suppress a legitimately new follow-up.
+
+The search-index delay is acknowledged as a known limitation of the secondary defense. Section 2a documents output capture as the primary agent-side guard; Section 2c search is the backstop for the harder cross-session convergence case where output capture does not apply.
+
 ---
 
 ## Exception Rationale
@@ -53,3 +69,4 @@ The quick-validate commands in `copilot-instructions.md` use `Get-ChildItem` + `
 ## Source
 
 - Issue #67: [feat: add read-only tool preference guardrail](https://github.com/Grimblaz/workflow-template/issues/67)
+- Issue #127: [feat: add deduplication guard to issue creation protocol](https://github.com/Grimblaz/workflow-template/issues/127)
