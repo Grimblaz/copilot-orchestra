@@ -1,6 +1,6 @@
 # Spring Boot Microservice Example
 
-This directory contains example configuration files for a Spring Boot microservice project using the multi-agent workflow template.
+This directory contains example configuration files for a Spring Boot microservice project using Copilot Orchestra.
 
 ## Contents
 
@@ -18,9 +18,9 @@ Copy the files you need to your project's `.github/` directory:
 
 ```bash
 # From your project root
-cp /path/to/workflow-template/examples/spring-boot-microservice/copilot-instructions.md .github/
-cp /path/to/workflow-template/examples/spring-boot-microservice/architecture-rules.md .github/
-cp /path/to/workflow-template/examples/spring-boot-microservice/TECH-DEBT.md ./
+cp /path/to/copilot-orchestra/examples/spring-boot-microservice/copilot-instructions.md .github/
+cp /path/to/copilot-orchestra/examples/spring-boot-microservice/architecture-rules.md .github/
+cp /path/to/copilot-orchestra/examples/spring-boot-microservice/TECH-DEBT.md ./
 ```
 
 ### Option 2: Use as Reference
@@ -72,7 +72,7 @@ your-project/
 ├── .github/
 │   ├── copilot-instructions.md    # ← From this example
 │   ├── architecture-rules.md      # ← From this example
-│   ├── agents/                    # ← From workflow-template
+│   ├── agents/                    # ← From copilot-orchestra
 │   └── ...
 ├── TECH-DEBT.md                   # ← From this example (project root)
 ├── src/

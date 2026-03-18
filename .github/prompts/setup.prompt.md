@@ -13,7 +13,7 @@ Setup has six phases. Each phase includes a skip gate so you can jump to exactly
 
 > **Before you start**
 >
-> - Run `/setup` in your **target project workspace** (the repo you want to configure) — not inside the workflow-template repo itself.
+> - Run `/setup` in your **target project workspace** (the repo you want to configure) — not inside the copilot-orchestra repo itself.
 > - If your workspace is brand-new and completely empty, don't worry — Phase 0 will automatically create a `README.md` placeholder. (VS Code's workspace context provider crashes on zero-file workspaces; Phase 0 handles this.)
 > - **Recommended model**: Claude Opus — this wizard benefits from deep reasoning for architecture and tech stack decisions. _(o3 or GPT-4o also work well if Opus is unavailable.)_
 
@@ -37,7 +37,7 @@ List the user-visible (non-hidden) files in the workspace root, excluding `.git/
 
 Check whether `.github/agents/` exists and contains 10 or more `.agent.md` files. If it does:
 
-- Warn: "⚠️ This workspace looks like the workflow-template repo itself, not a target project. `/setup` should be run in the repo you want to configure, not in the template."
+- Warn: "⚠️ This workspace looks like the copilot-orchestra repo itself, not a target project. `/setup` should be run in the repo you want to configure, not in the template."
 - Ask: "Would you like to continue anyway (e.g., you're intentionally reconfiguring this repo), or stop here?"
 - If the user chooses to stop: end the wizard.
 - If the user chooses to continue: proceed with version checks.
@@ -68,13 +68,13 @@ After reporting:
 
 ### Plugin Overlap Check
 
-Before proceeding, check whether the user has the workflow-template plugin already installed. This prevents accidentally creating duplicate agents by combining plugin distribution with clone-path settings.
+Before proceeding, check whether the user has the copilot-orchestra (or legacy workflow-template) plugin already installed. This prevents accidentally creating duplicate agents by combining plugin distribution with clone-path settings.
 
 **Step**: Run the command for the user's OS (determined by context from the cwd shown in Phase 0 or the path separator the user provides — Windows paths start with a drive letter):
 
-- **Windows**: `Select-String -Path "$env:APPDATA\Code\User\settings.json" -Pattern "Grimblaz/workflow-template" -Quiet 2>$null`
-- **macOS**: `grep -q "Grimblaz/workflow-template" "$HOME/Library/Application Support/Code/User/settings.json" 2>/dev/null && echo True`
-- **Linux**: `grep -q "Grimblaz/workflow-template" "$HOME/.config/Code/User/settings.json" 2>/dev/null && echo True`
+- **Windows**: `Select-String -Path "$env:APPDATA\Code\User\settings.json" -Pattern "Grimblaz/(workflow-template|copilot-orchestra)" -Quiet 2>$null`
+- **macOS**: `grep -qE "Grimblaz/(workflow-template|copilot-orchestra)" "$HOME/Library/Application Support/Code/User/settings.json" 2>/dev/null && echo True`
+- **Linux**: `grep -qE "Grimblaz/(workflow-template|copilot-orchestra)" "$HOME/.config/Code/User/settings.json" 2>/dev/null && echo True`
 
 > **Important**: Use string search (`Select-String` on Windows, `grep` on macOS/Linux), NOT `ConvertFrom-Json` — VS Code `settings.json` is JSONC (allows comments) and `ConvertFrom-Json` will fail on files with comments.
 
@@ -82,15 +82,15 @@ Before proceeding, check whether the user has the workflow-template plugin alrea
 
 > **Scope note**: This check only covers the standard VS Code stable installation path (`Code`). VS Code Insiders (`Code - Insiders`) and VSCodium users are not detected — if you know you use Insiders or VSCodium, treat this as `True` if the plugin is installed. In Dev Container and Remote-SSH contexts, the host `settings.json` is not accessible from the container filesystem; the check will always fail silently and skip — this is expected.
 
-**If the command returns `True`** (the workflow-template marketplace entry is present in your VS Code settings): inform the user:
+**If the command returns `True`** (the copilot-orchestra or workflow-template marketplace entry is present in your VS Code settings): inform the user:
 
-> "It looks like you have the workflow-template plugin installed (`workflow-template` found in your VS Code settings). Adding `chat.agentFilesLocations` at the same time will cause duplicate agents to appear in the chat picker.
+> "It looks like you have the copilot-orchestra plugin installed (found in your VS Code settings). Adding `chat.agentFilesLocations` at the same time will cause duplicate agents to appear in the chat picker.
 >
 > **Option 1 — Keep plugin, skip agent settings (recommended if you just want to use the workflow)**:
 > Continue Phase 1, but in Step 1.2 only add `chat.instructionsFilesLocations` and `chat.promptFilesLocations`. Skip `chat.agentFilesLocations` (the plugin already provides that). If `chat.agentFilesLocations` is already present in your `settings.json` from a previous setup, **remove it now** — it conflicts with the plugin and will cause duplicates regardless of which settings you add next.
 >
 > **Option 2 — Uninstall plugin, use full clone settings (use this if you want to customize agents or add project-specific instructions)**:
-> Continue with all four settings. First uninstall the plugin from the Extensions view (`Ctrl+Shift+X`, search `@agentPlugins workflow-template`, uninstall). This gives you local editable copies of all agents and skills.
+> Continue with all four settings. First uninstall the plugin from the Extensions view (`Ctrl+Shift+X`, search `@agentPlugins copilot-orchestra` (or `workflow-template` if using the legacy name), uninstall). This gives you local editable copies of all agents and skills.
 >
 > Which option do you prefer?"
 >
@@ -98,54 +98,54 @@ Before proceeding, check whether the user has the workflow-template plugin alrea
 
 **If the command returns no output** (plugin not installed): continue normally to the skip gate below.
 
-> **Skip gate**: Run `echo $env:WORKFLOW_TEMPLATE_ROOT` (Windows) or `echo $WORKFLOW_TEMPLATE_ROOT` (macOS/Linux) in a terminal and report the result.
+> **Skip gate**: Run `echo $env:COPILOT_ORCHESTRA_ROOT` (Windows) or `echo $COPILOT_ORCHESTRA_ROOT` (macOS/Linux) in a terminal. If empty, also check `echo $env:WORKFLOW_TEMPLATE_ROOT` / `echo $WORKFLOW_TEMPLATE_ROOT` as a fallback.
 >
-> - If it prints a valid path to an existing directory → ask: "WORKFLOW_TEMPLATE_ROOT is already set to `<path>`. Skip Phase 1?" If yes, skip to Phase 2.
+> - If either prints a valid path to an existing directory → ask: "Root path is already configured (`<path>`). Skip Phase 1?" If yes, skip to Phase 2.
 > - If it prints a path but the directory no longer exists → inform the user the path is stale and offer to update it.
 > - If it is empty or not set → continue with Phase 1 below.
 
 If not configured, ask:
 
-1. **Absolute path to your workflow-template clone** — the folder where you cloned this repository (e.g., `C:\Users\you\workflow-template` or `/Users/you/workflow-template`)
+1. **Absolute path to your copilot-orchestra clone** — the folder where you cloned this repository (e.g., `C:\Users\you\copilot-orchestra` or `/Users/you/copilot-orchestra`)
 2. **Your OS** — Windows, macOS, or Linux
 
 Once you have those answers:
 
-**Step 1.1** — Show the exact command to set `WORKFLOW_TEMPLATE_ROOT` permanently:
+**Step 1.1** — Show the exact command to set `COPILOT_ORCHESTRA_ROOT` permanently:
 
 For **Windows** (recommended — persists across all sessions):
 
 ```powershell
-[System.Environment]::SetEnvironmentVariable('WORKFLOW_TEMPLATE_ROOT', 'C:\path\to\workflow-template', 'User')
+[System.Environment]::SetEnvironmentVariable('COPILOT_ORCHESTRA_ROOT', 'C:\path\to\copilot-orchestra', 'User')
 ```
 
 For **Windows** (PowerShell profile — session-scope only, not recommended for VS Code GUI launch):
 
 ```powershell
 # Add to $PROFILE:
-$env:WORKFLOW_TEMPLATE_ROOT = "C:\path\to\workflow-template"
+$env:COPILOT_ORCHESTRA_ROOT = "C:\path\to\copilot-orchestra"
 ```
 
 For **macOS/Linux**:
 
 ```bash
 # Add to ~/.zshrc or ~/.bashrc:
-export WORKFLOW_TEMPLATE_ROOT="/path/to/workflow-template"
+export COPILOT_ORCHESTRA_ROOT="/path/to/copilot-orchestra"
 ```
 
-> **Important**: VS Code launched from the Start Menu or a desktop shortcut may not run your PowerShell profile. Use the permanent approach to ensure `WORKFLOW_TEMPLATE_ROOT` is always available — the Session Startup Check (in `copilot-instructions.md`) silently skips if the variable is not set.
+> **Important**: VS Code launched from the Start Menu or a desktop shortcut may not run your PowerShell profile. Use the permanent approach to ensure `COPILOT_ORCHESTRA_ROOT` is always available — the Session Startup Check (in `copilot-instructions.md`) silently skips if neither `COPILOT_ORCHESTRA_ROOT` nor `WORKFLOW_TEMPLATE_ROOT` is set.
 
 **Step 1.2** — Show the VS Code settings to add to your user `settings.json` (`Ctrl+,` → open `settings.json`):
 
 ```json
 {
-  "chat.agentFilesLocations": ["<your-path>/workflow-template/.github/agents"],
-  "chat.agentSkillsLocations": ["<your-path>/workflow-template/.github/skills"],
+  "chat.agentFilesLocations": ["<your-path>/copilot-orchestra/.github/agents"],
+  "chat.agentSkillsLocations": ["<your-path>/copilot-orchestra/.github/skills"],
   "chat.instructionsFilesLocations": {
-    "<your-path>/workflow-template/.github/instructions": true
+    "<your-path>/copilot-orchestra/.github/instructions": true
   },
   "chat.promptFilesLocations": {
-    "<your-path>/workflow-template/.github/prompts": true
+    "<your-path>/copilot-orchestra/.github/prompts": true
   }
 }
 ```
@@ -159,7 +159,7 @@ Replace `<your-path>` with the absolute path from Step 1.1.
 | `chat.instructionsFilesLocations` | Shared instruction files apply across all your repositories       |
 | `chat.promptFilesLocations`       | Shared prompt files (e.g. `/setup`) available in every repository |
 
-> **Windows path format**: Use forward slashes or escaped backslashes: `"C:/Users/you/workflow-template/.github/instructions"` or `"C:\\Users\\you\\workflow-template\\.github\\instructions"`.
+> **Windows path format**: Use forward slashes or escaped backslashes: `"C:/Users/you/copilot-orchestra/.github/instructions"` or `"C:\\Users\\you\\copilot-orchestra\\.github\\instructions"`.
 
 **Step 1.3** — Confirm: "Have you applied the command and settings above?" Wait for confirmation before continuing to Phase 2.
 
@@ -230,13 +230,13 @@ If generating scaffolding:
 
 Check whether `.gitignore` exists in the workspace root.
 
-- If it does not exist → create it with the workflow-template lines below plus a comment.
+- If it does not exist → create it with the Copilot Orchestra entries below plus a comment.
 - If it exists → read the current contents. Append ONLY the lines that are not already present. Do not add duplicates.
 
 Lines to ensure are present:
 
 ```
-# Copilot workflow-template tracking (agent scaffolding — local only)
+# Copilot Orchestra tracking (agent scaffolding — local only)
 /.copilot-tracking/
 /.copilot-tracking-archive/
 

@@ -1,6 +1,6 @@
 # Architecture Rules
 
-These rules define the structural constraints for the Copilot Workflow Template. All agents and contributors must follow them.
+These rules define the structural constraints for Copilot Orchestra. All agents and contributors must follow them.
 
 ## Directory Structure
 

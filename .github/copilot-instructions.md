@@ -2,7 +2,7 @@
 applyTo: "**"
 ---
 
-# Project: Copilot Workflow Template
+# Project: Copilot Orchestra
 
 ## Overview
 
@@ -78,12 +78,13 @@ At the start of every new conversation, **before responding to the user's first 
 
 ### Step 1 — Check prerequisites
 
-If `$env:WORKFLOW_TEMPLATE_ROOT` is not set, skip the entire check silently and continue with the user's request.
+Resolve the root path: use `$env:COPILOT_ORCHESTRA_ROOT` if set; otherwise fall back to `$env:WORKFLOW_TEMPLATE_ROOT`. If neither is set, skip the entire check silently and continue with the user's request.
 
 ### Step 2 — Run the detector
 
 ```powershell
-pwsh -NoProfile -NonInteractive -File "$env:WORKFLOW_TEMPLATE_ROOT/.github/scripts/session-cleanup-detector.ps1"
+$copilotRoot = if ($env:COPILOT_ORCHESTRA_ROOT) { $env:COPILOT_ORCHESTRA_ROOT } else { $env:WORKFLOW_TEMPLATE_ROOT }
+pwsh -NoProfile -NonInteractive -File "$copilotRoot/.github/scripts/session-cleanup-detector.ps1"
 ```
 
 ### Step 3 — Parse output
@@ -101,7 +102,7 @@ Execute the PowerShell code block from `additionalContext` in the terminal. Repo
 
 Continue with the user's original request regardless of whether cleanup was run, skipped, or declined.
 
-> **Silent skip conditions**: Skip the entire check when `$env:WORKFLOW_TEMPLATE_ROOT` is not set, `pwsh` is not available, or the script produces non-JSON output. See `.github/instructions/session-startup.instructions.md` for full edge case details.
+> **Silent skip conditions**: Skip the entire check when neither `$env:COPILOT_ORCHESTRA_ROOT` nor `$env:WORKFLOW_TEMPLATE_ROOT` is set, `pwsh` is not available, or the script produces non-JSON output. See `.github/instructions/session-startup.instructions.md` for full edge case details.
 
 ## Build & Run
 
@@ -122,4 +123,5 @@ No build step. This is a configuration/documentation template.
 ```powershell
 (Get-ChildItem -Path .github -Recurse -Filter "*.md" | Where-Object { $_.Name -notmatch "copilot-instructions|architecture-rules" } | Select-String "Plan-Architect").Count  # should be 0
 (Get-ChildItem -Path .github -Recurse -Filter "*.md" | Where-Object { $_.Name -notmatch "copilot-instructions|architecture-rules" } | Select-String "Janitor").Count  # should be 0
+(Get-ChildItem -Path .github -Recurse -Filter "*.md" | Where-Object { $_.Name -notmatch "copilot-instructions|architecture-rules|setup\.prompt" } | Select-String "workflow-template").Count  # should be 0
 ```

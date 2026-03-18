@@ -45,14 +45,14 @@ The `.github/plugin/` directory was chosen (rather than root) to keep plugin inf
 
 ```json
 {
-  "name": "workflow-template",
+  "name": "copilot-orchestra",
   "metadata": {
     "description": "...",
     "version": "X.Y.Z"
   },
   "plugins": [
     {
-      "name": "workflow-template",
+      "name": "copilot-orchestra",
       "source": ".",
       "version": "X.Y.Z"
     }
@@ -62,7 +62,7 @@ The `.github/plugin/` directory was chosen (rather than root) to keep plugin inf
 
 > **Note**: `marketplace.json` contains **two** `version` fields — `metadata.version` (top-level registry entry) and `plugins[0].version` (the plugin itself). Both must be kept in sync. The `bump-version.ps1` script updates both automatically; do not remove the `metadata` block as it will cause the script to fail.
 
-`source: "."` refers to the repo root, where VS Code will look for `plugin.json`. The file lives at `.github/plugin/marketplace.json` — VS Code is pointed here via `chat.plugins.marketplaces: ["Grimblaz/workflow-template"]` (lookup path is experimental/unconfirmed).
+`source: "."` refers to the repo root, where VS Code will look for `plugin.json`. The file lives at `.github/plugin/marketplace.json` — VS Code is pointed here via `chat.plugins.marketplaces: ["Grimblaz/copilot-orchestra"]` (lookup path is experimental/unconfirmed).
 
 ---
 
@@ -74,7 +74,7 @@ The `agents` field uses a directory path `["./.github/agents"]`. If VS Code requ
 
 ### R2 — `marketplace.json` lookup path (unresolvable without VS Code 1.110 runtime)
 
-If VS Code resolves `chat.plugins.marketplaces: ["Grimblaz/workflow-template"]` to the repo root (GitHub convention), `marketplace.json` at `.github/plugin/` won't be found. **Mitigation**: If plugin install fails, move `marketplace.json` to the repo root and update `source` to point to `.github/plugin/`.
+If VS Code resolves `chat.plugins.marketplaces: ["Grimblaz/copilot-orchestra"]` to the repo root (GitHub convention), `marketplace.json` at `.github/plugin/` won't be found. **Mitigation**: If plugin install fails, move `marketplace.json` to the repo root and update `source` to point to `.github/plugin/`.
 
 ### R3 — Agent file duplication when multiple configuration sources overlap (confirmed VS Code behavior)
 
@@ -109,7 +109,7 @@ VS Code loads agent files **additively** from all configured sources — there i
 | `.github/instructions/` (shared rules; `session-startup` operational content inlined into `copilot-instructions.md`) | ❌ not distributed | ✅ auto-discovered |
 | `.github/scripts/` (cleanup script) | ❌ not distributed | ✅ |
 
-Plugin users relying on `post-pr-review` skill Step 1 (preferred cleanup script) must use the manual archive method — the `$env:WORKFLOW_TEMPLATE_ROOT` path is unavailable in plugin-only setups. The skill's Step 1 includes a disclaimer for this case.
+Plugin users relying on `post-pr-review` skill Step 1 (preferred cleanup script) must use the manual archive method — the `$env:COPILOT_ORCHESTRA_ROOT` (or `WORKFLOW_TEMPLATE_ROOT`) path is unavailable in plugin-only setups. The skill's Step 1 includes a disclaimer for this case.
 
 ### Workarounds for Plugin-Only Users
 

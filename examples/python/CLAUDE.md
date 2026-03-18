@@ -67,7 +67,7 @@ poetry install && poetry run ruff check .
 
 ## Workflow for Claude Code
 
-Follow the phased workflow. Each phase references a role guide in the workflow-template:
+Follow the phased workflow. Each phase references a role guide in the copilot-orchestra repo:
 
 1. **Plan** — `.github/agents/Issue-Planner.agent.md`
 2. **Implement** — `.github/agents/Code-Smith.agent.md`

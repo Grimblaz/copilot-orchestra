@@ -16,17 +16,18 @@ Follow these steps exactly:
 
 ### Step 1 — Check prerequisites
 
-If `$env:WORKFLOW_TEMPLATE_ROOT` is not set, skip the check entirely and continue silently. Do not mention this to the user.
+Resolve the root path: use `$env:COPILOT_ORCHESTRA_ROOT` if set; otherwise fall back to `$env:WORKFLOW_TEMPLATE_ROOT`. If neither is set, skip the check entirely and continue silently. Do not mention this to the user.
 
 ### Step 2 — Run the detector script
 
-Run the following command in the terminal:
+Run the following command in the terminal, using the root path resolved in Step 1:
 
-```
-pwsh -NoProfile -NonInteractive -File "$env:WORKFLOW_TEMPLATE_ROOT/.github/scripts/session-cleanup-detector.ps1"
+```powershell
+$copilotRoot = if ($env:COPILOT_ORCHESTRA_ROOT) { $env:COPILOT_ORCHESTRA_ROOT } else { $env:WORKFLOW_TEMPLATE_ROOT }
+pwsh -NoProfile -NonInteractive -File "$copilotRoot/.github/scripts/session-cleanup-detector.ps1"
 ```
 
-Use the absolute path via `$env:WORKFLOW_TEMPLATE_ROOT` — this ensures the script is found even when working in a downstream repository (not the workflow-template repo itself).
+This ensures the script is found even when working in a downstream repository (not the copilot-orchestra repo itself).
 
 ### Step 3 — Parse the output
 
@@ -44,7 +45,7 @@ The detector returns one of two JSON shapes:
 {
   "hookSpecificOutput": {
     "hookEventName": "SessionStart",
-    "additionalContext": "**Post-merge cleanup detected** — stale tracking artifacts found:\n\n- `.copilot-tracking/issue-42-my-feature.yml`\n\nTo clean up, run:\n```powershell\n# Run in a PowerShell (pwsh) terminal:\npwsh '/path/to/workflow-template/.github/scripts/post-merge-cleanup.ps1' -IssueNumber 42 -FeatureBranch 'feature/issue-42-my-feature'\n```\n"
+    "additionalContext": "**Post-merge cleanup detected** — stale tracking artifacts found:\n\n- `.copilot-tracking/issue-42-my-feature.yml`\n\nTo clean up, run:\n```powershell\n# Run in a PowerShell (pwsh) terminal:\npwsh '/path/to/copilot-orchestra/.github/scripts/post-merge-cleanup.ps1' -IssueNumber 42 -FeatureBranch 'feature/issue-42-my-feature'\n```\n"
   }
 }
 ````
@@ -64,7 +65,7 @@ Use `#tool:vscode/askQuestions` with two options: "Yes — run cleanup" and "No 
 If the user confirms, run all lines from the code block inside `additionalContext` in the terminal. Skip blank lines; `#`-prefixed comment lines are safe to include (they are no-ops in PowerShell). Example:
 
 ```
-pwsh '/path/to/workflow-template/.github/scripts/post-merge-cleanup.ps1' -IssueNumber 42 -FeatureBranch 'feature/issue-42-my-feature'
+pwsh '/path/to/copilot-orchestra/.github/scripts/post-merge-cleanup.ps1' -IssueNumber 42 -FeatureBranch 'feature/issue-42-my-feature'
 ```
 
 Report what was cleaned up when complete.
@@ -77,9 +78,9 @@ Regardless of whether cleanup was run, skipped, or declined, continue responding
 
 Skip the entire check silently (no mention to user) in any of these cases:
 
-- `$env:WORKFLOW_TEMPLATE_ROOT` is not set
+- Neither `$env:COPILOT_ORCHESTRA_ROOT` nor `$env:WORKFLOW_TEMPLATE_ROOT` is set
 - `pwsh` is not available on PATH
 - The detector script returns an error or non-JSON output
 - The detector script does not exist at the expected path
 
-These are normal conditions for users who haven't configured the workflow template or are in environments where PowerShell is unavailable.
+These are normal conditions for users who haven't configured copilot-orchestra or are in environments where PowerShell is unavailable.

@@ -6,7 +6,7 @@ Configure a target project for both GitHub Copilot agents and Claude Code.
 
 `/project:setup`
 
-Run this in a target project (not in the workflow-template repo itself) to generate configuration files.
+Run this in a target project (not in the copilot-orchestra repo itself) to generate configuration files.
 
 ## Prerequisites
 
@@ -48,7 +48,7 @@ Ask the user for:
 Generate the following files using the collected answers:
 
 ### `.github/copilot-instructions.md`
-Follow the format in the workflow-template's `examples/` directory. Include: Project name, Overview, Technology Stack, Architecture diagram, Directory Structure, Key Conventions, Build & Run commands, Quick-Validate command.
+Follow the format in the copilot-orchestra `examples/` directory. Include: Project name, Overview, Technology Stack, Architecture diagram, Directory Structure, Key Conventions, Build & Run commands, Quick-Validate command.
 
 ### `CLAUDE.md`
 Follow the same structure but adapted for Claude Code:
@@ -71,5 +71,6 @@ Ask if the user wants project scaffolding:
 ## Completion
 
 After generating files, display a summary of what was created and next steps:
-- Point to `CUSTOMIZATION.md` in the workflow-template for advanced configuration
+
+- Point to `CUSTOMIZATION.md` in copilot-orchestra for advanced configuration
 - Suggest running `/project:start-issue {number}` to begin work on an issue

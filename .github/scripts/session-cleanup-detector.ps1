@@ -2,26 +2,28 @@
 #Requires -Version 7.0
 <#
 .SYNOPSIS
-    SessionStart hook: detect stale post-merge branches and tracking artifacts.
+    Session startup check: detect stale post-merge branches and tracking artifacts.
 
 .DESCRIPTION
-    Runs on every VS Code Copilot SessionStart. Two independent detection paths:
+    Runs at the start of every VS Code Copilot session. Two independent detection paths:
       1. BRANCH CHECK: Is the current branch a merged/deleted remote branch?
       2. TRACKING FILE CHECK: Are there .copilot-tracking/ files for merged issues?
     If either (or both) fire, injects additionalContext so the agent can prompt
     for cleanup. No-ops silently when nothing to clean.
 
 .OUTPUTS
-    JSON to stdout conforming to VS Code SessionStart hookSpecificOutput schema.
+    JSON to stdout conforming to the hookSpecificOutput schema for session startup.
 #>
 
 $ErrorActionPreference = 'SilentlyContinue'
 
-if (-not $env:WORKFLOW_TEMPLATE_ROOT) {
+$rootPath = $env:COPILOT_ORCHESTRA_ROOT
+if (-not $rootPath) { $rootPath = $env:WORKFLOW_TEMPLATE_ROOT }
+if (-not $rootPath) {
     [pscustomobject]@{
         hookSpecificOutput = [pscustomobject]@{
             hookEventName     = 'SessionStart'
-            additionalContext = 'WORKFLOW_TEMPLATE_ROOT is not set. Set this environment variable to your local workflow-template repo path so the SessionStart hook can locate its scripts.'
+            additionalContext = 'Neither COPILOT_ORCHESTRA_ROOT nor WORKFLOW_TEMPLATE_ROOT is set. Set one of these environment variables to your local copilot-orchestra repo path so the session startup check can locate its scripts.'
         }
     } | ConvertTo-Json -Depth 3 -Compress
     exit 1
@@ -183,7 +185,7 @@ function Get-TrackingLines {
 }
 
 # Safe root: single-quoted in emitted commands handles $ and " characters in the path
-$safeRoot = $env:WORKFLOW_TEMPLATE_ROOT -replace "'", "''"
+$safeRoot = $rootPath -replace "'", "''"
 
 # Helper: emit cleanup command lines for tracking-file items
 function Get-TrackingCommands {
