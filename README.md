@@ -1,4 +1,4 @@
-# Copilot Workflow Template
+# Copilot Orchestra
 
 [![Version](https://img.shields.io/badge/version-v1.7.0-blue.svg)](../../releases)
 [![Ready for Production](https://img.shields.io/badge/status-production%20ready-green.svg)](../../releases)
@@ -16,11 +16,11 @@ A multi-agent workflow system for GitHub Copilot that orchestrates AI-assisted s
    ```json
    {
      "chat.plugins.enabled": true,
-     "chat.plugins.marketplaces": ["Grimblaz/workflow-template"]
+     "chat.plugins.marketplaces": ["Grimblaz/copilot-orchestra"]
    }
    ```
 
-2. **Install** — In the Extensions view (`Ctrl+Shift+X`), search `@agentPlugins workflow-template` and install.
+2. **Install** — In the Extensions view (`Ctrl+Shift+X`), search `@agentPlugins copilot-orchestra` and install.
 3. **Use** — All 13 agents and 14 skills are immediately available in VS Code Chat.
 
 **What's included in the plugin**: 13 agents, 14 skills, and 2 slash commands (`/setup`, `/start-issue`).
@@ -49,7 +49,7 @@ Type `/setup` in GitHub Copilot Chat. It runs in six phases with skip gates:
 > **Recommended model**: Claude Opus — the setup wizard benefits from deep reasoning for architecture and tech stack decisions. *(o3 or GPT-4o also work well if Opus is unavailable.)*
 
 - **Phase 0** — Auto-detects prerequisites (VS Code version, pwsh, git, gh CLI)
-- **Phase 1** — One-time user setup: sets `WORKFLOW_TEMPLATE_ROOT` and adds agents, skills, and instructions to your VS Code settings. Skip if already configured.
+- **Phase 1** — One-time user setup: sets `COPILOT_ORCHESTRA_ROOT` and adds agents, skills, and instructions to your VS Code settings. Skip if already configured.
 - **Phase 2** — Collects project basics (name, language, framework, database). Skip if `copilot-instructions.md` already exists.
 - **Phase 3** — Collects architecture and conventions. Skip if `architecture-rules.md` already exists.
 - **Phase 4** — Collects build, run, test, lint, and quick-validate commands. Skip offered if Phases 2, 3, and 5 are all skipped.
@@ -175,12 +175,12 @@ You can make all agents available globally in VS Code — not just in repos that
 ```json
 {
   "chat.agentFilesLocations": [
-    "/path/to/your/workflow-template/.github/agents"
+    "/path/to/your/copilot-orchestra/.github/agents"
   ]
 }
 ```
 
-Replace `/path/to/your/workflow-template` with the absolute path to where you cloned this repo. VS Code will load agent definitions from that folder for all workspaces.
+Replace `/path/to/your/copilot-orchestra` with the absolute path to where you cloned this repo. VS Code will load agent definitions from that folder for all workspaces.
 
 > **Warning**: VS Code loads agents additively from all configured sources — there is no name-based deduplication. If you add a global path **and** also have the plugin installed, or if a project workspace also has `.github/agents/`, you will see duplicate agents in the chat picker. Choose one source: either set a global path (above) **or** install the plugin, not both. If you're seeing duplicates, see [CUSTOMIZATION.md — Troubleshooting](CUSTOMIZATION.md#troubleshooting).
 
@@ -239,6 +239,44 @@ Documents/
 
 CLAUDE.md                # Claude Code project instructions
 ```
+
+---
+
+## Migrating from workflow-template
+
+If you previously set up the repo when it was named `workflow-template`, here is what changes for you:
+
+### 1. Update your environment variable
+
+The primary env var is now `COPILOT_ORCHESTRA_ROOT`. Your existing `WORKFLOW_TEMPLATE_ROOT` continues to work as a fallback — you don't need to change it immediately. To move fully to the new name:
+
+**Windows (permanent)**:
+
+```powershell
+[System.Environment]::SetEnvironmentVariable('COPILOT_ORCHESTRA_ROOT', 'C:\path\to\copilot-orchestra', 'User')
+```
+
+**macOS/Linux**:
+
+```bash
+export COPILOT_ORCHESTRA_ROOT="/path/to/copilot-orchestra"
+```
+
+### 2. Update your VS Code plugin settings
+
+Change the `chat.plugins.marketplaces` entry in your VS Code user settings:
+
+```json
+{
+  "chat.plugins.marketplaces": ["Grimblaz/copilot-orchestra"]
+}
+```
+
+First, uninstall the existing plugin: in the Extensions view (`Ctrl+Shift+X`), search `@agentPlugins workflow-template`, then uninstall it. Then reinstall the plugin: search `@agentPlugins copilot-orchestra` in the Extensions view.
+
+### 3. Git remote (no action needed)
+
+GitHub automatically redirects `github.com/Grimblaz/workflow-template` to the new URL. Existing clones and remotes continue to work without any changes.
 
 ---
 

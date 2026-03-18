@@ -58,11 +58,11 @@ Code-Critic Perspective 7 (Documentation Script Audit) was added in the same pha
 
 ## WORKFLOW_TEMPLATE_ROOT Portability
 
-The hook is consumed by downstream repos via `chat.hookFilesLocations`. The hook JSON runs in the downstream workspace, but scripts live in the workflow-template repo — a relative path would not resolve.
+The hook is consumed by downstream repos via `chat.hookFilesLocations`. The hook JSON runs in the downstream workspace, but scripts live in the copilot-orchestra repo — a relative path would not resolve.
 
-**Solution**: All script path resolution uses `$WORKFLOW_TEMPLATE_ROOT` (set once at machine level). If the variable is unset, the hook outputs a structured JSON error with a clear, actionable message — not a silent no-op.
+**Solution**: All script path resolution uses `$COPILOT_ORCHESTRA_ROOT` (primary) or `$WORKFLOW_TEMPLATE_ROOT` (fallback) (set once at machine level). If neither is set, the detector outputs a structured JSON error with a clear, actionable message — not a silent no-op.
 
-**Setup requirement**: Users must set `WORKFLOW_TEMPLATE_ROOT` to the absolute path of their workflow-template clone before the hook will function. Documented in `CUSTOMIZATION.md` Section 6.
+**Setup requirement**: Users must set `COPILOT_ORCHESTRA_ROOT` (or the legacy `WORKFLOW_TEMPLATE_ROOT`) to the absolute path of their copilot-orchestra clone before the startup check will function. Documented in `CUSTOMIZATION.md` Section 6.
 
 ---
 
@@ -87,8 +87,8 @@ Added alongside the portability fix to close a gap found in the post-PR review o
 | File | Purpose | Status |
 |------|---------|--------|
 | `.github/hooks/session-cleanup.json` | `SessionStart` hook configuration; resolves scripts via `$WORKFLOW_TEMPLATE_ROOT`; structured JSON error when unset | **Deleted** — retired in issue #109 |
-| `.github/instructions/session-startup.instructions.md` | Agent self-check instruction; runs detector at conversation start; uses `$env:WORKFLOW_TEMPLATE_ROOT` for script paths | **Reference** — operational content inlined into `copilot-instructions.md` (issue #118) |
-| `.github/scripts/session-cleanup-detector.ps1` | Dual-path detection: branch check + tracking file check; emits cleanup command paths using `$env:WORKFLOW_TEMPLATE_ROOT` | Active — unchanged |
+| `.github/instructions/session-startup.instructions.md` | Agent self-check instruction; runs detector at conversation start; uses `$env:COPILOT_ORCHESTRA_ROOT` (fallback: `$env:WORKFLOW_TEMPLATE_ROOT`) for script paths | **Reference** — operational content inlined into `copilot-instructions.md` (issue #118) |
+| `.github/scripts/session-cleanup-detector.ps1` | Dual-path detection: branch check + tracking file check; emits cleanup command paths using `$env:COPILOT_ORCHESTRA_ROOT` (fallback: `$env:WORKFLOW_TEMPLATE_ROOT`) | Active — updated (issue #130) |
 | `.github/scripts/post-merge-cleanup.ps1` | Archives tracking files, deletes local/remote branch, syncs default branch | Active — unchanged |
 
 ---
@@ -98,4 +98,4 @@ Added alongside the portability fix to close a gap found in the post-PR review o
 - ~~VS Code 1.109.3+ required for the `SessionStart` hook (Preview feature)~~ — requirement dropped; instruction-based approach works on any VS Code version with Copilot Chat
 - Agent prompts at conversation start until cleanup is run — intentional persistent behavior (unchanged from hook design)
 - Linux/macOS without `pwsh`: instruction detects unavailability and skips silently
-- `WORKFLOW_TEMPLATE_ROOT` must be set for scripts to function in downstream repos (unchanged)
+- `COPILOT_ORCHESTRA_ROOT` (or `WORKFLOW_TEMPLATE_ROOT` as fallback) must be set for scripts to function in downstream repos

@@ -1,6 +1,6 @@
 # Node.js / TypeScript Example
 
-This directory contains example configuration files for a Node.js / TypeScript project using Express and the multi-agent workflow template.
+This directory contains example configuration files for a Node.js / TypeScript project using Express and Copilot Orchestra.
 
 ## Contents
 
@@ -27,8 +27,8 @@ Copy the files you need to your project's `.github/` directory:
 
 ```bash
 # From your project root
-cp /path/to/workflow-template/examples/nodejs-typescript/copilot-instructions.md .github/
-cp /path/to/workflow-template/examples/nodejs-typescript/architecture-rules.md .github/
+cp /path/to/copilot-orchestra/examples/nodejs-typescript/copilot-instructions.md .github/
+cp /path/to/copilot-orchestra/examples/nodejs-typescript/architecture-rules.md .github/
 ```
 
 Then edit them to match your actual project name, versions, and conventions.
@@ -72,7 +72,7 @@ your-project/
 ├── .github/
 │   ├── copilot-instructions.md    # ← From this example
 │   ├── architecture-rules.md      # ← From this example
-│   ├── agents/                    # ← From workflow-template
+│   ├── agents/                    # ← From copilot-orchestra
 │   └── ...
 ├── src/
 │   └── ...

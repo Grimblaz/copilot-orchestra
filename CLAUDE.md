@@ -1,4 +1,4 @@
-# Project: Copilot Workflow Template
+# Project: Copilot Orchestra
 
 ## Overview
 
@@ -106,6 +106,7 @@ Run via `pwsh -Command "..."` since these are PowerShell:
 # Validate no broken references to retired agent names
 (Get-ChildItem -Path .github -Recurse -Filter "*.md" | Where-Object { $_.Name -notmatch "copilot-instructions|architecture-rules" } | Select-String "Plan-Architect").Count  # should be 0
 (Get-ChildItem -Path .github -Recurse -Filter "*.md" | Where-Object { $_.Name -notmatch "copilot-instructions|architecture-rules" } | Select-String "Janitor").Count  # should be 0
+(Get-ChildItem -Path .github -Recurse -Filter "*.md" | Where-Object { $_.Name -notmatch "copilot-instructions|architecture-rules|setup\.prompt" } | Select-String "workflow-template").Count  # should be 0
 
 # Check agent count
 (Get-ChildItem .github/agents/*.agent.md).Count  # should be 13

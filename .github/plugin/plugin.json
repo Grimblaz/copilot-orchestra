@@ -1,5 +1,5 @@
 {
-  "name": "workflow-template",
+  "name": "copilot-orchestra",
   "description": "Multi-agent workflow system for GitHub Copilot. Pipeline-based agent orchestration: Issue → Design → Plan → Implement → Review → PR.",
   "version": "1.7.0",
   "author": {

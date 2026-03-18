@@ -1,10 +1,10 @@
-# Contributing to Workflow Template
+# Contributing to Copilot Orchestra
 
 Thank you for your interest in contributing! This template aims to help teams work effectively with AI coding agents.
 
 ## Setup
 
-For the best experience with this workflow template:
+For the best experience with Copilot Orchestra:
 
 ### Required
 
@@ -26,7 +26,7 @@ To make agents available globally across all VS Code workspaces (not just repos 
 ```json
 {
   "chat.agentFilesLocations": [
-    "/absolute/path/to/your/workflow-template/.github/agents"
+    "/absolute/path/to/your/copilot-orchestra/.github/agents"
   ]
 }
 ```
@@ -43,11 +43,11 @@ To enable automatic skill discovery from `.github/skills/` (VS Code 1.108+):
 
 This enables agents to interact directly with GitHub issues and PRs without external MCP server configuration.
 
-> **Note**: If you also use the workflow-template plugin (via `chat.plugins.marketplaces`), do not add `chat.agentFilesLocations` — this creates duplicate agents in the chat picker. See [CUSTOMIZATION.md — Troubleshooting](CUSTOMIZATION.md#troubleshooting) for fix steps.
+> **Note**: If you also use the copilot-orchestra plugin (via `chat.plugins.marketplaces`), do not add `chat.agentFilesLocations` — this creates duplicate agents in the chat picker. See [CUSTOMIZATION.md — Troubleshooting](CUSTOMIZATION.md#troubleshooting) for fix steps.
 
 ### Session Startup Check
 
-This template includes a session startup check (inline in `copilot-instructions.md`) that tells agents to check for post-merge cleanup work at the start of each conversation. When merged feature branches have stale tracking files in `.copilot-tracking/`, the active agent prompts you to confirm cleanup. Requires PowerShell 7+ (`pwsh`) and `WORKFLOW_TEMPLATE_ROOT` set. See `.github/instructions/session-startup.instructions.md` for edge case details.
+This template includes a session startup check (inline in `copilot-instructions.md`) that tells agents to check for post-merge cleanup work at the start of each conversation. When merged feature branches have stale tracking files in `.copilot-tracking/`, the active agent prompts you to confirm cleanup. Requires PowerShell 7+ (`pwsh`) and `COPILOT_ORCHESTRA_ROOT` (or `WORKFLOW_TEMPLATE_ROOT`) set. See `.github/instructions/session-startup.instructions.md` for edge case details.
 
 ## Ways to Contribute
 

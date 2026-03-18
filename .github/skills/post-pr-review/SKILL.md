@@ -28,9 +28,10 @@ This document provides a standardized checklist for agents to follow after a Pul
 
 ```powershell
 # Preferred (clone/fork only): use the cleanup script (handles archival, branch deletion, git sync)
-# Requires $env:WORKFLOW_TEMPLATE_ROOT to be set and .github/scripts/ to be on disk.
+# Requires $env:COPILOT_ORCHESTRA_ROOT or $env:WORKFLOW_TEMPLATE_ROOT to be set and .github/scripts/ to be on disk.
 # Plugin-only users: use the manual archive method below.
-pwsh "$env:WORKFLOW_TEMPLATE_ROOT/.github/scripts/post-merge-cleanup.ps1" -IssueNumber {ID} -FeatureBranch feature/issue-{ID}-description
+$copilotRoot = if ($env:COPILOT_ORCHESTRA_ROOT) { $env:COPILOT_ORCHESTRA_ROOT } else { $env:WORKFLOW_TEMPLATE_ROOT }
+pwsh "$copilotRoot/.github/scripts/post-merge-cleanup.ps1" -IssueNumber {ID} -FeatureBranch feature/issue-{ID}-description
 
 # Or manual archive only (PowerShell):
 $archivePath = Join-Path ".copilot-tracking-archive" (Get-Date -Format 'yyyy') (Get-Date -Format 'MM') "issue-{ID}"
@@ -47,7 +48,7 @@ Get-ChildItem .copilot-tracking -Recurse -File |
 - Files moved to `.copilot-tracking-archive/{year}/{month}/issue-{ID}/`
 - No tracking files remain in `.copilot-tracking/research/` for this issue
 
-> **Automation**: The `copilot-instructions.md` "Session Startup Check" detects stale tracking files and prompts you at the start of your next conversation — cleanup requires one confirmation. You can also run the script directly: `pwsh "$env:WORKFLOW_TEMPLATE_ROOT/.github/scripts/post-merge-cleanup.ps1" -IssueNumber {ID} -FeatureBranch feature/issue-{ID}-description`
+> **Automation**: The `copilot-instructions.md` "Session Startup Check" detects stale tracking files and prompts you at the start of your next conversation — cleanup requires one confirmation. You can also run the script directly: `$copilotRoot = if ($env:COPILOT_ORCHESTRA_ROOT) { $env:COPILOT_ORCHESTRA_ROOT } else { $env:WORKFLOW_TEMPLATE_ROOT }; pwsh "$copilotRoot/.github/scripts/post-merge-cleanup.ps1" -IssueNumber {ID} -FeatureBranch feature/issue-{ID}-description`
 
 ### 2. Update Documentation
 

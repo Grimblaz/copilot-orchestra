@@ -17,11 +17,13 @@
 
 $ErrorActionPreference = 'SilentlyContinue'
 
-if (-not $env:WORKFLOW_TEMPLATE_ROOT) {
+$rootPath = $env:COPILOT_ORCHESTRA_ROOT
+if (-not $rootPath) { $rootPath = $env:WORKFLOW_TEMPLATE_ROOT }
+if (-not $rootPath) {
     [pscustomobject]@{
         hookSpecificOutput = [pscustomobject]@{
             hookEventName     = 'SessionStart'
-            additionalContext = 'WORKFLOW_TEMPLATE_ROOT is not set. Set this environment variable to your local workflow-template repo path so the SessionStart hook can locate its scripts.'
+            additionalContext = 'Neither COPILOT_ORCHESTRA_ROOT nor WORKFLOW_TEMPLATE_ROOT is set. Set one of these environment variables to your local copilot-orchestra repo path so the SessionStart hook can locate its scripts.'
         }
     } | ConvertTo-Json -Depth 3 -Compress
     exit 1
@@ -183,7 +185,7 @@ function Get-TrackingLines {
 }
 
 # Safe root: single-quoted in emitted commands handles $ and " characters in the path
-$safeRoot = $env:WORKFLOW_TEMPLATE_ROOT -replace "'", "''"
+$safeRoot = $rootPath -replace "'", "''"
 
 # Helper: emit cleanup command lines for tracking-file items
 function Get-TrackingCommands {
