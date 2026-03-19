@@ -503,11 +503,11 @@ Three changes across two agent files:
 
 | # | Decision | Choice | Rationale |
 |---|----------|--------|-----------|
-| D22 | Code-Critic placement (consumer check) | §6 Script & Automation | §6 fires when scripts are in the PR — the most common defect vector (consumer modifying its enum array) |
-| D23 | Code-Critic placement (producer check) | §1 Architecture (docs-only path) | §1 fires for all docs-only PRs — covers the symmetric case where a template renames a value without touching any script |
-| D24 | Issue-Planner trigger scope | Bidirectional (consumer side + producer side) | One-directional (consumer-only) leaves the producer-rename scenario unguarded; design prosecution (pass 1) caught this gap |
-| D25 | Format specification for enum list | Example format in rule (`Allowed values: 'main' \| 'postfix' \| 'ce'`) | Without an example, planners diverge on PowerShell array vs. JSON vs. prose — only exact-match formats make mismatch visible at a glance |
-| D26 | Multi-tier rule trigger wording | "involves" (not "produces" or "consumes") | Direction-agnostic — fires for both producer and consumer plan steps; design adversarial prosecution finding F3 caught the "produces"-vs-"involves" gap |
+| D29 | Code-Critic placement (consumer check) | §6 Script & Automation | §6 fires when scripts are in the PR — the most common defect vector (consumer modifying its enum array) |
+| D30 | Code-Critic placement (producer check) | §1 Architecture (docs-only path) | §1 fires for all docs-only PRs — covers the symmetric case where a template renames a value without touching any script |
+| D31 | Issue-Planner trigger scope | Bidirectional (consumer side + producer side) | One-directional (consumer-only) leaves the producer-rename scenario unguarded; design prosecution (pass 1) caught this gap |
+| D32 | Format specification for enum list | Example format in rule (`Allowed values: 'main' \| 'postfix' \| 'ce'`) | Without an example, planners diverge on PowerShell array vs. JSON vs. prose — only exact-match formats make mismatch visible at a glance |
+| D33 | Multi-tier rule trigger wording | "involves" (not "produces" or "consumes") | Direction-agnostic — fires for both producer and consumer plan steps; design adversarial prosecution finding F3 caught the "produces"-vs-"involves" gap |
 
 ### Acceptance Criteria (from issues #121 and #122)
 
