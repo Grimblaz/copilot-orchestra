@@ -1,6 +1,6 @@
 ---
 name: skill-creator
-description: Guide for creating new skills in this system with proper frontmatter format. Use when adding new skills, updating skill templates, or reviewing skill structure. DO NOT USE FOR: general agent or instruction file customization (use agent-customization skill) or modifying existing skill logic/content.
+description: Guide for creating new skills in this system with proper frontmatter format. Use when adding new skills, updating skill templates, or reviewing skill structure. DO NOT USE FOR: general agent or instruction file customization (use agent-customization) or modifying existing skill logic/content.
 ---
 
 # Skill Creator
@@ -127,7 +127,7 @@ Before finalizing a skill's `description:` field, verify:
 1. **Length target**: ≤60 words total (positive triggers + negative signals combined)
 2. **Positive triggers**: includes "Use when..." with 2–3 specific, distinct scenarios — not generic summary language
 3. **Negative signals**: includes "DO NOT USE FOR:..." with at least one adjacent skill pointer, e.g. `(use {other-skill})`
-4. **Collision check**: before finalizing, grep existing SKILL.md files for overlapping trigger words and add explicit "DO NOT USE FOR" signals to **both** sides of any conflict:
+4. **Collision check**: before finalizing, grep existing SKILL.md files for overlapping trigger words and add explicit "DO NOT USE FOR:" signals to **both** sides of any conflict:
    ```powershell
    Select-String -Path ".github/skills/*/SKILL.md" -Pattern "your-trigger-word" | Select-Object Path, Line
    ```

@@ -63,7 +63,7 @@ Skills with `name` + `description` in SKILL.md frontmatter are discoverable in V
 ```yaml
 ---
 name: my-skill
-description: What this skill does and when to use it. Use when...
+description: What this skill does. Use when {trigger conditions}. DO NOT USE FOR: {negative scenarios} (use {other-skill}).
 ---
 ```
 

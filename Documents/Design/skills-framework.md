@@ -59,7 +59,7 @@ Every skill lives at `.github/skills/{skill-name}/SKILL.md` with required YAML f
 ```yaml
 ---
 name: skill-name
-description: One-sentence description shown in VS Code picker
+description: What skill does. Use when {trigger conditions}. DO NOT USE FOR: {negative scenarios} (use {other-skill}).
 ---
 ```
 
