@@ -13,7 +13,7 @@ Multi-agent workflow system for GitHub Copilot. Provides specialized agents, ski
 - **Language**: Markdown (agent definitions, skills, instructions, documentation)
 - **Framework**: VS Code Custom Agents (`.agent.md` format with YAML frontmatter)
 - **Build Tool**: None (no compiled code)
-- **Testing**: Manual verification, grep-based validation
+- **Testing**: Pester (`.github/scripts/Tests/`), plus manual verification and grep-based structural checks
 
 ## Architecture
 
@@ -113,6 +113,9 @@ No build step. This is a configuration/documentation template.
 ### Commands
 
 ```powershell
+# Run PowerShell script test suite (Pester)
+pwsh -NoProfile -NonInteractive -Command "Invoke-Pester .github/scripts/Tests/ -Output Minimal"
+
 # Validate no broken references
 (Get-ChildItem -Path .github -Recurse -Filter "*.md" | Where-Object { $_.Name -notmatch "copilot-instructions|architecture-rules" } | Select-String "Plan-Architect").Count  # should be 0
 
