@@ -206,7 +206,7 @@ Add-Content -Path '$($callsFile -replace "'", "''")' -Value `$EntryJson
             $exitCode = $LASTEXITCODE
 
             $errLines = ($stdout | Where-Object { $_ -is [System.Management.Automation.ErrorRecord] }) -join "`n"
-            $outLines  = ($stdout | Where-Object { $_ -isnot [System.Management.Automation.ErrorRecord] }) -join "`n"
+            $outLines = ($stdout | Where-Object { $_ -isnot [System.Management.Automation.ErrorRecord] }) -join "`n"
 
             $calls = @()
             if (Test-Path $callsFile) {
@@ -217,11 +217,11 @@ Add-Content -Path '$($callsFile -replace "'", "''")' -Value `$EntryJson
             }
 
             return @{
-                ExitCode   = $exitCode
-                Output     = $outLines
-                Error      = $errLines
-                CallCount  = $calls.Count
-                Calls      = $calls
+                ExitCode  = $exitCode
+                Output    = $outLines
+                Error     = $errLines
+                CallCount = $calls.Count
+                Calls     = $calls
             }
         }
 
@@ -259,7 +259,7 @@ Add-Content -Path '$($callsFile -replace "'", "''")' -Value `$EntryJson
                 @{ number = 42; mergedAt = '2026-03-10T10:00:00Z'; body = $script:V2MetricsBody }
                 @{ number = 43; mergedAt = '2026-03-11T11:00:00Z'; body = $script:V1MetricsBody }
             )
-            $ghPath    = & $script:WriteMockGh -WorkDir $workDir -JsonOutput (& $script:BuildPrJson -Prs $prs)
+            $ghPath = & $script:WriteMockGh -WorkDir $workDir -JsonOutput (& $script:BuildPrJson -Prs $prs)
             $writePath = & $script:WriteMockWriteScript -WorkDir $workDir
 
             # Act
@@ -277,7 +277,7 @@ Add-Content -Path '$($callsFile -replace "'", "''")' -Value `$EntryJson
             $prs = @(
                 @{ number = 50; mergedAt = '2026-03-12T08:00:00Z'; body = $script:V1MetricsBody }
             )
-            $ghPath    = & $script:WriteMockGh -WorkDir $workDir -JsonOutput (& $script:BuildPrJson -Prs $prs)
+            $ghPath = & $script:WriteMockGh -WorkDir $workDir -JsonOutput (& $script:BuildPrJson -Prs $prs)
             $writePath = & $script:WriteMockWriteScript -WorkDir $workDir
 
             # Act
@@ -295,7 +295,7 @@ Add-Content -Path '$($callsFile -replace "'", "''")' -Value `$EntryJson
             $prs = @(
                 @{ number = 60; mergedAt = '2026-03-13T09:00:00Z'; body = $script:NoMetricsBody }
             )
-            $ghPath    = & $script:WriteMockGh -WorkDir $workDir -JsonOutput (& $script:BuildPrJson -Prs $prs)
+            $ghPath = & $script:WriteMockGh -WorkDir $workDir -JsonOutput (& $script:BuildPrJson -Prs $prs)
             $writePath = & $script:WriteMockWriteScript -WorkDir $workDir
 
             # Act
@@ -308,13 +308,13 @@ Add-Content -Path '$($callsFile -replace "'", "''")' -Value `$EntryJson
 
         It 'passes created_at (set to the GitHub mergedAt value) in the entry JSON' {
             # Arrange: 1 v2 PR with a known mergedAt timestamp
-            $workDir   = & $script:NewWorkDir
-            $mergedAt  = '2026-03-15T14:30:00Z'
+            $workDir = & $script:NewWorkDir
+            $mergedAt = '2026-03-15T14:30:00Z'
 
             $prs = @(
                 @{ number = 70; mergedAt = $mergedAt; body = $script:V2MetricsBody }
             )
-            $ghPath    = & $script:WriteMockGh -WorkDir $workDir -JsonOutput (& $script:BuildPrJson -Prs $prs)
+            $ghPath = & $script:WriteMockGh -WorkDir $workDir -JsonOutput (& $script:BuildPrJson -Prs $prs)
             $writePath = & $script:WriteMockWriteScript -WorkDir $workDir
 
             # Act
@@ -337,7 +337,7 @@ Add-Content -Path '$($callsFile -replace "'", "''")' -Value `$EntryJson
             $prs = @(
                 @{ number = 80; mergedAt = '2026-03-16T10:00:00Z'; body = $script:V2MetricsBody }
             )
-            $ghPath    = & $script:WriteMockGh -WorkDir $workDir -JsonOutput (& $script:BuildPrJson -Prs $prs)
+            $ghPath = & $script:WriteMockGh -WorkDir $workDir -JsonOutput (& $script:BuildPrJson -Prs $prs)
             $writePath = & $script:WriteMockWriteScript -WorkDir $workDir
 
             # Act
@@ -363,7 +363,7 @@ Add-Content -Path '$($callsFile -replace "'", "''")' -Value `$EntryJson
             # Arrange: mock gh returns an empty JSON array
             $workDir = & $script:NewWorkDir
 
-            $ghPath    = & $script:WriteMockGh -WorkDir $workDir -JsonOutput '[]'
+            $ghPath = & $script:WriteMockGh -WorkDir $workDir -JsonOutput '[]'
             $writePath = & $script:WriteMockWriteScript -WorkDir $workDir
 
             # Act
@@ -379,7 +379,7 @@ Add-Content -Path '$($callsFile -replace "'", "''")' -Value `$EntryJson
             $workDir = & $script:NewWorkDir
 
             $brokenGhPath = & $script:WriteBrokenGh -WorkDir $workDir
-            $writePath    = & $script:WriteMockWriteScript -WorkDir $workDir
+            $writePath = & $script:WriteMockWriteScript -WorkDir $workDir
 
             # Act
             $result = & $script:Invoke -WorkDir $workDir -GhCliPath $brokenGhPath -WriteScriptPath $writePath

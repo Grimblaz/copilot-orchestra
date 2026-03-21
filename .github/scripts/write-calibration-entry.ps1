@@ -43,7 +43,8 @@ function ConvertTo-NormalizedObject {
         $utc = if ($obj.Kind -eq [System.DateTimeKind]::Utc) { $obj } else { $obj.ToUniversalTime() }
         if ($utc.Millisecond -eq 0) {
             return $utc.ToString('yyyy-MM-ddTHH:mm:ssZ')
-        } else {
+        }
+        else {
             return $utc.ToString('yyyy-MM-ddTHH:mm:ss.fffZ')
         }
     }
@@ -128,7 +129,7 @@ $entry = ConvertTo-NormalizedObject $entry
 
 $calibDir = Join-Path (Get-Location).Path '.copilot-tracking' 'calibration'
 $dataFile = Join-Path $calibDir 'review-data.json'
-$tmpFile  = "$dataFile.tmp"
+$tmpFile = "$dataFile.tmp"
 
 # Clean up any stale .tmp from a previous incomplete run
 if (Test-Path $tmpFile) {
@@ -143,7 +144,8 @@ New-Item -ItemType Directory -Path $calibDir -Force | Out-Null
 
 if (Test-Path $dataFile) {
     $data = Get-Content $dataFile -Raw | ConvertFrom-Json -AsHashtable
-} else {
+}
+else {
     $data = [ordered]@{
         calibration_version = 1
         entries             = @()
@@ -152,8 +154,8 @@ if (Test-Path $dataFile) {
 
 # ── Deduplicate by pr_number, then append new entry ───────────────────────────
 
-$prNumber   = $entry.pr_number
-$filtered   = @($data.entries | Where-Object { $_.pr_number -ne $prNumber })
+$prNumber = $entry.pr_number
+$filtered = @($data.entries | Where-Object { $_.pr_number -ne $prNumber })
 $newEntries = $filtered + @($entry)
 
 # ── Build output ───────────────────────────────────────────────────────────────
@@ -173,7 +175,8 @@ try {
     $null = Get-Content $tmpFile -Raw | ConvertFrom-Json
 
     Move-Item -Path $tmpFile -Destination $dataFile -Force
-} catch {
+}
+catch {
     if (Test-Path $tmpFile) {
         Remove-Item $tmpFile -Force -ErrorAction SilentlyContinue
     }

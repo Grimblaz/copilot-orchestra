@@ -88,7 +88,7 @@ Describe 'write-calibration-entry.ps1' {
                 $exitCode = $LASTEXITCODE
                 # Separate ErrorRecord objects (stderr) from plain strings (stdout)
                 $errLines = ($stdout | Where-Object { $_ -is [System.Management.Automation.ErrorRecord] }) -join "`n"
-                $outLines  = ($stdout | Where-Object { $_ -isnot [System.Management.Automation.ErrorRecord] }) -join "`n"
+                $outLines = ($stdout | Where-Object { $_ -isnot [System.Management.Automation.ErrorRecord] }) -join "`n"
                 return @{ ExitCode = $exitCode; Output = $outLines; Error = $errLines }
             }
             finally {
@@ -240,7 +240,7 @@ Describe 'write-calibration-entry.ps1' {
             $data.entries.Count | Should -Be 1 -Because 'same pr_number must be overwritten, not duplicated'
             # ConvertFrom-Json returns created_at as DateTime; normalise to UTC string for comparison
             ([datetime]$data.entries[0].created_at).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ss') |
-                Should -Be '2026-03-22T10:00:00' -Because 'the new entry data must replace the old one'
+            Should -Be '2026-03-22T10:00:00' -Because 'the new entry data must replace the old one'
         }
     }
 
@@ -370,13 +370,13 @@ Describe 'write-calibration-entry.ps1' {
                 )
                 summary    = [ordered]@{
                     # prosecution_findings omitted
-                    pass_1_findings  = 1
-                    pass_2_findings  = 0
-                    pass_3_findings  = 0
+                    pass_1_findings   = 1
+                    pass_2_findings   = 0
+                    pass_3_findings   = 0
                     defense_disproved = 0
-                    judge_accepted   = 1
-                    judge_rejected   = 0
-                    judge_deferred   = 0
+                    judge_accepted    = 1
+                    judge_rejected    = 0
+                    judge_deferred    = 0
                 }
             }
             $entryJson = $bad | ConvertTo-Json -Depth 10 -Compress
