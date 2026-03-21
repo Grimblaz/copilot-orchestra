@@ -12,13 +12,11 @@
       - Skips PRs whose metrics block has no `findings:` array (v1-only PRs)
       - For v2 PRs (have `findings:` array): builds an entry JSON with:
           - pr_number  ← PR number from API
-          - created_at ← PR mergedAt from GitHub API (write script requires created_at, not merged_at)
+          - created_at ← PR mergedAt from GitHub API
           - findings[] ← extracted from pipeline-metrics block
           - summary    ← extracted from pipeline-metrics top-level scalar fields
-      - Calls write-calibration-entry.ps1 -EntryJson $entryJson for each v2 PR
-        (or the -WriteScript path if that parameter is supplied)
+      - Writes entries in-process to .copilot-tracking/calibration/review-data.json
       - Accepts -GhCliPath to inject a mock gh binary (enables test isolation)
-      - Accepts -WriteScript to inject a mock write script (enables test isolation)
       - Exits 0 with informational message when gh returns an empty PR list
       - Exits non-zero when gh is unavailable or returns a non-zero exit code
       - Exits 0 on success
@@ -28,10 +26,9 @@
       - A minimal mock `gh.ps1` is written into the temp dir; its path is
         passed to the script via -GhCliPath so the real `gh` CLI is never
         invoked.
-      - A mock `write-calibration-entry-mock.ps1` is written into the same
-        temp dir; its path is passed via -WriteScript.  The mock appends
-        each -EntryJson value to a `write-calls.txt` file in its own
-        directory so tests can count/inspect invocations without side-effects.
+      - The child pwsh process runs with -WorkingDirectory set to the temp dir
+        so .copilot-tracking/calibration/review-data.json is written there.
+      - Tests read the output JSON directly to inspect entries written.
       - Invocations run in a child pwsh process to keep test process state clean.
 #>
 
@@ -166,41 +163,20 @@ exit 1
         }
 
         # ------------------------------------------------------------------
-        # Helper: write the mock write-calibration-entry.ps1 into a temp dir.
-        # The mock appends each -EntryJson call to write-calls.txt in its
-        # own directory so tests can count and inspect calls.
-        # Returns the path to the mock script.
-        # ------------------------------------------------------------------
-        $script:WriteMockWriteScript = {
-            param([string]$WorkDir)
-            $mockPath = Join-Path $WorkDir 'write-calibration-entry-mock.ps1'
-            $callsFile = Join-Path $WorkDir 'write-calls.txt'
-            $mockScript = @"
-param([string]`$EntryJson)
-Add-Content -Path '$($callsFile -replace "'", "''")' -Value `$EntryJson
-"@
-            $mockScript | Set-Content -Path $mockPath -Encoding UTF8
-            return $mockPath
-        }
-
-        # ------------------------------------------------------------------
         # Helper: invoke the backfill script with injected mocks.
-        # Returns @{ ExitCode; Output; CallCount; Calls[] }
-        # where Calls[] is the list of -EntryJson strings passed to the
-        # mock write script (one element per invocation).
+        # Returns @{ ExitCode; Output; EntryCount; Entries[] }
+        # where Entries[] is the list of entry objects written to review-data.json.
         # ------------------------------------------------------------------
         $script:Invoke = {
             param(
                 [string]$WorkDir,
                 [string]$GhCliPath,
-                [string]$WriteScriptPath,
                 [int]$Limit = 10
             )
-            $callsFile = Join-Path $WorkDir 'write-calls.txt'
+            $dataFile = Join-Path $WorkDir '.copilot-tracking' 'calibration' 'review-data.json'
 
-            $stdout = & pwsh -NoProfile -NonInteractive -File $script:ScriptFile `
+            $stdout = & pwsh -NoProfile -NonInteractive -WorkingDirectory $WorkDir -File $script:ScriptFile `
                 -GhCliPath $GhCliPath `
-                -WriteScript $WriteScriptPath `
                 -Limit $Limit 2>&1
 
             $exitCode = $LASTEXITCODE
@@ -208,20 +184,18 @@ Add-Content -Path '$($callsFile -replace "'", "''")' -Value `$EntryJson
             $errLines = ($stdout | Where-Object { $_ -is [System.Management.Automation.ErrorRecord] }) -join "`n"
             $outLines = ($stdout | Where-Object { $_ -isnot [System.Management.Automation.ErrorRecord] }) -join "`n"
 
-            $calls = @()
-            if (Test-Path $callsFile) {
-                # Each line is one -EntryJson value written by the mock
-                $calls = Get-Content $callsFile -Raw
-                # @() wrap ensures array even when only 1 call (prevents pipeline scalar unrolling)
-                $calls = @($calls -split "`r?`n" | Where-Object { $_.Trim() -ne '' })
+            $entries = @()
+            if (Test-Path $dataFile) {
+                $data = Get-Content $dataFile -Raw | ConvertFrom-Json
+                $entries = @($data.entries)
             }
 
             return @{
-                ExitCode  = $exitCode
-                Output    = $outLines
-                Error     = $errLines
-                CallCount = $calls.Count
-                Calls     = $calls
+                ExitCode   = $exitCode
+                Output     = $outLines
+                Error      = $errLines
+                EntryCount = $entries.Count
+                Entries    = $entries
             }
         }
 
@@ -260,14 +234,13 @@ Add-Content -Path '$($callsFile -replace "'", "''")' -Value `$EntryJson
                 @{ number = 43; mergedAt = '2026-03-11T11:00:00Z'; body = $script:V1MetricsBody }
             )
             $ghPath = & $script:WriteMockGh -WorkDir $workDir -JsonOutput (& $script:BuildPrJson -Prs $prs)
-            $writePath = & $script:WriteMockWriteScript -WorkDir $workDir
 
             # Act
-            $result = & $script:Invoke -WorkDir $workDir -GhCliPath $ghPath -WriteScriptPath $writePath
+            $result = & $script:Invoke -WorkDir $workDir -GhCliPath $ghPath
 
-            # Assert: called exactly once (only for the v2 PR)
-            $result.ExitCode | Should -Be 0 -Because 'success exit expected'
-            $result.CallCount | Should -Be 1 -Because 'only the v2 PR should trigger a write-calibration-entry call'
+            # Assert: one entry written (only for the v2 PR)
+            $result.ExitCode  | Should -Be 0 -Because 'success exit expected'
+            $result.EntryCount | Should -Be 1 -Because 'only the v2 PR should produce a calibration entry'
         }
 
         It 'skips PRs with no findings array (v1-only)' {
@@ -278,14 +251,13 @@ Add-Content -Path '$($callsFile -replace "'", "''")' -Value `$EntryJson
                 @{ number = 50; mergedAt = '2026-03-12T08:00:00Z'; body = $script:V1MetricsBody }
             )
             $ghPath = & $script:WriteMockGh -WorkDir $workDir -JsonOutput (& $script:BuildPrJson -Prs $prs)
-            $writePath = & $script:WriteMockWriteScript -WorkDir $workDir
 
             # Act
-            $result = & $script:Invoke -WorkDir $workDir -GhCliPath $ghPath -WriteScriptPath $writePath
+            $result = & $script:Invoke -WorkDir $workDir -GhCliPath $ghPath
 
-            # Assert: write script never called
-            $result.ExitCode  | Should -Be 0 -Because 'v1-only PRs should be skipped cleanly'
-            $result.CallCount | Should -Be 0 -Because 'v1 PRs have no findings array and must be skipped'
+            # Assert: no entries written
+            $result.ExitCode   | Should -Be 0 -Because 'v1-only PRs should be skipped cleanly'
+            $result.EntryCount | Should -Be 0 -Because 'v1 PRs have no findings array and must be skipped'
         }
 
         It 'skips PRs with no pipeline-metrics block at all' {
@@ -296,14 +268,13 @@ Add-Content -Path '$($callsFile -replace "'", "''")' -Value `$EntryJson
                 @{ number = 60; mergedAt = '2026-03-13T09:00:00Z'; body = $script:NoMetricsBody }
             )
             $ghPath = & $script:WriteMockGh -WorkDir $workDir -JsonOutput (& $script:BuildPrJson -Prs $prs)
-            $writePath = & $script:WriteMockWriteScript -WorkDir $workDir
 
             # Act
-            $result = & $script:Invoke -WorkDir $workDir -GhCliPath $ghPath -WriteScriptPath $writePath
+            $result = & $script:Invoke -WorkDir $workDir -GhCliPath $ghPath
 
-            # Assert: write script never called
-            $result.ExitCode  | Should -Be 0 -Because 'PRs without metrics blocks should be skipped cleanly'
-            $result.CallCount | Should -Be 0 -Because 'no pipeline-metrics block means nothing to backfill'
+            # Assert: no entries written
+            $result.ExitCode   | Should -Be 0 -Because 'PRs without metrics blocks should be skipped cleanly'
+            $result.EntryCount | Should -Be 0 -Because 'no pipeline-metrics block means nothing to backfill'
         }
 
         It 'passes created_at (set to the GitHub mergedAt value) in the entry JSON' {
@@ -315,16 +286,14 @@ Add-Content -Path '$($callsFile -replace "'", "''")' -Value `$EntryJson
                 @{ number = 70; mergedAt = $mergedAt; body = $script:V2MetricsBody }
             )
             $ghPath = & $script:WriteMockGh -WorkDir $workDir -JsonOutput (& $script:BuildPrJson -Prs $prs)
-            $writePath = & $script:WriteMockWriteScript -WorkDir $workDir
 
             # Act
-            $result = & $script:Invoke -WorkDir $workDir -GhCliPath $ghPath -WriteScriptPath $writePath
+            $result = & $script:Invoke -WorkDir $workDir -GhCliPath $ghPath
 
-            # Assert: the captured EntryJson contains created_at matching the PR mergedAt
-            $result.CallCount | Should -Be 1 -Because 'one v2 PR should produce one write call'
+            # Assert: one entry with correct created_at
+            $result.EntryCount | Should -Be 1 -Because 'one v2 PR should produce one calibration entry'
 
-            $entryJson = $result.Calls[0]
-            $entry = $entryJson | ConvertFrom-Json
+            $entry = $result.Entries[0]
             # ConvertFrom-Json may auto-convert ISO dates to DateTime; normalize to UTC string for comparison
             ([datetime]$entry.created_at).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ') | Should -Be $mergedAt `
                 -Because 'created_at in the entry must be set to the GitHub API mergedAt value'
@@ -338,16 +307,14 @@ Add-Content -Path '$($callsFile -replace "'", "''")' -Value `$EntryJson
                 @{ number = 80; mergedAt = '2026-03-16T10:00:00Z'; body = $script:V2MetricsBody }
             )
             $ghPath = & $script:WriteMockGh -WorkDir $workDir -JsonOutput (& $script:BuildPrJson -Prs $prs)
-            $writePath = & $script:WriteMockWriteScript -WorkDir $workDir
 
             # Act
-            $result = & $script:Invoke -WorkDir $workDir -GhCliPath $ghPath -WriteScriptPath $writePath
+            $result = & $script:Invoke -WorkDir $workDir -GhCliPath $ghPath
 
             # Assert: findings[0].id == 'F1' as specified in V2MetricsBody
-            $result.CallCount | Should -Be 1 -Because 'one v2 PR should produce one write call'
+            $result.EntryCount | Should -Be 1 -Because 'one v2 PR should produce one calibration entry'
 
-            $entryJson = $result.Calls[0]
-            $entry = $entryJson | ConvertFrom-Json
+            $entry = $result.Entries[0]
             $entry.findings            | Should -Not -BeNullOrEmpty -Because 'findings must be extracted from the metrics block'
             $entry.findings[0].id      | Should -Be 'F1'          -Because 'finding id must match the metrics block content'
             $entry.findings[0].category | Should -Be 'architecture' -Because 'finding category must match the metrics block content'
@@ -364,14 +331,13 @@ Add-Content -Path '$($callsFile -replace "'", "''")' -Value `$EntryJson
             $workDir = & $script:NewWorkDir
 
             $ghPath = & $script:WriteMockGh -WorkDir $workDir -JsonOutput '[]'
-            $writePath = & $script:WriteMockWriteScript -WorkDir $workDir
 
             # Act
-            $result = & $script:Invoke -WorkDir $workDir -GhCliPath $ghPath -WriteScriptPath $writePath
+            $result = & $script:Invoke -WorkDir $workDir -GhCliPath $ghPath
 
-            # Assert: exits 0, no writes
-            $result.ExitCode  | Should -Be 0 -Because 'an empty PR list is a valid no-op, not an error'
-            $result.CallCount | Should -Be 0 -Because 'no PRs means no writes'
+            # Assert: exits 0, no entries written
+            $result.ExitCode   | Should -Be 0 -Because 'an empty PR list is a valid no-op, not an error'
+            $result.EntryCount | Should -Be 0 -Because 'no PRs means no entries to write'
         }
 
         It 'exits non-zero when gh is unavailable' {
@@ -379,10 +345,9 @@ Add-Content -Path '$($callsFile -replace "'", "''")' -Value `$EntryJson
             $workDir = & $script:NewWorkDir
 
             $brokenGhPath = & $script:WriteBrokenGh -WorkDir $workDir
-            $writePath = & $script:WriteMockWriteScript -WorkDir $workDir
 
             # Act
-            $result = & $script:Invoke -WorkDir $workDir -GhCliPath $brokenGhPath -WriteScriptPath $writePath
+            $result = & $script:Invoke -WorkDir $workDir -GhCliPath $brokenGhPath
 
             # Assert: non-zero exit propagated
             $result.ExitCode | Should -Not -Be 0 `

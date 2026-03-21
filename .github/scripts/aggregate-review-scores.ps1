@@ -225,7 +225,7 @@ $accumulateFinding = {
 }
 
 foreach ($pr in $mergedPRs) {
-    $prNumber = $pr.number
+    $prNumber = [int]$pr.number
     $mergedAt = $pr.mergedAt
 
     # Compute decay weight

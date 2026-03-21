@@ -8,8 +8,7 @@
 param(
     [string]$Repo,
     [int]$Limit = 100,
-    [string]$GhCliPath = 'gh',
-    [string]$WriteScript = (Join-Path $PSScriptRoot 'write-calibration-entry.ps1')
+    [string]$GhCliPath = 'gh'
 )
 
 Set-StrictMode -Version Latest
@@ -46,6 +45,8 @@ $prs = ($ghOut -join '') | ConvertFrom-Json
 # ---------------------------------------------------------------------------
 # Process each PR
 # ---------------------------------------------------------------------------
+$pendingEntries = [System.Collections.Generic.List[object]]::new()
+
 foreach ($pr in $prs) {
     # 1. Extract the pipeline-metrics block
     $bodyText = [string]$pr.body
@@ -86,12 +87,52 @@ foreach ($pr in $prs) {
         summary    = $summary
     }
 
-    # 6. Serialize and call write script in a child process (write script calls exit)
-    $entryJson = $entry | ConvertTo-Json -Depth 10 -Compress
-    & pwsh -NoProfile -NonInteractive -File $WriteScript -EntryJson $entryJson
-    if ($LASTEXITCODE -ne 0) {
-        Write-Warning "write-calibration-entry failed for PR #$($pr.number) - continuing"
+    # 6. Accumulate for batch write
+    $pendingEntries.Add($entry)
+}
+
+# ── Batch write: load once, merge all entries, write once ─────────────────────
+
+if ($pendingEntries.Count -gt 0) {
+    $calibDir = Join-Path (Get-Location).Path '.copilot-tracking' 'calibration'
+    $dataFile = Join-Path $calibDir 'review-data.json'
+    $tmpFile = "$dataFile.tmp"
+
+    if (Test-Path $dataFile) {
+        $data = Get-Content $dataFile -Raw | ConvertFrom-Json -AsHashtable
+    } else {
+        $data = [ordered]@{
+            calibration_version = 1
+            entries             = @()
+        }
     }
+
+    New-Item -ItemType Directory -Path $calibDir -Force | Out-Null
+
+    # Merge: replace any existing entries with the same pr_number
+    $existingEntries = @($data.entries | Where-Object {
+        $pn = [int]$_.pr_number
+        -not ($pendingEntries | Where-Object { [int]$_.pr_number -eq $pn })
+    })
+    $mergedEntries = $existingEntries + @($pendingEntries)
+
+    # Preserve all top-level keys from existing data, override only entries
+    $output = [ordered]@{}
+    foreach ($key in $data.Keys) { $output[$key] = $data[$key] }
+    $output['entries'] = $mergedEntries
+
+    try {
+        $json = $output | ConvertTo-Json -Depth 10
+        Set-Content -Path $tmpFile -Value $json -Encoding UTF8
+        $null = Get-Content $tmpFile -Raw | ConvertFrom-Json
+        Move-Item -Path $tmpFile -Destination $dataFile -Force
+    } catch {
+        if (Test-Path $tmpFile) { Remove-Item $tmpFile -Force -ErrorAction SilentlyContinue }
+        Write-Error "Batch write failed: $_" -ErrorAction Continue
+        exit 1
+    }
+
+    Write-Output "Backfilled $($pendingEntries.Count) entries."
 }
 
 exit 0

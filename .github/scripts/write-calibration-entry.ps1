@@ -54,7 +54,7 @@ function ConvertTo-NormalizedObject {
         return $out
     }
     if ($obj -is [System.Collections.IEnumerable] -and $obj -isnot [string]) {
-        return @($obj | ForEach-Object { ConvertTo-NormalizedObject $_ })
+        return , @($obj | ForEach-Object { ConvertTo-NormalizedObject $_ })
     }
     return $obj
 }
@@ -158,14 +158,13 @@ $prNumber = $entry.pr_number
 $filtered = @($data.entries | Where-Object { $_.pr_number -ne $prNumber })
 $newEntries = $filtered + @($entry)
 
-# ── Build output ───────────────────────────────────────────────────────────────
+# ── Build output — preserve all top-level keys from existing data ──────────────
 
-$output = [ordered]@{
-    calibration_version = 1
-    entries             = $newEntries
-}
+$output = [ordered]@{}
+foreach ($key in $data.Keys) { $output[$key] = $data[$key] }
+$output['entries'] = $newEntries
 
-# ── Atomic write: tmp → validate → rename ─────────────────────────────────────
+# ── Crash-safe write: tmp → validate → rename ─────────────────────────────────
 
 try {
     $json = $output | ConvertTo-Json -Depth 10

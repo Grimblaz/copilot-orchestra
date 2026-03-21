@@ -26,8 +26,12 @@ function Get-FindingsArray {
 
     $findings = [System.Collections.Generic.List[hashtable]]::new()
     $findingsKeyPattern = '^findings:\s*$'  # $ is regex end-anchor; interpolates safely in double-quoted strings
+    $findingsEmptyPattern = '^findings:\s*\[\]\s*$'  # canonical v2 zero-findings form
 
-    # Locate start of findings: section
+    # Recognize canonical zero-findings form: findings: []
+    if ([regex]::IsMatch($Block, "(?m)$findingsEmptyPattern")) { Write-Output -NoEnumerate $findings; return }
+
+    # Locate start of findings: section (multi-line form)
     if (-not [regex]::IsMatch($Block, "(?m)$findingsKeyPattern")) { Write-Output -NoEnumerate $findings; return }
 
     $blockLines = $Block -split "`n"
@@ -50,9 +54,8 @@ function Get-FindingsArray {
             continue
         }
 
-        # Stop if we hit a top-level key (note: char class excludes digits/hyphens;
-        # all current top-level keys after findings: use only [a-z_])
-        if ($line -match '^[a-z_]+:') {
+        # Stop if we hit a top-level key
+        if ($line -match '^[a-z0-9_]+:') {
             if ($null -ne $current) { $findings.Add($current) }
             $current = $null
             break

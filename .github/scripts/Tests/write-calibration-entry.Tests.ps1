@@ -500,6 +500,21 @@ Describe 'write-calibration-entry.ps1' {
             $data.entries[0].findings[0].review_stage | Should -Be 'custom-stage' `
                 -Because 'custom review_stage value must be stored verbatim'
         }
+
+        It 'serializes single-element findings as a JSON array, not an object' {
+            # Regression test for CE-F4: ConvertTo-NormalizedObject must not collapse
+            # a single-element findings array to a plain JSON object due to pipeline unrolling.
+            $workDir = & $script:NewWorkDir
+            $entryJson = $script:ValidEntry | ConvertTo-Json -Depth 10 -Compress
+            & $script:Invoke -WorkDir $workDir -EntryJson $entryJson
+
+            $dataFile = Join-Path $workDir '.copilot-tracking\calibration\review-data.json'
+            $data = Get-Content $dataFile -Raw | ConvertFrom-Json
+            $findings = $data.entries[0].findings
+            $findings.GetType().IsArray | Should -BeTrue `
+                -Because 'findings must be a JSON array even with one element'
+            $findings.Count | Should -Be 1 -Because 'exactly one finding was written'
+        }
     }
 
     # ==================================================================
