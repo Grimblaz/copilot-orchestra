@@ -29,9 +29,9 @@ Experience-Owner frames the customer problem before design begins:
 1. **Customer Problem Statement** — Who is affected? What is the gap? What outcome do they need?
 2. **User Journeys** — 2–4 journeys from the customer's perspective (not implementation steps)
 3. **CE Gate Scenarios** — Functional and Intent scenario types; identifies customer surface and tool availability
-4. **Design Intent Reference** — Distils the CE Gate `Design Intent` field for the `[CE GATE]` plan step
+4. **Design Intent Reference** — distills the CE Gate `Design Intent` field for the `[CE GATE]` plan step
 5. **Surface Readiness Assessment** — Identifies which tools are available for the surface under change
-6. **Persists output** — Writes to the GitHub issue body with `<!-- experience-owner-complete-{ID} -->` marker
+6. **Persists output** — Posts a comment to the GitHub issue with the `<!-- experience-owner-complete-{ID} -->` marker
 
 ---
 
@@ -39,7 +39,7 @@ Experience-Owner frames the customer problem before design begins:
 
 Invoked by Code-Conductor as a subagent during the CE Gate:
 
-1. Reads `<!-- experience-owner-complete-{ID} -->` from the issue body
+1. Reads `<!-- experience-owner-complete-{ID} -->` from issue comments
 2. Identifies surface and exercises each scenario using the appropriate tool
 3. Captures evidence (screenshots, API responses, CLI output)
 4. Returns structured evidence to Code-Conductor

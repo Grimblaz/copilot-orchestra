@@ -75,7 +75,7 @@ The `.github/plugin/` directory was chosen (rather than root) to keep plugin inf
 
 ### R1 — `agents` directory vs. individual files (unresolvable without VS Code 1.110 runtime)
 
-The `agents` field uses a directory path `["./.github/agents"]`. If VS Code requires individual `.agent.md` file paths (matching the skills pattern), all 14 agents fail to load silently. **Mitigation**: Monitor first install test against VS Code 1.110 EA.
+The `agents` field uses a directory path `["./.github/agents/"]`. If VS Code requires individual `.agent.md` file paths (matching the skills pattern), all 14 agents fail to load silently. **Mitigation**: Monitor first install test against VS Code 1.110 EA.
 
 ### R2 — `marketplace.json` lookup path (unresolvable without VS Code 1.110 runtime)
 
