@@ -177,7 +177,7 @@ Use `#tool:vscode/askQuestions`:
 **Skip D9 when**:
 
 - User invoked `/implement #N` directly (smart resume determines entry point; no hub-mode pause)
-- Smart resume found ALL upstream phase markers applicable to the current pipeline tier (abbreviated pipeline: `<!-- plan-issue-{ID} -->` comment only; full pipeline: all three phase completion markers) completed in prior sessions — D9 suppression requires prior-session completion, not in-session scope-based skip. For multi-issue bundles, ALL markers for ALL bundled issues (not just the primary issue) must be prior-session complete before D9 may be suppressed — see Multi-Issue Bundling.
+- Smart resume found ALL upstream phase markers applicable to the current pipeline tier (abbreviated pipeline: `<!-- plan-issue-{ID} -->` comment only; full pipeline: all three phase completion markers) completed in prior sessions — D9 suppression requires prior-session completion, not in-session scope-based skip. For multi-issue bundles, ALL markers for ALL bundled issues (not just the primary issue) must be prior-session complete before D9 may be suppressed (see Multi-Issue Bundling: smart resume applies per-issue independently).
 - User already indicated intent to continue (e.g., responded "Continue" or "Approved — save and proceed" in this session)
 
 ### Multi-Issue Bundling
