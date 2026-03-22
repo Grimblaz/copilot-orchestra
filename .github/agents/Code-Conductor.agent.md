@@ -152,7 +152,7 @@ Before calling any upstream agent, classify the issue scope to determine the app
 
 **User override**: Always present both tiers as options and recommend one — the user may choose either regardless of your analysis. This is how scope override (D5) is implemented.
 
-**Escalation check (after Issue-Planner returns)**: After receiving the plan from Issue-Planner, read the plan YAML frontmatter. If `escalation_recommended: true` is present, present the user via `#tool:vscode/askQuestions` with the `escalation_reason` and offer to re-enter the full pipeline from the appropriate upstream phase (for abbreviated-tier sessions, re-enter at Experience-Owner — the first full-pipeline phase; for full-tier sessions with prior-session partial completion, re-enter at the first non-completed phase — Solution-Designer if Experience-Owner was completed, or Experience-Owner if neither was completed) before proceeding to D9.
+**Escalation check (after Issue-Planner returns)**: After receiving the plan from Issue-Planner, read the plan YAML frontmatter. If `escalation_recommended: true` is present, present the user via `#tool:vscode/askQuestions` with the `escalation_reason` and offer to re-enter the full pipeline from the appropriate upstream phase (for abbreviated-tier sessions, re-enter at Experience-Owner — the first full-pipeline phase; for full-tier sessions with prior-session partial completion, re-enter at the first non-completed phase — Solution-Designer if Experience-Owner was completed, or Experience-Owner if neither was completed; for full-tier sessions where all phases ran in this session, present the `escalation_reason` and offer re-entry at Solution-Designer — Issue-Planner's scope discovery supersedes the completed SD pass) before proceeding to D9.
 
 **Hub execution order** (call only phases not already complete, per classification result):
 
@@ -172,12 +172,13 @@ Use `#tool:vscode/askQuestions`:
 - "Pause here — I'll resume with `/implement`" — stop cleanly; all upstream work persisted via smart resume markers; user can switch models and resume
 ```
 
+> **Note**: D9 fires even if some upstream phases were completed in prior sessions — suppression requires ALL applicable tier-required phase markers to have been completed before this session. If Issue-Planner ran in this session, D9 must fire unless the user already confirmed continuation.
+
 **Skip D9 when**:
 
 - User invoked `/implement #N` directly (smart resume determines entry point; no hub-mode pause)
-- Smart resume found ALL upstream phase markers applicable to the current pipeline tier (abbreviated pipeline: Issue-Planner plan marker only; full pipeline: all three phase completion markers) completed in prior sessions — D9 suppression requires prior-session completion, not in-session scope-based skip
+- Smart resume found ALL upstream phase markers applicable to the current pipeline tier (abbreviated pipeline: `<!-- plan-issue-{ID} -->` comment only; full pipeline: all three phase completion markers) completed in prior sessions — D9 suppression requires prior-session completion, not in-session scope-based skip
 - User already indicated intent to continue (e.g., responded "Continue" or "Approved — save and proceed" in this session)
-- D9 fires even if some upstream phases were completed in prior sessions — suppression requires ALL applicable tier-required phase markers to have been completed before this session. If Issue-Planner ran in this session, D9 must fire unless the user already confirmed continuation.
 
 ### Multi-Issue Bundling
 
@@ -193,7 +194,7 @@ When the user invokes hub mode for multiple issues at once (e.g., `@code-conduct
 ### Hub Execution Workflow
 
 1. **Locate Plan & Context**:
-   - Find plan using this lookup chain: (1) session memory — if hub mode was invoked with multiple issues, check `plan-bundle-{primary}-{secondary1}-{secondaryN}.md` first; otherwise check `plan-issue-{ID}.md`; via the `vscode/memory` tool; (2) GitHub issue comments — use `mcp_github_issue_read` with `method: get_comments` to find a comment containing `<!-- plan-issue-{ID} -->`; (3) escalate via `#tool:vscode/askQuestions` if neither found
+   - Find plan using this lookup chain: (1) session memory — use `vscode/memory view /memories/session/` to list files; if any file matches the `plan-bundle-*.md` pattern, load it as the bundle plan; otherwise check `plan-issue-{ID}.md` via the `vscode/memory` tool; (2) GitHub issue comments — use `mcp_github_issue_read` with `method: get_comments` to find a comment containing `<!-- plan-issue-{ID} -->`; (3) escalate via `#tool:vscode/askQuestions` if neither found
    - Find design context using this lookup chain: (1) session memory — `view /memories/session/design-issue-{ID}.md` via the `vscode/memory` tool; (2) GitHub issue comments — use `mcp_github_issue_read` with `method: get_comments` to find a comment containing `<!-- design-issue-{ID} -->`; (3) fall back to reading the issue body directly and create the design cache: use `mcp_github_issue_read` with `method: get` to read the issue body, then use `vscode/memory` `create` to write the full issue body content to `/memories/session/design-issue-{ID}.md`, wrapped with header `<!-- design-issue-{ID} -->` and footer `---\n**Source**: Snapshot of issue #{ID} body at plan creation. Design changes require a new plan.` (fallback creator role — Issue-Planner is the primary creator; Code-Conductor recreates only on session reset recovery)
    - Look for supporting docs in `Documents/Design/`, `Documents/Decisions/`, `.copilot-tracking/research/` — read whatever exists for additional context
    - Check `.github/skills/` for relevant domain expertise
