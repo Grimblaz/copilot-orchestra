@@ -541,7 +541,7 @@ No actionable signals found. All metrics within acceptable ranges or below per-c
 
 **Analysis**:
 
-- Search for duplicate topics: Use `grep_search` with query `subject` and `includePattern: "**/*.md"` (or the appropriate memory scope path) to find duplicate topics
+- Search for duplicate topics in workspace docs: Use `grep_search` with query `subject` and `includePattern: "**/*.md"`. For session memory, use the `memory` tool (`view /memories/session/` then read individual files) to check for overlapping topics.
 - Check file ages: Which is canonical?
 - Review references: Which files link to which?
 

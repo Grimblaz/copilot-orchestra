@@ -15,7 +15,7 @@ Run these before doing anything else:
 
 1. **Branch check**: Run `git branch --show-current`. If not on `main`, stop and tell the user: "Switch to `main` before creating a release (`git checkout main && git pull`)."
 
-2. **Clean working tree**: Use `get_changed_files` to verify no uncommitted changes — empty result confirms no uncommitted tracked changes. If any uncommitted changes exist, stop and tell the user to commit or stash them first.
+2. **No uncommitted tracked changes**: Use `get_changed_files` to verify no uncommitted tracked changes — empty result confirms no uncommitted tracked changes. If any exist, stop and tell the user to commit or stash them first.
 
 3. **Current state**: Run these in parallel and display the results:
    - `gh release list --limit 3` — show the last 3 releases
