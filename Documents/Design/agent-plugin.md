@@ -37,14 +37,16 @@ The `.github/plugin/` directory was chosen (rather than root) to keep plugin inf
     "./.github/prompts/plan.prompt.md",
     "./.github/prompts/implement.prompt.md",
     "./.github/prompts/review.prompt.md",
-    "./.github/prompts/polish.prompt.md"
+    "./.github/prompts/polish.prompt.md",
+    "./.github/prompts/experience.prompt.md",
+    "./.github/prompts/orchestrate.prompt.md"
   ]
 }
 ```
 
 - `agents`: Points to the agents directory. VS Code is expected to discover all `*.agent.md` files within it (spec unconfirmed — experimental).
 - `skills`: Individual skill directory paths, matching the pattern used by default VS Code skill discovery.
-- `commands`: Individual `.prompt.md` files for slash command registration. Legacy commands (`/setup`, `/start-issue`) use `agent: agent` frontmatter; the 5 new commands (`/design`, `/plan`, `/implement`, `/review`, `/polish`) use `agent: {mode-name}` frontmatter to route directly to a named agent mode. See R4 below — named-agent routing is unconfirmed in the experimental plugin system.
+- `commands`: Individual `.prompt.md` files for slash command registration. Legacy commands (`/setup`, `/start-issue`) use `agent: agent` frontmatter; the 7 new commands (`/design`, `/plan`, `/implement`, `/review`, `/polish`, `/experience`, `/orchestrate`) use `agent: {mode-name}` frontmatter to route directly to a named agent mode. See R4 below — named-agent routing is unconfirmed in the experimental plugin system.
 
 ### `marketplace.json` Design
 
@@ -115,7 +117,7 @@ The 5 new slash commands (`/design`, `/plan`, `/implement`, `/review`, `/polish`
 |---------|--------|------------|
 | 13 agents | ✅ | ✅ |
 | 14 skills | ✅ | ✅ |
-| `/setup`, `/start-issue`, `/design`, `/plan`, `/implement`, `/review`, `/polish` slash commands | ✅ | ✅ |
+| `/setup`, `/start-issue`, `/design`, `/plan`, `/implement`, `/review`, `/polish`, `/experience`, `/orchestrate` slash commands | ✅ | ✅ |
 | `/release` slash command | ❌ not in plugin.json | ✅ auto-discovered |
 | `.github/instructions/` (shared rules; `session-startup` operational content inlined into `.github/copilot-instructions.md`) | ❌ not distributed | ✅ auto-discovered |
 | `.github/scripts/` (cleanup script) | ❌ not distributed | ✅ |
