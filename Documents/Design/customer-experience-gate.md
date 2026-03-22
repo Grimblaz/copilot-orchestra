@@ -129,13 +129,11 @@ Intent criteria are surface-dependent. A surface-specific table in Code-Conducto
 | File | Change |
 |---|---|
 | `.github/agents/Code-Conductor.agent.md` | Intent Match Rubric + Surface-Specific Intent Verification table added; markers updated with intent match levels; intent deficiency routing added to Two-Track; Step 2 updated to read `Design Intent` field from plan step first |
-| `.github/agents/Process-Review.agent.md` | `intent mismatch` added as third Classification option; `Failing scenario` field renamed to `Triggering scenario`; "When invoked" updated to cover all three Track 2 invocation paths |
+| `.github/agents/Process-Review.agent.md` | `intent mismatch` added as third Classification option; `Triggering scenario` field renamed from `Failing scenario`; "When invoked" updated to cover all three Track 2 invocation paths |
 | `.github/agents/Issue-Planner.agent.md` | `[CE GATE]` step template updated with `Design Intent` field |
 | `.github/agents/Experience-Owner.agent.md` | CE Gate readiness: Functional and Intent scenario types defined; design intent reference identified and summarized for `[CE GATE]` plan step |
 | `.github/copilot-instructions.md` | CE Gate description updated to include "design-intent verification" |
-| `CLAUDE.md` | CE Gate description updated to include "design-intent verification" |
 | `Documents/Design/customer-experience-gate.md` | Intent match architecture documented: D15 decision, Intent Match Rubric, Surface-Specific Intent Verification, Two-Track intent deficiency routing |
-| `.claude/commands/implement.md` | `after fix` marker variant added; placeholder notation standardized to `{strong\|partial\|weak}`; intent evaluation updated to reference `[CE GATE]` Design Intent field |
 
 ---
 

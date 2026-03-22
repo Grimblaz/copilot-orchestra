@@ -610,7 +610,7 @@ findings:
 
 ### Calibration Data Write (VS Code Copilot only)
 
-After creating the PR body with the `<!-- pipeline-metrics -->` block, invoke the write script to persist calibration data locally. This is a VS Code Copilot optimization — Claude Code does not run this step (calibration data accumulates via backfill or the aggregate script's GitHub PR body path).
+After creating the PR body with the `<!-- pipeline-metrics -->` block, invoke the write script to persist calibration data locally. This is a VS Code Copilot optimization (calibration data also accumulates via backfill or the aggregate script's GitHub PR body path).
 
 ```powershell
 # Test-Path guard — template portability for downstream repos without the write script
