@@ -75,3 +75,7 @@ D7: The original D9 wording implied full-pipeline-only, which meant abbreviated-
 | File | Change |
 |------|--------|
 | `.github/agents/Code-Conductor.agent.md` | Added Scope Classification Gate section with 5-criterion rubric, two-tier table, user override, and escalation check; added Multi-Issue Bundling section; updated D9 checkpoint wording to fire at any pipeline tier and tightened suppression semantics; added no-scope-exemption rule for Issue-Planner delegation |
+| `.github/agents/Code-Critic.agent.md` | Added post-fix prosecution scope constraint clause and out-of-diff AC exception |
+| `.github/agents/Code-Review-Response.agent.md` | Updated effort estimation language to use "high confidence" framing |
+| `.github/agents/Issue-Planner.agent.md` | Added `escalation_recommended` and `escalation_reason` YAML frontmatter fields to plan output spec |
+| `CLAUDE.md` | Added Phase 0 abbreviated-tier skip criteria: enumerated all 5 criteria explicitly |

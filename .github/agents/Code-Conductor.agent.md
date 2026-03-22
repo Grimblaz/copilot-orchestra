@@ -145,8 +145,7 @@ Before calling any upstream agent, classify the issue scope to determine the app
 | ----------------- | ------------- | -------------------- |
 | Experience-Owner  | ✅            | ❌ (skip)            |
 | Solution-Designer | ✅            | ❌ (skip)            |
-| Issue-Planner     | ✅            | ✅ (required)        |
-| Design review     | ✅            | ✅ (required)        |
+| Issue-Planner (incl. design review) | ✅            | ✅ (required)        |
 | D9 Checkpoint     | ✅            | ✅ (required)        |
 | Implementation    | ✅            | ✅                   |
 
@@ -178,7 +177,7 @@ Use `#tool:vscode/askQuestions`:
 
 - User invoked `/implement #N` directly (smart resume determines entry point; no hub-mode pause)
 - Smart resume found ALL upstream phase markers applicable to the current pipeline tier (abbreviated pipeline: `<!-- plan-issue-{ID} -->` comment only; full pipeline: all three phase completion markers) completed in prior sessions — D9 suppression requires prior-session completion, not in-session scope-based skip. For multi-issue bundles, ALL markers for ALL bundled issues (not just the primary issue) must be prior-session complete before D9 may be suppressed (see Multi-Issue Bundling: smart resume applies per-issue independently).
-- User already indicated intent to continue (e.g., responded "Continue" or "Approved — save and proceed" in this session)
+- User has already answered the D9 checkpoint in this session (e.g., selected the "Continue implementation" option in the D9 `#tool:vscode/askQuestions` prompt)
 
 ### Multi-Issue Bundling
 
@@ -187,7 +186,7 @@ When the user invokes hub mode for multiple issues at once (e.g., `@code-conduct
 1. **Per-issue marker check**: Use `mcp_github_issue_read` with `method: get_comments` for each issue to detect completed upstream phases. Smart resume applies per-issue independently.
 2. **Per-issue scope classification**: Classify each issue separately using the Scope Classification Gate rubric. The bundle adopts the **highest-scope tier** (if any issue requires full pipeline, run full pipeline for all). Present all issue classifications in a single `#tool:vscode/askQuestions` call — do not make separate per-issue prompts. Format your recommendation as a list entry per issue showing recommended tier and the key criterion driving the classification, followed by the 'highest-scope-wins' bundle tier.
 3. **Shared upstream execution**: Run upstream phases based on the adopted bundle tier: **Full pipeline** — call Experience-Owner, then Solution-Designer, then Issue-Planner, once for the bundle covering all issues together. **Abbreviated pipeline** — call Issue-Planner only, once for the bundle. Issue-Planner creates a single bundled plan.
-4. **Plan naming**: Use `plan-bundle-{primary}-{secondary1}-{secondaryN}` (e.g., `plan-bundle-163-164-165`). Save to session memory at `/memories/session/plan-bundle-{primary}-{secondary1}-{secondaryN}.md`. Post plan as a GitHub issue comment to each issue with the bundle's `<!-- plan-issue-{ID} -->` marker.
+4. **Plan naming**: Use `plan-bundle-{primary}-{secondary1}-{secondaryN}` (e.g., `plan-bundle-163-164-165`), where primary is the first issue listed in the invocation and secondaries follow in invocation order. Save to session memory at `/memories/session/plan-bundle-{primary}-{secondary1}-{secondaryN}.md`. Post plan as a GitHub issue comment to each issue with its corresponding `<!-- plan-issue-{ID} -->` marker.
 5. **Completion markers**: Track completion markers per-issue. When an issue's acceptance criteria are fully addressed, post its completion marker comment.
 6. **Single-issue flow is unaffected**: These rules apply only when multiple issues are bundled in a single invocation.
 
