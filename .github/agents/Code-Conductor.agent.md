@@ -141,13 +141,13 @@ Before calling any upstream agent, classify the issue scope to determine the app
 
 **Two-tier table**:
 
-| Phase             | Full pipeline | Abbreviated pipeline |
-| ----------------- | ------------- | -------------------- |
-| Experience-Owner  | ✅            | ❌ (skip)            |
-| Solution-Designer | ✅            | ❌ (skip)            |
+| Phase                               | Full pipeline | Abbreviated pipeline |
+| ----------------------------------- | ------------- | -------------------- |
+| Experience-Owner                    | ✅            | ❌ (skip)            |
+| Solution-Designer                   | ✅            | ❌ (skip)            |
 | Issue-Planner (incl. design review) | ✅            | ✅ (required)        |
-| D9 Checkpoint     | ✅            | ✅ (required)        |
-| Implementation    | ✅            | ✅                   |
+| D9 Checkpoint                       | ✅            | ✅ (required)        |
+| Implementation                      | ✅            | ✅                   |
 
 **User override**: Always present both tiers as options and recommend one — the user may choose either regardless of your analysis. This is how scope override (D5) is implemented.
 
