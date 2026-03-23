@@ -554,3 +554,37 @@ Three targeted additions to close the process gaps that allowed these defects th
 2. **Code-Smith item 4 — Single-element array round-trip verification** (`Code-Smith.agent.md`): Extended the serialized output correctness rule to require verifying that single-element writes preserve array type, not just that the JSON document is parseable. Added PowerShell idiom hint (`return , @(...)` / `Write-Output -NoEnumerate`).
 
 3. **copilot-instructions.md — Pester test command**: Added `pwsh -NoProfile -NonInteractive -Command "Invoke-Pester .github/scripts/Tests/ -Output Minimal"` to the validation commands section and updated the Testing line in the Technology Stack.
+
+---
+
+## Token Budget Optimization
+
+**Source**: Issue #180, informed by PR #111 session (Grimblaz-and-Friends/Windgust-Questbook) data — 23 subagent calls, 2 rate-limit failures, ~25–35% estimated token waste.
+
+**Preamble re-pay cost model**: Every `runSubagent` call creates a fresh context window. The subagent re-ingests its full agent definition (often 800+ lines), all loaded skills and instructions, tool definitions, and file context — a fixed floor cost of 15K–25K+ input tokens before any actual task work begins. This makes call-count reduction the highest-leverage optimization: each avoided call saves the preamble cost in full.
+
+### D7 — Express Lane Gate (R6)
+
+**Decision**: After prosecution merges and deduplicates the ledger, partition findings matching all six mechanical criteria (severity ≤2, strictly mechanical fix type, no logic changes, no test cascade, not stored ID/DB schema, scope ≤1 file) into an express lane that bypasses defense and judge and routes directly to the specialist.
+
+**Rationale**: A 1-point string casing fix does not benefit from a defense pass or a judge arbitration. The compound 6-criteria gate mitigates severity under-rating risk — all criteria must hold simultaneously, making false eligibility rare. Estimated savings: 30K–75K+ tokens per express-laned item (2 avoided subagent calls × preamble cost).
+
+**Scope restriction**: Standard code review prosecution only — not proxy prosecution (GitHub intake), CE prosecution, or design review.
+
+### D8 — 1+1 Post-Fix Prosecution (R2)
+
+**Decision**: Replace 3 parallel post-fix prosecution passes with 1 pass + 1 conditional follow-up (only if pass 1 finds ≥1 finding). If pass 1 finds nothing, post-fix review is complete — skip defense, judge, and routing.
+
+**Rationale**: In the PR #111 session, pass 2 of post-fix prosecution returned "no findings — clean" (pure waste). A clean pass 1 is strong evidence of a clean fix, given that the post-fix scope is diff-scoped (small, targeted). The conditional follow-up preserves defect detection when pass 1 does surface something. Estimated savings: 30K–50K+ tokens per clean post-fix cycle.
+
+### D9 — Batch Specialist Dispatch (R4)
+
+**Decision**: Collect all routing decisions (express-lane partition + judge rulings) before dispatching to specialists. Group findings by assigned specialist agent and make one `runSubagent` call per unique specialist, passing all that agent's findings together.
+
+**Rationale**: Multiple sequential calls to the same specialist each re-incur the preamble cost. Grouping eliminates N−1 preamble re-pays per agent. Two-phase collection (finalize all routing decisions before any dispatching) ensures no findings are dispatched before all routing choices are final. Estimated savings: 15K–25K+ tokens per avoided call. Exception: contradictory-approach findings for the same agent split into separate calls.
+
+### D10 — Rate Limit Backoff (R5)
+
+**Decision**: Implement exponential backoff (2^attempt × 30s: attempt 1 = 60s, attempt 2 = 120s) before retrying rate-limited subagent calls. After 2 consecutive failures for the same call, defer remaining work to the next session — save state to session memory, never silently drop findings.
+
+**Rationale**: In the PR #111 session, 2 rate-limited retries consumed prompt tokens with zero output (pure waste). Exponential backoff gives the rate-limit window time to reset without hammering the API. Sonnet→Opus fallback is considered before entering backoff because Anthropic models have separate per-model TPM limits. Deferred-not-dropped ensures quality — no findings are silently lost to rate limiting.
