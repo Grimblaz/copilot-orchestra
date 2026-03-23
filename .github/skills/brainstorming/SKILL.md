@@ -94,14 +94,6 @@ Guide for structured exploration of ideas through Socratic questioning.
 - Stakeholder perspectives to consider
 - Common assumptions in your domain
 
-## Anti-Patterns to Avoid
-
-- **Premature convergence**: Settling on first reasonable idea
-- **Groupthink**: Not challenging popular opinions
-- **Analysis paralysis**: Endless questioning without action
-- **Leading questions**: Questions that assume the answer
-- **Defensive responses**: Treating questions as attacks
-
 ## Output Artifacts
 
 After brainstorming, document:
@@ -112,3 +104,13 @@ After brainstorming, document:
 4. Top approaches with pros/cons
 5. Decision and rationale
 6. Open questions for future exploration
+
+## Gotchas
+
+| Trigger                                             | Gotcha                                                         | Fix                                                                                      |
+| --------------------------------------------------- | -------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| "This approach seems good" in the first few minutes | Premature convergence — first idea is never fully examined     | Enforce a DIVERGE phase before CONVERGE; exhaust alternatives before committing          |
+| Everyone agrees quickly with no pushback            | Groupthink — consensus silences better options                 | Assign devil's advocate; use §2 Probing Assumptions questions to challenge the consensus |
+| 30+ minutes of questioning with no decision         | Analysis paralysis — endless questioning without converging    | Time-box phases using the Session Structure; reach CONVERGE by minute 30                 |
+| Questions framed as "Shouldn't we use X?"           | Leading questions — forecloses alternatives before exploration | Rephrase as open questions per §1 Clarifying format ("What are the options here?")       |
+| Socratic questions met with defensiveness           | Defensive responses — posture shuts down exploration           | Frame questions as discovery, not criticism; restate the exploration goal                |

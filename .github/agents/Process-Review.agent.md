@@ -371,6 +371,67 @@ No actionable signals found. All metrics within acceptable ranges or below per-c
 
 **Guardrail**: Calibration recommendations are advisory only. This agent does NOT auto-apply changes to agent instruction files. Recommendations are presented for human review and approval. To apply an approved recommendation, use the "Update Instructions → Doc-Keeper" handoff button.
 
+### 4.8 Upstream Gotcha Lifecycle
+
+**Purpose**: Surface domain failure patterns discovered in downstream repos back to Copilot Orchestra as potential skill improvements.
+
+**When to run**: Automatically during each full Process-Review retrospective invocation. Skip in subagent mode (CE Gate Track 2, Calibration-only).
+
+**Step 1 — Check prerequisites**:
+
+- If `.github/instructions/local-gotchas.instructions.md` does not exist → skip §4.8 silently
+- If the file exists but is empty → skip §4.8 silently
+- Read `copilot-orchestra-repo` from `.github/copilot-instructions.md` (look for line `copilot-orchestra-repo: {owner}/{repo}`)
+- If field is absent → skip §4.8 silently
+- Pre-flight access check: `gh repo view {copilot-orchestra-repo} --json name 2>&1` — if non-zero exit or error output → emit `⚠️ Upstream gotcha flow skipped — gh access to {copilot-orchestra-repo} failed` and fall back to creating a local GitHub issue labeled `upstream-gotcha` and `priority: medium`
+
+**Step 2 — Scan for unresolved entries**:
+
+Read `local-gotchas.instructions.md`. For each skill heading (`## {skill-name}`) and each entry without a terminal marker — that is, an entry with no status marker, or with marker `<!-- gotcha-status: new -->`, or with marker `<!-- gotcha-status: dedup-error -->` (the terminal markers are: `upstream:{url}`, `local`, `duplicate`, `resolved`):
+
+- Apply heuristic filter: if the pattern references a library or system unique to this downstream repo → mark `<!-- gotcha-status: local -->` (do not send upstream)
+- If the pattern describes the skill's domain generally (could happen to any user of the skill) → upstream candidate
+
+> **Format note**: Each gotcha entry in `local-gotchas.instructions.md` must be its own single-row table with its own `<!-- gotcha-status: ... -->` marker. Multi-row tables produce ambiguous state — only the marker before the table header is read.
+
+**Step 3 — Dedup and create upstream issues**:
+
+For each upstream candidate:
+
+```powershell
+# Search key is skill-name-only (per safe-operations §2c) to group all gotchas for this skill
+gh issue list --repo {copilot-orchestra-repo} --search "[Gotcha] {skill-name}" --state all --json number --jq length
+```
+
+- If `$LASTEXITCODE -ne 0` → dedup check failed; mark `<!-- gotcha-status: dedup-error -->` in local file and skip upstream issue creation
+- If result > 0 → duplicate found; mark `<!-- gotcha-status: duplicate -->` in local file
+- If result = 0 → create upstream issue:
+
+```powershell
+gh issue create --repo {copilot-orchestra-repo} `
+  --title "[Gotcha] {skill-name}: {brief description}" `
+  --body "## Gotcha Discovery`n`n- **Skill**: {skill-name}`n- **Trigger**: {trigger}`n- **Failure**: {what went wrong}`n- **Fix**: {correct approach}`n- **Source**: Discovered in {downstream-repo} during {workflow step}`n- **Frequency**: first occurrence`n`n## Context`n{additional context}" `
+  --label "enhancement,priority: medium"
+```
+
+Then mark `<!-- gotcha-status: upstream:{issue-url} -->` in local file (where `{issue-url}` is the URL returned by `gh issue create`).
+
+**Step 4 — Lifecycle management**:
+
+For each entry already marked `<!-- gotcha-status: upstream:{url} -->`: check if the linked issue is closed (`gh issue view {url} --json state --jq .state`). If closed → update marker to `<!-- gotcha-status: resolved -->`.
+
+**Output**: Emit a brief summary:
+
+```markdown
+## Upstream Gotcha Summary
+
+- Entries scanned: {N}
+- Sent upstream: {N} | Duplicates: {N} | Local-only: {N} | Resolved: {N}
+- Skipped: {reason or "none"}
+```
+
+**Guardrail**: This section reads and writes `local-gotchas.instructions.md` to update status markers, and creates GitHub issues. It does NOT modify any other agent, skill, or system instruction file. Issue creation requires output-capture verification per safe-operations.instructions.md §2a and §2c.
+
 ### 5. Root Cause Analysis
 
 **For each deviation, ask**:

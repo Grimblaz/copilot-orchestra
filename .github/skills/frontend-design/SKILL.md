@@ -127,10 +127,6 @@ Consider:
 ## Intentional Constraints
 
 - [Self-imposed rules that create consistency]
-
-## Anti-Patterns
-
-- [Specific patterns to avoid in your context]
 ```
 
 ## Review Questions
@@ -152,3 +148,15 @@ Before shipping any design:
 - Component library
 - Design tokens
 - Approved patterns and templates
+
+## Gotchas
+
+<!-- [CUSTOMIZE] Add project-specific anti-patterns below -->
+
+| Trigger                                                                            | Gotcha                                                                               | Fix                                                                                              |
+| ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------ |
+| Keeping every component library default (border-radius, shadow, spacing) unchanged | Design feels generic — indistinguishable from any other app using the same framework | Audit defaults; make ≥3 intentional overrides per component type                                 |
+| Header layout is logo-left, nav-right without questioning it                       | The invisible default — identical to every SaaS app                                  | Evaluate navigation mental models; consider sidebar, bottom nav, or contextual nav               |
+| "It's common" or "everyone does it" as design justification                        | Common ≠ purposeful; pattern chosen without intent                                   | Force "why this, not something else?" using §1 Purpose Over Pattern                              |
+| Reaching for a table when asked to "show data"                                     | Tables rarely fit mobile; rarely surface hierarchy                                   | Ask "Is a table the right pattern?" before building; consider cards, timelines, or grouped lists |
+| Shipping without answering the 5 review questions                                  | UI may be polished but not recognizable, purposeful, or accessible                   | Answer all 5 review questions before declaring design done                                       |

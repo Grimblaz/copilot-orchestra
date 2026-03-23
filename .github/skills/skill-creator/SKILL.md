@@ -118,6 +118,12 @@ Organize by user goals, not by internal structure.
 
 - [Related supporting file](./related-file.md)
 - External reference links
+
+## Gotchas
+
+| Trigger                                        | Gotcha                    | Fix                     |
+| ---------------------------------------------- | ------------------------- | ----------------------- |
+| {observable condition that causes the failure} | {what goes wrong and why} | {actionable correction} |
 ```
 
 ## Description Quality Checklist
@@ -153,11 +159,11 @@ description: This skill helps with testing things.  # Unclear scope
 
 ### Frontmatter Validation
 
-| Field         | Required | Rule                                  | Validation Guidance                                                               |
-| ------------- | -------- | ------------------------------------- | --------------------------------------------------------------------------------- |
-| `name`        | Yes      | kebab-case                            | Use lowercase words separated by hyphens (for example: `test-driven-development`) |
+| Field         | Required | Rule                                                     | Validation Guidance                                                                                                   |
+| ------------- | -------- | -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `name`        | Yes      | kebab-case                                               | Use lowercase words separated by hyphens (for example: `test-driven-development`)                                     |
 | `description` | Yes      | Include what it does + usage triggers + negative signals | Include "Use when ..." for positive triggers and "DO NOT USE FOR: ... (use {skill})" for at least one negative signal |
-| Other fields  | No       | Unsupported                           | Do not add extra fields (for example `allowed-tools`) because they are ignored    |
+| Other fields  | No       | Unsupported                                              | Do not add extra fields (for example `allowed-tools`) because they are ignored                                        |
 
 ### Content Principles
 
@@ -166,6 +172,29 @@ description: This skill helps with testing things.  # Unclear scope
 3. **Keep SKILL.md concise**: Route to supporting files for details
 4. **Template-generic language**: No repo-specific references
 5. **Include "When to Use"**: Explicit trigger conditions
+
+### Gotchas Section Guidelines
+
+- **Always include ≥1 gotcha**: No skill should ship without at least one entry
+- **Trigger precision**: Use observable conditions, not abstract categories ("Using `clickElement` on canvas" not "Wrong tool usage")
+- **Fix specificity**: Provide actionable commands, skill section references, or concrete alternatives — not "use the right approach"
+- **Use prose alternatives**: When a gotcha needs more than 2 sentences, use a callout block or guardrail section instead of cramming it into a table cell
+- **Downstream convention**: When agents discover new gotchas while working in a downstream repo, append them to `.github/instructions/local-gotchas.instructions.md` under a `## {skill-name}` heading with format `<!-- gotcha-status: new -->` — Process-Review will scan and route them upstream
+
+  Example entry in `local-gotchas.instructions.md`:
+
+  ```markdown
+  ## brainstorming
+
+  <!-- gotcha-status: new -->
+
+  | Trigger                                | Gotcha                            | Fix                                        |
+  | -------------------------------------- | --------------------------------- | ------------------------------------------ |
+  | Asking for options without constraints | Produces unbounded solution space | Add scope constraints before brainstorming |
+  ```
+
+  The `<!-- gotcha-status: new -->` marker goes on the line immediately before the table header it annotates (not inside the table body).
+  Each gotcha entry must be its own single-row table — do not combine multiple entries in one table, as the `<!-- gotcha-status: ... -->` marker tracks state per table, not per row.
 
 ### Customization Markers
 
@@ -203,6 +232,7 @@ Before committing a new skill:
 - [ ] No hardcoded paths or repo-specific references
 - [ ] Supporting files are referenced from SKILL.md
 - [ ] Content is actionable, not just conceptual
+- [ ] Gotchas section present with at least one entry
 
 ## Example: Complete Skill
 
@@ -255,3 +285,14 @@ Systematic approach to reviewing code changes.
 - Review checklist items
 - Auto-merge criteria
 ```
+
+## Gotchas
+
+| Trigger                                                                       | Gotcha                                                                   | Fix                                                                                  |
+| ----------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------ |
+| Using extra frontmatter fields (`allowed-tools`, `applyTo`, custom keys)      | Only `name` and `description` are supported; extras are silently ignored | Use only `name` and `description` in frontmatter                                     |
+| Writing a vague description: `description: Debugging guide.`                  | Skill never appears in suggestions — description fails semantic matching | Include "Use when..." with 2–3 specific observable triggers                          |
+| Omitting "DO NOT USE FOR:..." negative signals                                | Skill collides with adjacent skills; wrong one is chosen                 | Include at least one `DO NOT USE FOR:` pointer with the alternative skill name       |
+| Not running a collision check before finalizing                               | New skill's trigger words shadow an existing skill                       | `grep_search` trigger phrases across `.github/skills/*/SKILL.md` before finalizing   |
+| Using camelCase or PascalCase for `name` (`MySkill`)                          | Naming convention violation; potential discovery failure                 | Use kebab-case (`my-skill`) for the `name` frontmatter field                         |
+| Creating `references/`, `examples/`, and `templates/` directories immediately | File bloat; harder to navigate and maintain                              | Start with Minimal structure; split only when core document becomes hard to navigate |

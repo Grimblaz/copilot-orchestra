@@ -400,6 +400,36 @@ Follow the format in `examples/nodejs-typescript/copilot-instructions.md` (or th
 
 > **If Phase 3 was skipped**: Omit the Architecture section from the generated `copilot-instructions.md` and add a comment: `# Architecture: see .github/architecture-rules.md`. Do not hallucinate architecture details — leave those details to the existing rules file.
 
+**Auto-derive `copilot-orchestra-repo`** (If Phase 2 was just generated, also run this step):
+
+Run the following in a terminal to resolve the upstream repo slug:
+
+```powershell
+# Resolve the Copilot Orchestra root
+$copilotRoot = if ($env:COPILOT_ORCHESTRA_ROOT) { $env:COPILOT_ORCHESTRA_ROOT } else { $env:WORKFLOW_TEMPLATE_ROOT }
+
+# Get the upstream remote URL (fail silently on any error)
+$remoteUrl = git -C "$copilotRoot" remote get-url origin 2>$null
+
+# Parse owner/repo from HTTPS or SSH URL; strip any trailing slash
+$repoSlug = if ($remoteUrl -match 'github\.com[:/](.+?)(?:\.git)?$') { $Matches[1].TrimEnd('/') } else { $null }
+```
+
+If `$repoSlug` cannot be resolved (env vars absent, git command fails, URL doesn't match known GitHub patterns) → skip silently. No user prompt or error message.
+
+If resolved:
+
+1. **Idempotency check**: Read `.github/copilot-instructions.md` and check if it already contains a line starting with `copilot-orchestra-repo:`. If present → skip (already injected).
+2. **Inject**: Use the `replace_string_in_file` tool to append `copilot-orchestra-repo: {resolved-value}` as a new line at the end of `.github/copilot-instructions.md`. Do **not** use shell-level file-append commands — the file-write tool avoids encoding issues.
+
+   **Forming the anchor**: Use the last non-empty line of the file as `old_str`, and set `new_str` to `{last-line}\ncopilot-orchestra-repo: {value}`. If the file was freshly generated in the same session, its closing lines are already known — use them directly. Example:
+
+   ```
+   # If copilot-instructions.md ends with: quick-validate: true
+   # old_str = "quick-validate: true"
+   # new_str = "quick-validate: true\ncopilot-orchestra-repo: owner/repo"
+   ```
+
 **If Phase 3 was completed or regenerated** → Generate `.github/architecture-rules.md`:
 
 Use Phase 3 answers to fill in layer structure, dependency rules, testing rules, and naming conventions. Follow the format in `examples/nodejs-typescript/architecture-rules.md` (or the appropriate stack example). Include all standard sections: Layer Architecture, Dependency Rules, Testing Rules, File & Naming Conventions.

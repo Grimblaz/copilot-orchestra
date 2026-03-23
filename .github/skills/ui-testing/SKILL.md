@@ -139,16 +139,6 @@ it("should be accessible", async () => {
 
 See [testing-patterns.md](./testing-patterns.md) for more detailed patterns.
 
-## Anti-Patterns to Avoid
-
-| Anti-Pattern                | Problem                 | Better Approach       |
-| --------------------------- | ----------------------- | --------------------- |
-| Testing internal state      | Breaks on refactor      | Test visible outcomes |
-| Snapshot overuse            | Noise, false positives  | Targeted assertions   |
-| `waitFor` with long timeout | Hides perf issues       | Fix root cause        |
-| Testing library internals   | Not your responsibility | Trust dependencies    |
-| `act()` warnings ignored    | Async issues hidden     | Fix test timing       |
-
 ## Project Configuration
 
 [CUSTOMIZE] Add your project's testing setup:
@@ -167,3 +157,15 @@ See [testing-patterns.md](./testing-patterns.md) for more detailed patterns.
 3. **Check test isolation**: Does order matter? Shared state?
 4. **Check timing**: Race conditions in component or test?
 5. **Add debugging**: `screen.debug()`, `logRoles(container)`
+
+## Gotchas
+
+| Trigger                                                                                                    | Gotcha                                                                                                      | Fix                                                                                            |
+| ---------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Asserting on `component.state` or internal refs directly                                                   | Breaks on internal refactoring even when user-visible behavior is unchanged                                 | Assert on rendered text, visible elements, or dispatched events — not internal component state |
+| Adding `expect(tree).toMatchSnapshot()` to every component test                                            | One-character internal change triggers cascading snapshot failures; reviewers approve noise without reading | Replace with targeted assertions on specific text, attributes, or DOM structure                |
+| Setting `waitFor` timeout > 1000ms to make a flaky test pass                                               | Masks real performance or async timing issues; adds hard delay to the entire suite                          | Diagnose why the element isn't ready sooner; fix the underlying async handling                 |
+| Writing assertions that validate a third-party library's own behavior (e.g., checking React Query fetched) | Tests validate the library, not your code; break on library version changes                                 | Trust the library; test your code's response to its outputs — not the library's own logic      |
+| Suppressing or ignoring `act()` warnings in the console                                                    | Async state update issues are hidden; test results become unreliable                                        | Fix the timing: wrap state updates in `act()` or switch from `fireEvent` to `userEvent`        |
+| Using `data-testid` when `getByRole` would work                                                            | Tests diverge from user accessibility model; role-based queries are more resilient                          | Follow locator priority: `getByRole` > `getByLabel` > `getByTestId` > CSS (last resort)        |
+| Asserting on internal library DOM nodes (e.g., react-select internals)                                     | Tests break on library upgrade, not on your code breaking                                                   | Trust the dependency; test what the user sees and can interact with                            |
