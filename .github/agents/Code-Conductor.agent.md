@@ -308,9 +308,9 @@ A finding qualifies for the **express lane** (bypasses defense+judge, routes dir
 
 Route express-eligible findings directly to the specialist dispatch queue with an `express_lane: true` marker. All remaining findings continue to the defense → judge pipeline as normal.
 
-**Scope restriction**: Express lane applies to **standard code review prosecution only** — it does NOT apply to proxy prosecution (GitHub review intake), CE prosecution, or design/plan review prosecution.
+**Scope restriction**: Express lane applies to **standard code review prosecution only** — it does NOT apply to proxy prosecution (GitHub review intake), CE prosecution, or design/plan review prosecution. (Proxy prosecution output does not include `fix_type` classification, which is required to safely evaluate express-lane criteria 2 and 3. R4 and R5 still apply to proxy prosecution sessions.)
 
-**Tier 1 re-validation required**: After the specialist applies an express-lane fix, re-run Tier 1 validation (build + lint/typecheck + tests) before proceeding.
+**Tier 1 re-validation required**: After the specialist applies an express-lane fix, re-run Tier 1 validation (build + lint/typecheck + tests) before proceeding. (When batched under R4, Tier 1 re-validation runs once after all express-lane specialist fixes in the batch are applied.) If Tier 1 fails, route the failure via the Failure Triage Rule and resolve it before proceeding.
 
 - **Defense pass**: Invoke Code-Critic with the merged prosecution ledger and the marker `"Use defense review perspectives"`. Defense reviews the full ledger in a single pass and emits a Defense Report.
 - **Judge pass**: Invoke Code-Review-Response with both the merged prosecution ledger and the defense report. Judge rules final on all items and emits a score summary.
@@ -756,10 +756,17 @@ When a subagent call fails or returns no output, classify the failure before rou
 
 1. Wait `2^attempt × 30s` before retrying (attempt 1 = 60s, attempt 2 = 120s).
 2. On Sonnet-class model failure: before entering backoff, consider switching to an Opus-class model — Sonnet and Opus have separate per-model TPM limits, so Opus may still be available when Sonnet is throttled.
-3. After **2 consecutive failures** for the same call: defer remaining work to the next session.
+3. After **2 consecutive failures** for the same call: prompt via `#tool:vscode/askQuestions` with:
+   - Option A: "Defer remaining work — {N} findings pending (resume next session from current phase)" _(recommended)_
+   - Option B: "Skip remaining low-severity findings and continue" — only available when all pending findings are `low` severity; Critical/High/Medium findings cannot be skipped.
+
+   If the user selects Option A (or Option B is unavailable and auto-selected):
    - Save pending work state to session memory — record the deferred findings, the interrupted step, and the resume point.
    - Emit: `⚠️ Rate limit: deferring remaining work — {N} findings pending. Resume from the current phase using session memory as ground truth for deferred state.`
    - Do NOT silently drop deferred findings. They must be re-processed in the next session.
+
+   If the user selects Option B:
+   - Skip remaining low-severity findings, log them to session memory as intentionally skipped, and continue.
 
 **Applies to**: ALL subagent calls (Code-Smith, Test-Writer, Code-Critic, Code-Review-Response, Refactor-Specialist, Doc-Keeper, Experience-Owner, and any other specialist).
 
