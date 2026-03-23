@@ -226,3 +226,14 @@ Do not mark complete while any of these are true:
 - [ ] [Required approvals]
 - [ ] [Required notifications]
 ```
+
+## Gotchas
+
+| Trigger                                                    | Gotcha                                                                                                     | Fix                                                                                 |
+| ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| "I tested it locally" as the completion claim              | No evidence = claims-based completion; untestable by reviewer                                              | Provide screenshot, CI link, terminal output, or screen recording                   |
+| "It worked yesterday"                                      | Stale evidence; code and state have changed since then                                                     | Re-validate in current state against current code immediately before declaring done |
+| "The tests pass" without specifying which                  | Ambiguous scope — which tests? Unit only? Integration?                                                     | Specify exact test command and scope run                                            |
+| "I didn't change that area" as reason to skip verifying it | Indirect breakage happens through shared state, CSS side effects, shared utilities                         | Verify anyway; run the full suite regardless of which files were touched            |
+| Declaring done without re-reading original requirements    | PR may add unrequested features or omit required ones                                                      | Re-read every AC item explicitly; check off each before opening the PR              |
+| Verifying components in isolation only                     | Component works standalone but breaks at integration surface (API contracts, DB migrations, feature flags) | Complete the integration checklist items, not just unit tests                       |

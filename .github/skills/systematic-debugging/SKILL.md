@@ -189,12 +189,14 @@ Conclusion:
 - [ ] Resource exhaustion? Check memory/connections
 - [ ] Permission change? Check access controls
 
-## Anti-Patterns to Avoid
+## Gotchas
 
-| Anti-Pattern            | Problem                           | Instead                 |
-| ----------------------- | --------------------------------- | ----------------------- |
-| Shotgun debugging       | Random changes obscure root cause | One change at a time    |
-| Fix and forget          | Bug may recur                     | Add regression test     |
-| Assuming the cause      | Wastes time on wrong path         | Gather evidence first   |
-| Debugging in production | Risk of more damage               | Reproduce locally first |
-| Not documenting         | Knowledge lost                    | Keep observation log    |
+| Trigger                                                     | Gotcha                                                                       | Fix                                                                                |
+| ----------------------------------------------------------- | ---------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| Making multiple simultaneous changes to isolate the bug     | Root cause becomes impossible to identify — can't know which change fixed it | Revert to baseline; apply one targeted change; verify; then proceed                |
+| Closing the bug without adding a regression test            | Bug recurs under similar conditions undetected                               | Add a test that reproduces the original failure; confirm it is GREEN after the fix |
+| Forming a hypothesis before completing Phase 1 observations | Leads investigation down the wrong path; root cause stays unexamined         | Complete Phase 1 (Observe) fully before proposing any hypothesis                   |
+| Applying changes directly in the production environment     | Risk of cascading failure or data corruption                                 | Reproduce locally first; use staging environments or feature flags                 |
+| Ending the session without updating the observation log     | Investigation must restart from scratch next session                         | Log dated observations before ending the session; commit the log                   |
+| Making permanent code changes while testing hypotheses      | Progressive state contamination — hard to reason about current baseline      | Preserve ability to undo each test step; use feature flags or branches             |
+| Fixing the symptom without root cause analysis              | Bug recurs under different conditions                                        | Follow the 4-phase protocol fully; document root cause before applying fix         |

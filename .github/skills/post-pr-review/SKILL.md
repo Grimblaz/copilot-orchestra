@@ -222,44 +222,6 @@ Before considering work fully complete, verify:
 - [ ] Stakeholders notified (if needed)
 - [ ] Working tree clean: `git status` shows no untracked or modified files
 
-## Common Pitfalls to Avoid
-
-1. **Committing tracking files to git**
-   - `.copilot-tracking/` and `.copilot-tracking-archive/` are gitignored — keep them that way
-   - These are agent scaffolding, not team artifacts; the durable record is in GitHub issues, PRs, and `Documents/Design/`
-   - If you ever see tracking files in `git status` as untracked, do **not** `git add` them
-
-2. **Using the GitHub file API to edit existing files**
-   - `mcp_github_create_or_update_file` replaces the **entire file**
-   - Passing partial content silently truncates the file in the repo
-   - Always use `replace_string_in_file` + `git commit` + `git push` for existing files
-
-3. **Using `Set-Content` / `Out-File` to restore files from git history**
-   - PowerShell file-write cmdlets may introduce CRLF endings or BOM characters
-   - This creates a trivial but visible `+1 -1` diff that VS Code surfaces for review
-   - Use `git restore --source=<sha> <file>` instead — git handles encoding correctly
-
-4. **Expecting a `Documents/Design/...` design doc to exist before implementation**
-   - Solution-Designer outputs design to the **issue body**, not to a committed file
-   - The design doc (a domain-based `Documents/Design/{domain-slug}.md` file) is created or updated by Code-Conductor (via Doc-Keeper) as part of the implementation PR
-   - If you're reviewing a PR and the expected design doc is missing, check whether Code-Conductor committed it alongside the code changes
-
-5. **Incomplete documentation updates**
-   - Causes confusion for future contributors
-   - Creates technical debt
-
-6. **Skipping release tags**
-   - Makes version history unclear
-   - Complicates rollback procedures
-
-7. **Leaving stale branches**
-   - Clutters repository
-   - May cause confusion about active work
-
-8. **Not closing related issues**
-   - Leaves project tracking inaccurate
-   - May cause duplicate work
-
 ## Project-Specific Customization
 
 **[CUSTOMIZE]** Add project-specific steps:
@@ -300,3 +262,16 @@ Once all checklist items are verified:
 - Update team status boards
 
 The work is now fully complete and properly documented.
+
+## Gotchas
+
+| Trigger                                                                    | Gotcha                                                                                 | Fix                                                                                    |
+| -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `git status` shows `.copilot-tracking/` files as untracked                 | These are gitignored local scaffolding, not team artifacts                             | Never `git add` them; use GitHub issues and `Documents/Design/` for durable records    |
+| Updating an existing file using `mcp_github_create_or_update_file`         | Tool replaces the entire file; partial content silently truncates to just the new text | Use `replace_string_in_file` + `git commit` + `git push` for existing files            |
+| Restoring a file from git history using `Set-Content` or `Out-File`        | PowerShell may add BOM or CRLF causing noisy diffs                                     | Use `git restore --source=<sha> <file>` instead                                        |
+| Looking for the `Documents/Design/` file before the PR is merged           | The file is created by Code-Conductor in the PR diff, not in the repo pre-merge        | Check the PR diff, not the repo, for the design doc                                    |
+| Version bump using `mcp_github_create_or_update_file` with partial content | Tool replaces entire file; version bump deletes all other content                      | Use `pwsh .github/scripts/bump-version.ps1 -Version X.Y.Z` or `replace_string_in_file` |
+| "PR merged — done" without running the cleanup checklist                   | Stale branches persist; related issues stay open; version history unclear              | Run the full post-merge checklist (Steps 1–5) before declaring done                    |
+| Skipping the pre-merge strategic assessment (Step 6 / SAR)                 | Missing the window to catch low-quality patterns before they set precedent             | Complete Step 6 SAR before committing to merge on any >Medium impact PR                |
+| Archiving tracking files before committing documentation                   | PR created without updated design docs and changelog                                   | Follow checklist order: documentation first, then archive                              |

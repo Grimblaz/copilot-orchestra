@@ -240,3 +240,14 @@ When reviewing architecture:
 
 - [Link to ADRs or decision log]
 ```
+
+## Gotchas
+
+| Trigger                                                                     | Gotcha                                                                              | Fix                                                                                |
+| --------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| Domain/entity class importing a database adapter or HTTP client directly    | Domain layer gains transitive dependency on all infrastructure; DIP violation       | Depend on interfaces; inject concrete adapters from outer layers                   |
+| Adding a new case to an existing switch/if chain for new behavior           | Breaks open-close: touching existing code increases regression risk → OCP violation | Extend via new class or strategy; existing code unchanged                          |
+| Duplicating a formula or logic block in a new class instead of injecting it | Two sources of truth; diverge silently when one changes                             | Search for existing logic first; inject as dependency; delegate via composition    |
+| One class handles parsing, validation, and persistence                      | Multiple unrelated reasons to change; tests require the full class → SRP violation  | Split into single-responsibility components with clear ownership                   |
+| New implementation class imported only in test files                        | Component never reaches production call path; feature silently absent               | Verify import + instantiation + callsite in production code, not just test imports |
+| Cyclomatic complexity > 10 in a single method                               | Untestable paths; risky to change; each branch multiplies test surface              | Extract helpers per SRP; enforce file size limits from project conventions         |

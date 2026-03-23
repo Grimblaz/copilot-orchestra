@@ -68,16 +68,16 @@ Quality gates are enforced in priority order:
 
 ## Response Routing
 
-| Response             | Workflow/Reference             | Description                         |
-| -------------------- | ------------------------------ | ----------------------------------- |
-| write                | workflows/write-tests-first.md | RED phase - write failing tests     |
-| implement            | workflows/make-tests-pass.md   | GREEN phase - implement code        |
-| validate             | workflows/validate-coverage.md | Run quality gates                   |
-| refactor             | workflows/refactor-safely.md   | REFACTOR phase - improve code       |
-| lookup patterns      | references/test-patterns.md    | AAA, parameterized tests, factories |
-| lookup commands      | references/commands.md         | Test commands reference             |
-| lookup gates         | references/quality-gates.md    | Thresholds and enforcement          |
-| lookup anti-patterns | references/anti-patterns.md    | What to avoid                       |
+| Response             | Workflow/Reference             | Description                                                                     |
+| -------------------- | ------------------------------ | ------------------------------------------------------------------------------- |
+| write                | workflows/write-tests-first.md | RED phase - write failing tests                                                 |
+| implement            | workflows/make-tests-pass.md   | GREEN phase - implement code                                                    |
+| validate             | workflows/validate-coverage.md | Run quality gates                                                               |
+| refactor             | workflows/refactor-safely.md   | REFACTOR phase - improve code                                                   |
+| lookup patterns      | references/test-patterns.md    | AAA, parameterized tests, factories                                             |
+| lookup commands      | references/commands.md         | Test commands reference                                                         |
+| lookup gates         | references/quality-gates.md    | Thresholds and enforcement                                                      |
+| lookup anti-patterns | ## Gotchas (below)             | Summary of what to avoid; see references/anti-patterns.md for detailed examples |
 
 </routing>
 
@@ -120,3 +120,16 @@ Quality gates are enforced in priority order:
 # Run mutation testing (PIT)
 ./gradlew pitest
 ```
+
+## Gotchas
+
+| Trigger                                                                | Gotcha                                                                               | Fix                                                                              |
+| ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------- |
+| Testing a private method via reflection (`setAccessible(true)`)        | Couples test to implementation; breaks on rename or visibility change                | Test through the public interface that exercises the private logic               |
+| Asserting `verify(repo, times(1)).findById(...)` instead of the result | Breaks on caching, batching, or any refactor — tests the mechanism, not the behavior | Assert on the returned result or observable side effect, not how it was obtained |
+| Testing null/empty inputs that can never occur in the system           | Bloats test suite; encourages defensive code that hides real bugs                    | Test realistic input ranges only; match edge cases to actual system boundaries   |
+| `assertThat(health).isEqualTo(150)` with an exact formula match        | Breaks on any formula tweak; encodes the implementation, not the business rule       | Test comparative invariant (`highVit.health > lowVit.health`) not exact values   |
+| 100% line coverage with assertions that don't verify correctness       | Coverage is green; mutations survive                                                 | Run mutation testing; require ≥80% score; review asserts on each changed line    |
+| Organizing tests as one method per production method                   | Misses behavior variations and error cases; becomes a checklist                      | Organize by scenario/behavior with descriptive names; use `@Nested` groups       |
+
+For detailed examples of each anti-pattern, see `references/anti-patterns.md`.

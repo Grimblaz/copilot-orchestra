@@ -116,5 +116,20 @@ gh issue list --search "{key phrase from title}" --state open --json number,titl
 If a matching issue exists, do NOT create a duplicate. Instead, reference the existing issue number in the current work context (PR body, review notes, or tracking file).
 
 > **Exception**: Skip when the title contains a high-entropy machine-generated unique identifier — specifically a full commit SHA (40 hex chars) or UUID v4 (128-bit random) — that guarantees no collision. Short tokens, sequential IDs, and timestamps do not qualify.
-
+>
 > **Note on search-index timing**: GitHub's search index has a propagation delay (typically seconds to minutes). The dedup search cannot prevent sub-second re-submissions — that failure mode is addressed by output capture (Section 2a). This search guards against independent code-path convergence (the same topic created by separate agents on different branches or sessions).
+
+**Cross-repo gotcha dedup** (used by Process-Review §4.8 upstream lifecycle):
+
+```powershell
+# Cross-repo dedup — use --repo flag to target the upstream Copilot Orchestra repo:
+# Read copilot-orchestra-repo from .github/copilot-instructions.md first
+gh issue list --repo {copilot-orchestra-repo} --search "[Gotcha] {skill-name}" --state all --json number,title --jq '.[] | "\(.number): \(.title)"'
+```
+
+Key differences from the standard pattern:
+
+- `--repo {copilot-orchestra-repo}` targets the upstream template repo (not the current repo)
+- `--state all` includes closed issues (a resolved gotcha should not be re-submitted)
+- Search key format is `[Gotcha] {skill-name}` — the `[Gotcha]` prefix groups all gotcha issues for that skill
+- If `gh` cannot access the upstream repo, fall back to creating a local issue with label `upstream-gotcha` for manual transfer

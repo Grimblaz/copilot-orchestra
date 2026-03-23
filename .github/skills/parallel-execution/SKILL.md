@@ -74,3 +74,14 @@ At issue/PR completion, record a short process checkpoint:
 - What single guardrail should be added next?
 
 Track this in the completion summary to improve future cycles.
+
+## Gotchas
+
+| Trigger                                                                                           | Gotcha                                                                    | Fix                                                                                                  |
+| ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Test-Writer writes tests to match Code-Smith's implementation instead of the Requirement Contract | Tests pass but AC is not met; the test is wrong, not the implementation   | Route back as `test defect` with evidence when assertion appears over-constrained relative to AC     |
+| Starting implementation lanes before the Requirement Contract is agreed                           | Lanes diverge against different assumptions; reconciliation is expensive  | Mandate Requirement Contract before any lane begins — block execution until it exists                |
+| Advancing to the next phase on a verbal "looks good"                                              | Missing explicit green/valid/non-brittle confirmation; state is ambiguous | Block phase advance until all 3 convergence criteria explicitly stated in writing                    |
+| More than 3 correction cycles with no resolution                                                  | Infinite loop; work stalls; effort compounds with no progress             | At cycle 3, perform root-cause analysis and escalate via `vscode/askQuestions` with concrete options |
+| Classifying a test defect as a code defect (or vice versa)                                        | Wrong agent receives the correction task; fix misses the actual problem   | Triage before routing: `code defect`, `test defect`, or `harness/env defect` — require evidence      |
+| Skipping the post-issue process checkpoint after merge                                            | Lessons from slow steps and late failures are lost                        | Record the 3-question checkpoint in every completion summary                                         |
