@@ -107,7 +107,6 @@ Quick checklist before declaring mode for a step:
 ## Core Workflow
 
 <!-- markdownlint-disable-next-line MD029 -->
-
 0. **Issue Transition (Step 0, before implementation)**:
    - Cleanup note: The `.github/copilot-instructions.md` "Session Startup Check" detects stale tracking files from merged branches and prompts you at the start of your next conversation — cleanup requires one confirmation. If stale artifacts persist, run `$copilotRoot = if ($env:COPILOT_ORCHESTRA_ROOT) { $env:COPILOT_ORCHESTRA_ROOT } else { $env:WORKFLOW_TEMPLATE_ROOT }; pwsh "$copilotRoot/.github/scripts/post-merge-cleanup.ps1" -IssueNumber {N} -FeatureBranch feature/issue-{N}-description` directly (only if `$copilotRoot` is non-empty — requires `COPILOT_ORCHESTRA_ROOT` or `WORKFLOW_TEMPLATE_ROOT` to be set).
    - Optional planning lane: If scope/acceptance criteria changed or are ambiguous, call Issue-Planner to confirm whether plan updates are needed before execution.
@@ -293,6 +292,26 @@ Include in each pass prompt: `"Change type: {classification}. Per Code-Critic's 
 - Do NOT skip passes because a prior pass "already covered" the code. That reasoning defeats the purpose.
 - Do NOT merge passes into one call — each must be a separate subagent invocation.
 - After all passes complete, merge all findings into a single ledger. Deduplicate only when two passes flag **identical evidence at the same file/line** — different framing of the same issue counts as one finding. Complementary findings from different passes are additive. Preserve `pass: N` tags in the merged ledger. For deduplicated findings, the **earliest pass** gets credit (lowest pass number).
+
+#### Express Lane Gate (R6, Standard and Post-Fix Code Review Only)
+
+After merging and deduplicating the prosecution ledger, partition findings before the defense pass:
+
+A finding qualifies for the **express lane** (bypasses defense+judge, routes directly to specialist) only when ALL six criteria are met:
+
+1. **Severity is `low`** — as rated by prosecution output (the only severity level below medium in the `critical | high | medium | low` schema)
+2. **Fix type is strictly mechanical**: string literal changes, import path fixes, comment corrections, or formatting fixes — exhaustive list; no other fix types qualify
+3. **No logic changes**: the fix does not add, remove, or modify any `if`/`else`/`switch`/loop/return/guard clause or conditional short-circuit (`&&`/`||` guard reordering)
+4. **No test file cascade**: the fix does not require changes to any test file or assertion
+5. **Changed value not in stored IDs or DB schema**: backward compatibility is not at risk
+6. **Scope ≤ 1 file**: the fix touches exactly one file
+
+Route express-eligible findings directly to the specialist dispatch queue with an `express_lane: true` marker. All remaining findings continue to the defense → judge pipeline as normal.
+
+**Scope restriction**: Express lane applies to **standard code review prosecution and post-fix targeted prosecution only** — it does NOT apply to proxy prosecution (GitHub review intake), CE prosecution, or design/plan review prosecution. (In proxy prosecution sessions, Code-Conductor does not have access to the diff context required to verify criteria 2 and 3. R4 and R5 still apply to proxy prosecution sessions.)
+
+**Tier 1 re-validation required**: After the specialist applies an express-lane fix, re-run Tier 1 validation (build + lint/typecheck + tests) before proceeding. (When batched under R4, Tier 1 re-validation runs once after all express-lane specialist fixes in the batch are applied.) If Tier 1 fails, route the failure via the Failure Triage Rule and resolve it before proceeding.
+
 - **Defense pass**: Invoke Code-Critic with the merged prosecution ledger and the marker `"Use defense review perspectives"`. Defense reviews the full ledger in a single pass and emits a Defense Report.
 - **Judge pass**: Invoke Code-Review-Response with both the merged prosecution ledger and the defense report. Judge rules final on all items and emits a score summary.
 
@@ -333,6 +352,17 @@ Default to <1 day. Only defer if ALL of these apply: 5+ files, new subsystem des
 
 For DEFERRED-SIGNIFICANT items, create a GitHub tracking issue automatically — no user approval required. Include PR link, review comment reference, and acceptance target in the issue body.
 
+#### Batch Specialist Dispatch (R4)
+
+Before dispatching any findings to specialists, complete **all** routing decisions first (express-lane partition from the prosecutor pass + judge rulings). Then dispatch in a single batch per specialist agent:
+
+1. **Collect**: Gather all accepted findings into two queues — express-lane findings (partitioned before defense) and judge-accepted findings (from Code-Review-Response ruling). Do not dispatch either queue until both are finalized.
+2. **Group by agent**: Using the Agent Selection table, map each finding to its specialist. Group all findings for the same agent into one list.
+3. **Dispatch**: Make one `runSubagent` call per unique specialist agent, passing all that agent's findings together. Order findings within each call by finding ID (ascending). Each finding must be individually described with its evidence, file reference, and line reference in the prompt — do not summarize or merge finding descriptions.
+4. **Exception**: If two findings for the same agent require contradictory fix approaches (e.g., one requires adding a guard clause, another requires removing the same guard), split them into separate calls and document the rationale.
+
+This replaces the default pattern of one call per finding.
+
 #### GitHub Response Posting
 
 When the review originated from GitHub (proxy prosecution pipeline), Code-Conductor posts concise responses to GitHub review comments with final disposition and score evidence after routing accepted fixes to specialists.
@@ -358,7 +388,7 @@ Skip if no findings were accepted and applied (post-judgment: all REJECT or DEFE
 
 **Prosecution scope constraint** — Post-fix prosecution evaluates fix-introduced regressions and direct side effects only. Findings unrelated to the fix diff changes (pre-existing style issues, optimization opportunities in untouched code, general code quality concerns in surrounding area) must be classified as DEFERRED-SIGNIFICANT regardless of severity. The out-of-diff AC exception is preserved: if a finding outside the diff maps to an explicit acceptance criterion item, the AC Cross-Check Gate applies.
 
-**Pipeline** — 3 parallel prosecution passes (diff-scoped) → merge deduplicated ledger → 1 defense pass → 1 judge pass (Code-Review-Response). Same protocol as main review, smaller input scope.
+**Pipeline (R2)** — 1 prosecution pass (diff-scoped). If pass 1 produces ≥1 finding, run 1 conditional follow-up pass. Merge the 1-or-2-pass results into a deduplicated ledger → 1 defense pass → 1 judge pass (Code-Review-Response). If pass 1 finds nothing, post-fix review is complete — skip defense, judge, and routing, and proceed directly to the CE Gate. Express lane (R6) applies to post-fix prosecution findings after the 1-or-2-pass merge.
 
 **Routing** — Route accepted findings to specialists per the Agent Selection table. Loop budget: 1 fix-revalidate cycle. If further issues remain after one cycle, they converge through the standard terminal state (DEFERRED-SIGNIFICANT → auto-tracking issue). If the post-fix judge accepts zero findings (all DEFERRED-SIGNIFICANT or REJECTED), no specialist routing occurs; proceed directly to the CE Gate.
 
@@ -569,16 +599,29 @@ postfix_judge_rejected: {N}
 postfix_judge_deferred: {N}
 postfix_defense_disproved: {N}
 postfix_rework_cycles: {N}
+express_lane_count: {N}
+postfix_passes: {1|2|n/a}
+batch_dispatch_calls: {N}
+batch_dispatch_findings: {N}
+rate_limit_retries: {N}
+rate_limit_deferred: {true|false}
 findings:
   - id: F1
-    category: architecture
-    severity: high
-    points: 10
+    category: documentation
+    severity: low
+    points: 1
     pass: 1
-    defense_verdict: conceded
-    judge_ruling: sustained
-    judge_confidence: high
     review_stage: main
+    express_lane: true  # optional — present only for express-laned findings; defense_verdict and judge_ruling are absent because express-laned findings bypass defense and judge (scripts default judge_ruling to "finding-sustained" for backward compat)
+    judge_ruling: finding-sustained
+  - id: F3
+    category: documentation
+    severity: low
+    points: 1
+    pass: 1
+    review_stage: postfix
+    express_lane: true  # post-fix targeted prosecution express-lane example
+    judge_ruling: finding-sustained
   - id: F2
     category: performance
     severity: medium
@@ -591,7 +634,7 @@ findings:
 -->
 ```
 
-**Default values**: `0` for numeric fields when the stage ran but found nothing. `n/a` for categorical fields when the stage was skipped entirely (e.g., `ce_gate_result: not-applicable`, `ce_gate_intent: n/a` when `ce_gate: false`). `ce_gate_defects_found: n/a` when the CE Gate did not run (`ce_gate: false` or `⏭️ CE Gate not applicable`). For proxy prosecution (GitHub review intake): `pass_1_findings`, `pass_2_findings`, `pass_3_findings` → `n/a` (3-pass structure replaced by proxy pass); route total findings count to `prosecution_findings` only. `postfix_*` numeric fields default to `0` when post-fix review was triggered but found nothing; `n/a` when not triggered (`postfix_triggered: false`). Set `postfix_triggered: true` when trigger conditions are met and post-fix prosecution executes (regardless of whether any findings were accepted). Set `postfix_triggered: false` when the skip rule applies or trigger criteria are not satisfied. For `findings:` array: emit as an empty list (`findings: []`) when no findings exist. For proxy prosecution (GitHub review intake), include all validated GitHub findings with `review_stage: proxy`.
+**Default values**: `0` for numeric fields when the stage ran but found nothing. `n/a` for categorical fields when the stage was skipped entirely (e.g., `ce_gate_result: not-applicable`, `ce_gate_intent: n/a` when `ce_gate: false`). `ce_gate_defects_found: n/a` when the CE Gate did not run (`ce_gate: false` or `⏭️ CE Gate not applicable`). For proxy prosecution (GitHub review intake): `pass_1_findings`, `pass_2_findings`, `pass_3_findings` → `n/a` (3-pass structure replaced by proxy pass); route total findings count to `prosecution_findings` only. `postfix_*` numeric fields default to `0` when post-fix review was triggered but found nothing; `n/a` when not triggered (`postfix_triggered: false`). Set `postfix_triggered: true` when trigger conditions are met and post-fix prosecution executes (regardless of whether any findings were accepted). Set `postfix_triggered: false` when the skip rule applies or trigger criteria are not satisfied. For `findings:` array: emit as an empty list (`findings: []`) when no findings exist. For proxy prosecution (GitHub review intake), include all validated GitHub findings with `review_stage: proxy`. New optimization fields: `express_lane_count`, `batch_dispatch_calls`, `batch_dispatch_findings`, `rate_limit_retries` default to `0` when the stage ran; `n/a` when the relevant phase was not active for the current review mode (e.g., `express_lane_count: n/a` for proxy, CE, or design review; `batch_dispatch_calls`/`batch_dispatch_findings: n/a` only for review modes where specialist dispatch is not active — such as standalone design-review flows that stop after prosecution). `postfix_passes` defaults to `n/a` when post-fix review was not triggered; `1` or `2` to reflect actual passes run. `rate_limit_deferred` defaults to `false`. `express_lane: true` is present in the findings array only for express-laned items — absence means the item went through the full prosecution→defense→judge pipeline.
 
 **Verdict mapping**: Map verdicts from the judge's score summary table to the corresponding metric fields:
 
@@ -640,6 +683,12 @@ if (Test-Path .github/scripts/write-calibration-entry.ps1) {
             judge_accepted       = <N>
             judge_rejected       = <N>
             judge_deferred       = <N>
+            express_lane_count    = <N>
+            postfix_passes        = '<1|2|n/a>'
+            batch_dispatch_calls  = <N>
+            batch_dispatch_findings = <N>
+            rate_limit_retries    = <N>
+            rate_limit_deferred   = $<true|false>
         }
     } | ConvertTo-Json -Depth 10 -Compress
     # -NoProfile prevents user profile scripts from interfering with unattended execution
@@ -703,6 +752,32 @@ You are expected to follow the plan, but not blindly. A good engineering manager
 - A step's entire premise is invalid (the feature it builds on doesn't exist or works differently than assumed)
 - The plan's scope seems wrong (too much or too little for the issue)
 - You discover a significant design question the plan didn't address
+
+## Subagent Call Resilience (R5)
+
+When a subagent call fails or returns no output, classify the failure before routing:
+
+**Rate-limit detection (heuristic)**: A call is presumed rate-limited when: the subagent returns no output or an empty response, the error message contains terms such as `rate limit`, `throttle`, `capacity`, `quota`, or `too many requests`, or when the same subagent call fails twice in succession without a clear tool-error cause.
+
+**Non-rate-limit errors** (parse failures, tool-specific errors, environment issues) route to `## Error Handling`, not backoff.
+
+**Backoff protocol (R5)** (rate-limit failures only):
+
+1. Wait `2^attempt × 30s` before retrying (attempt 1 = 60s, attempt 2 = 120s).
+2. On Sonnet-class model failure: before entering backoff, consider switching to an Opus-class model — Sonnet and Opus have separate per-model TPM limits, so Opus may still be available when Sonnet is throttled.
+3. After **2 consecutive retry failures** for the same call (3 total attempts in the timeout-failure path; the rate-limit-heuristic detection path described above may trigger a prompt after 2 attempts when the initial call + 1 retry both return empty output): prompt via `#tool:vscode/askQuestions` with:
+   - Option A: "Defer remaining work — {N} findings pending (resume next session from current phase)" _(recommended)_
+   - Option B: "Skip remaining low-severity findings and continue" — only available when all pending findings are `low` severity; Critical/High/Medium findings cannot be skipped.
+
+   If the user selects Option A (or only Option A is presented because Option B's condition is not met):
+   - Save pending work state to session memory — record the deferred findings, the interrupted step, and the resume point.
+   - Emit: `⚠️ Rate limit: deferring remaining work — {N} findings pending. Resume from the current phase using session memory as ground truth for deferred state.`
+   - Do NOT silently drop deferred findings. They must be re-processed in the next session.
+
+   If the user selects Option B:
+   - Skip remaining low-severity findings, log them to session memory as intentionally skipped, and continue.
+
+**Applies to**: ALL subagent calls (Code-Smith, Test-Writer, Code-Critic, Code-Review-Response, Refactor-Specialist, Doc-Keeper, Experience-Owner, and any other specialist).
 
 ## Error Handling
 
