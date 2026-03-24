@@ -67,7 +67,7 @@ Only the `plans/` subdirectory was removed. The `research/` subdirectory and any
 | Agent | Responsibility |
 |-------|----------------|
 | Issue-Planner (Section 6) | Write plan to session memory |
-| Code-Conductor (D9) | On explicit Stop / Pause, persist the current plan to the canonical GitHub comment when the latest persisted handoff is missing or changed |
+| Code-Conductor (D9) | On explicit Stop / Pause, persist the current plan to the canonical GitHub comment when the latest persisted handoff is missing or changed after normalizing away transport-only formatting drift, including line-ending normalization and trailing newlines/whitespace |
 | Code-Conductor (Step 1) | Read plan using the lookup chain above |
 | Specialist agents | Reference "plan" (not "plan file") in instructions |
 
@@ -129,7 +129,7 @@ Design should be settled before implementation begins. Mid-implementation design
 | Agent | Responsibility |
 |-------|----------------|
 | Issue-Planner (Section 6) | Create design cache to session memory after plan approval |
-| Code-Conductor (D9) | On explicit Stop / Pause, persist the current design snapshot to the canonical GitHub comment when the latest persisted handoff is missing or changed |
+| Code-Conductor (D9) | On explicit Stop / Pause, persist the current design snapshot to the canonical GitHub comment when the latest persisted handoff is missing or changed after normalizing away transport-only formatting drift, including line-ending normalization and trailing newlines/whitespace |
 | Code-Conductor (Step 1) | Read design cache using lookup chain above; recreate from issue body if absent (session reset recovery) |
 | Code-Conductor (Step 3) | Re-read design cache at major phase boundaries for alignment checks |
 | Code-Conductor (CE Gate) | Read design intent from cache (fallback: issue body) |

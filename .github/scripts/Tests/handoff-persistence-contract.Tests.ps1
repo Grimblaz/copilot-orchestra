@@ -22,7 +22,7 @@
             - Canonical plan and design markers remain unchanged
             - Latest-comment-wins lookup and bundle plan naming remain unchanged
 
-    These tests are RED coverage for issue #186 until the wording contract is updated.
+        These tests actively enforce the D9-owned handoff persistence wording contract for issue #186 and guard against future contract drift.
 #>
 
 Describe 'execution handoff persistence contract' {

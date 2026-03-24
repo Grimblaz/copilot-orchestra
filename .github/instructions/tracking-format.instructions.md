@@ -172,9 +172,9 @@ When using a cloud agent (e.g., Codex) for implementation, it creates its own br
 | Phase | Agent | Output Location |
 | --- | --- | --- |
 | Design | Solution-Designer | Updates **issue body** with full design details |
-| Planning | Issue Planner | Saves plan to session memory (`/memories/session/plan-issue-{ID}.md`) and caches design context at `/memories/session/design-issue-{ID}.md` |
-| D9 handoff | Code Conductor | Continue: reads session memory only. Stop / Pause: writes durable GitHub issue comments with `<!-- plan-issue-{ID} -->` and `<!-- design-issue-{ID} -->` markers when the latest persisted handoff is missing or changed |
-| Implementation | Code Conductor | Reads plan from session memory first, then the latest matching GitHub issue comment; reads design cache from session memory first, then the latest matching GitHub issue comment, then the issue body. Commits design doc to `Documents/Design/{domain-slug}.md` with the implementation PR |
+| Planning | Issue-Planner | Saves plan to session memory (`/memories/session/plan-issue-{ID}.md`) and caches design context at `/memories/session/design-issue-{ID}.md` |
+| D9 handoff | Code-Conductor | Continue: reads session memory only. Stop / Pause: writes durable GitHub issue comments with `<!-- plan-issue-{ID} -->` and `<!-- design-issue-{ID} -->` markers when the latest persisted handoff is missing or changed |
+| Implementation | Code-Conductor | Reads plan from session memory first, then the latest matching GitHub issue comment; reads design cache from session memory first, then the latest matching GitHub issue comment, then the issue body. Commits design doc to `Documents/Design/{domain-slug}.md` with the implementation PR |
 
 ### Rules
 

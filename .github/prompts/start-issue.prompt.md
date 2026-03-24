@@ -141,10 +141,10 @@ Adjust the branch naming pattern to match your project:
 
 **Examples**:
 
-- `feature/issue-[NUMBER]-[description]` (default)
-- `feat/PROJ-[NUMBER]-[description]` (with Jira-style prefixes)
-- `feature/[NUMBER]/[description]` (with slash separators)
-- `[github-handle]/issue-[NUMBER]-[description]` (with developer name)
+- `feature/issue-[ISSUE_NUMBER]-[description]` (default)
+- `feat/PROJ-[ISSUE_NUMBER]-[description]` (with Jira-style prefixes)
+- `feature/[ISSUE_NUMBER]/[description]` (with slash separators)
+- `[github-handle]/issue-[ISSUE_NUMBER]-[description]` (with developer name)
 
 ---
 
@@ -155,12 +155,12 @@ Adjust the branch naming pattern to match your project:
 After completing setup with this prompt:
 
 1. **Solution-Designer** → **Issue-Planner**: Pass issue details for planning
-2. **Issue-Planner** → **Code-Conductor**: Issue-Planner saves the implementation plan and design cache to session memory; Continue implementation uses session memory only as the same-session source of truth. At D9, if the user chooses Stop / Pause / resume later, Code-Conductor persists durable GitHub issue comments with the `<!-- plan-issue-[NUMBER] -->` and `<!-- design-issue-[NUMBER] -->` markers for handoff
+2. **Issue-Planner** → **Code-Conductor**: Issue-Planner saves the implementation plan and design cache to session memory; Continue implementation uses session memory only as the same-session source of truth. At D9, if the user chooses Stop / Pause / resume later, Code-Conductor persists durable GitHub issue comments with the `<!-- plan-issue-[ISSUE_NUMBER] -->` and `<!-- design-issue-[ISSUE_NUMBER] -->` markers for handoff
 3. **Code-Conductor** → **Specialized Agents**: Execute phases sequentially
 
 ### Plan Storage
 
-Issue-Planner saves the plan to session memory at `/memories/session/plan-issue-[NUMBER].md` and caches design context at `/memories/session/design-issue-[NUMBER].md` using the `vscode/memory` tool. The plan includes YAML frontmatter (see Issue-Planner Section 6 in `.github/agents/Issue-Planner.agent.md` for field definitions) and a `## Plan` heading with the full implementation steps. Continue implementation uses session memory only as the same-session source of truth. At D9, if the user explicitly chooses Stop / Pause / resume later, Code-Conductor persists durable GitHub issue comments with the `<!-- plan-issue-[NUMBER] -->` and `<!-- design-issue-[NUMBER] -->` markers for cross-session or cloud-agent handoff.
+Issue-Planner saves the plan to session memory at `/memories/session/plan-issue-[ISSUE_NUMBER].md` and caches design context at `/memories/session/design-issue-[ISSUE_NUMBER].md` using the `vscode/memory` tool. The plan includes YAML frontmatter (see Issue-Planner Section 6 in `.github/agents/Issue-Planner.agent.md` for field definitions) and a `## Plan` heading with the full implementation steps. Continue implementation uses session memory only as the same-session source of truth. At D9, if the user explicitly chooses Stop / Pause / resume later, Code-Conductor persists durable GitHub issue comments with the `<!-- plan-issue-[ISSUE_NUMBER] -->` and `<!-- design-issue-[ISSUE_NUMBER] -->` markers for cross-session or cloud-agent handoff.
 
 ---
 
@@ -169,9 +169,9 @@ Issue-Planner saves the plan to session memory at `/memories/session/plan-issue-
 For a rapid start without the full prompt, ensure these minimum requirements:
 
 - [ ] Issue read and understood
-- [ ] Feature branch created: `feature/issue-[NUMBER]-[name]`
+- [ ] Feature branch created: `feature/issue-[ISSUE_NUMBER]-[name]`
 - [ ] Implementation plan delegated to @Issue-Planner
-- [ ] Plan saved by Issue-Planner to session memory: `/memories/session/plan-issue-[NUMBER].md`
+- [ ] Plan saved by Issue-Planner to session memory: `/memories/session/plan-issue-[ISSUE_NUMBER].md`
 - [ ] No blocking dependencies
 
 Then proceed to Phase 1: Research & Planning.
