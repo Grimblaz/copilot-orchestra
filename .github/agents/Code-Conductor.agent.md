@@ -63,6 +63,7 @@ When Code-Conductor orchestrates **hub mode** (any pipeline tier — full or abb
 
 - **When it fires**: After plan approval, before implementation begins — ONLY when at least one upstream phase ran in this session, regardless of whether other phases were skipped by scope classification or prior-session completion. Does NOT fire when the user invokes `/implement` directly.
 - **Options to present**: "Continue implementation" (recommended) / "Pause here — I'll resume with `/implement`"
+- **Allowed D9 values**: `'Continue implementation' | 'Pause here — I'll resume with /implement'` only. Do not introduce alternate labels for this checkpoint.
 - **Interrupt budget effect**: This counts against the overall hub session interruption budget, not the review cycle budget.
 
 ### Review Workflow Interruption Budget (Balanced Policy)
@@ -105,9 +106,7 @@ Quick checklist before declaring mode for a step:
 - **No scope exemption**: Code-Conductor must NEVER create plans directly, regardless of change size, scope classification tier, or multi-issue bundling. All plans are created by Issue-Planner — unconditionally.
 
 ## Core Workflow
-
 <!-- markdownlint-disable-next-line MD029 -->
-
 0. **Issue Transition (Step 0, before implementation)**:
    - Cleanup note: The `.github/copilot-instructions.md` "Session Startup Check" detects stale tracking files from merged branches and prompts you at the start of your next conversation — cleanup requires one confirmation. If stale artifacts persist, run `$copilotRoot = if ($env:COPILOT_ORCHESTRA_ROOT) { $env:COPILOT_ORCHESTRA_ROOT } else { $env:WORKFLOW_TEMPLATE_ROOT }; pwsh "$copilotRoot/.github/scripts/post-merge-cleanup.ps1" -IssueNumber {N} -FeatureBranch feature/issue-{N}-description` directly (only if `$copilotRoot` is non-empty — requires `COPILOT_ORCHESTRA_ROOT` or `WORKFLOW_TEMPLATE_ROOT` to be set).
    - Optional planning lane: If scope/acceptance criteria changed or are ambiguous, call Issue-Planner to confirm whether plan updates are needed before execution.
@@ -121,7 +120,7 @@ When the user invokes Code-Conductor without a specific slash command (e.g., `@c
 
 - `<!-- experience-owner-complete-{ID} -->` found → customer framing done; skip Experience-Owner upstream call
 - `<!-- design-phase-complete-{ID} -->` found → technical design done; skip Solution-Designer
-- Plan found (session memory or `<!-- plan-issue-{ID} -->` comment) → skip upstream phases, proceed to implementation
+- Plan found (session memory or `<!-- plan-issue-{ID} -->` comment) → skip upstream phases; in hub mode, D9 still applies unless the later tier-aware prior-session artifact rules suppress it
 
 Skip hub mode entirely when the user invokes a specific slash command (e.g., `/implement #N`, `/plan #N`, `/design #N`) — these execute the named phase directly; smart resume applies at the phase level, not the hub level. Exception: `/orchestrate` is a slash command that explicitly triggers hub mode — treat it as equivalent to `@code-conductor issue #N` (single issue) or `@code-conductor issues #A #B #C` (multi-issue bundle, per the Multi-Issue Bundling section).
 
@@ -157,7 +156,7 @@ Before calling any upstream agent, classify the issue scope to determine the app
 
 1. **Experience-Owner** (upstream customer framing) — full pipeline only; call with issue number; wait for `<!-- experience-owner-complete-{ID} -->` completion marker in issue comments
 2. **Solution-Designer** (technical design) — full pipeline only; call with issue number; wait for `<!-- design-phase-complete-{ID} -->` completion marker in issue comments
-3. **Issue-Planner** (implementation plan) — both tiers; call with issue number; plan persisted to session memory or issue comment; check for `escalation_recommended` after receiving plan
+3. **Issue-Planner** (implementation plan) — both tiers; call with issue number; plan persisted to session memory, with any durable GitHub handoff comments owned by D9 rather than planner-time posting; check for `escalation_recommended` after receiving plan
 4. **D9 Checkpoint** — both tiers; see below; hub-mode only
 5. **Implementation** → validation ladder → PR
 
@@ -167,16 +166,17 @@ After plan approval and before implementation begins, present this checkpoint �
 
 ```text
 Use `#tool:vscode/askQuestions`:
-- "Continue implementation" (recommended if staying on current model) — proceed to Code-Smith and the implementation pipeline in this session
-- "Pause here — I'll resume with `/implement`" — stop cleanly; all upstream work persisted via smart resume markers; user can switch models and resume
+- "Continue implementation" (recommended if staying on current model) — proceed to Code-Smith in this session using session memory only as the source of truth; create no new `<!-- plan-issue-{ID} -->` or `<!-- design-issue-{ID} -->` comments on this path
+- "Pause here — I'll resume with `/implement`" — before stopping, compare the current session-memory plan and current issue-body design snapshot against the latest matching `<!-- plan-issue-{ID} -->` and `<!-- design-issue-{ID} -->` comments after normalizing away transport-only formatting drift (for example line-ending normalization and trailing newlines/whitespace); append new GitHub issue comments only when the matching marker is missing or the normalized content changed, then stop cleanly so the user can switch models and resume
 ```
 
 > **Note**: D9 fires even if some upstream phases were completed in prior sessions — suppression requires ALL applicable tier-required phase markers to have been completed before this session. If Issue-Planner ran in this session, D9 must fire unless the user already confirmed continuation.
+> **Persistence contract**: D9 owns durable execution-handoff persistence. Continue is the same-session fast path and stays in session memory only. Pause writes durable handoff comments only when needed, using the existing `<!-- plan-issue-{ID} -->` / `<!-- design-issue-{ID} -->` markers, ignoring transport-only formatting drift during comparison, and preserving the same latest-comment-wins lookup semantics already used by smart resume.
 
 **Skip D9 when**:
 
 - User invoked `/implement #N` directly (smart resume determines entry point; no hub-mode pause)
-- Smart resume found ALL upstream phase markers applicable to the current pipeline tier (abbreviated pipeline: `<!-- plan-issue-{ID} -->` comment only; full pipeline: all three phase completion markers) completed in prior sessions — D9 suppression requires prior-session completion, not in-session scope-based skip. For multi-issue bundles, ALL markers for ALL bundled issues (not just the primary issue) must be prior-session complete before D9 may be suppressed (see Multi-Issue Bundling: smart resume applies per-issue independently).
+- Smart resume found ALL prior-session artifacts required by the current pipeline tier (abbreviated pipeline: the `<!-- plan-issue-{ID} -->` comment, which is itself the required durable handoff artifact; full pipeline: the `<!-- experience-owner-complete-{ID} -->` and `<!-- design-phase-complete-{ID} -->` phase markers plus the `<!-- plan-issue-{ID} -->` and `<!-- design-issue-{ID} -->` durable handoff comments). D9 suppression requires those prior-session durable handoff artifacts when the selected tier needs them, not just phase markers, and in-session scope-based skips do not satisfy this rule. For multi-issue bundles, ALL required prior-session markers and durable handoff comments for ALL bundled issues (not just the primary issue) must already exist before D9 may be suppressed (see Multi-Issue Bundling: smart resume applies per-issue independently).
 - User has already answered the D9 checkpoint in this session (e.g., selected the "Continue implementation" option in the D9 `#tool:vscode/askQuestions` prompt)
 
 ### Multi-Issue Bundling
@@ -186,7 +186,7 @@ When the user invokes hub mode for multiple issues at once (e.g., `@code-conduct
 1. **Per-issue marker check**: Use `mcp_github_issue_read` with `method: get_comments` for each issue to detect completed upstream phases. Smart resume applies per-issue independently.
 2. **Per-issue scope classification**: Classify each issue separately using the Scope Classification Gate rubric. The bundle adopts the **highest-scope tier** (if any issue requires full pipeline, run full pipeline for all). Present all issue classifications in a single `#tool:vscode/askQuestions` call — do not make separate per-issue prompts. Format your recommendation as a list entry per issue showing recommended tier and the key criterion driving the classification, followed by the 'highest-scope-wins' bundle tier.
 3. **Shared upstream execution**: Run upstream phases based on the adopted bundle tier: **Full pipeline** — call Experience-Owner, then Solution-Designer, then Issue-Planner, once for the bundle covering all issues together. **Abbreviated pipeline** — call Issue-Planner only, once for the bundle. Issue-Planner creates a single bundled plan.
-4. **Plan naming**: Use `plan-bundle-{primary}-{secondary1}-{secondaryN}` (e.g., `plan-bundle-163-164-165`), where primary is the first issue listed in the invocation and secondaries follow in invocation order. Save to session memory at `/memories/session/plan-bundle-{primary}-{secondary1}-{secondaryN}.md`. Post plan as a GitHub issue comment to each issue with its corresponding `<!-- plan-issue-{ID} -->` marker.
+4. **Plan naming**: Use `plan-bundle-{primary}-{secondary1}-{secondaryN}` (e.g., `plan-bundle-163-164-165`), where primary is the first issue listed in the invocation and secondaries follow in invocation order. Save to session memory at `/memories/session/plan-bundle-{primary}-{secondary1}-{secondaryN}.md`. At bundle D9, "Continue implementation" stays session-memory-only; "Pause here — I'll resume with `/implement`" compares the current bundle plan and each issue's current design snapshot against the latest matching marker comments after normalizing away transport-only formatting drift (for example line-ending normalization and trailing newlines/whitespace), then appends `<!-- plan-issue-{ID} -->` / `<!-- design-issue-{ID} -->` comments only for issues whose durable handoff artifact is missing or whose normalized content changed.
 5. **Completion markers**: Track completion markers per-issue. When an issue's acceptance criteria are fully addressed, post its completion marker comment.
 6. **Single-issue flow is unaffected**: These rules apply only when multiple issues are bundled in a single invocation.
 

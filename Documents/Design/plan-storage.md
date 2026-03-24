@@ -17,7 +17,7 @@ Plans are stored in VS Code session memory at `/memories/session/plan-issue-{ID}
 | Layer | Location | Created by | Required |
 |-------|----------|------------|----------|
 | Primary | `/memories/session/plan-issue-{ID}.md` | Issue-Planner (`memory` tool `create`) | Yes |
-| Secondary | GitHub issue comment with `<!-- plan-issue-{ID} -->` as first line | Issue-Planner (opt-in) | No |
+| Secondary | GitHub issue comment with `<!-- plan-issue-{ID} -->` as first line | Code-Conductor at D9 Stop / Pause when durable handoff is needed | No |
 
 ### Lookup Chain (Code-Conductor)
 
@@ -52,11 +52,9 @@ ce_gate: false        # true if CE Gate is required
 
 Session memory is immediately available, requires no file system operations, and avoids gitignored-file management overhead. Limitation: cleared when the VS Code conversation ends.
 
-### D2 — GitHub issue comment as optional persistence
+### D2 — GitHub issue comment as explicit D9 durable handoff
 
-Providing an opt-in GitHub issue comment gives cross-session and cloud-agent handoff support without polluting issue threads for simple same-session work. The `<!-- plan-issue-{ID} -->` HTML comment on the first line is the canonical detection marker.
-
-Default answer to the prompt is **No** (session memory only).
+Continue implementation uses session memory only as the same-session source of truth. Cross-session and cloud-agent handoff rely on Code-Conductor writing the current plan to a GitHub issue comment only when the user explicitly chooses Stop / Pause at D9. The `<!-- plan-issue-{ID} -->` HTML comment on the first line remains the canonical detection marker, and readers continue to use the latest matching comment.
 
 ### D3 — Removal of `.copilot-tracking/plans/`
 
@@ -68,7 +66,8 @@ Only the `plans/` subdirectory was removed. The `research/` subdirectory and any
 
 | Agent | Responsibility |
 |-------|----------------|
-| Issue-Planner (Section 6) | Write plan to session memory; prompt for optional issue-comment persistence |
+| Issue-Planner (Section 6) | Write plan to session memory |
+| Code-Conductor (D9) | On explicit Stop / Pause, persist the current plan to the canonical GitHub comment when the latest persisted handoff is missing or changed |
 | Code-Conductor (Step 1) | Read plan using the lookup chain above |
 | Specialist agents | Reference "plan" (not "plan file") in instructions |
 
@@ -91,7 +90,7 @@ The design cache stores the full design content from the GitHub issue body in a 
 | Layer | Location | Created by | Required |
 |-------|----------|------------|----------|
 | Primary | `/memories/session/design-issue-{ID}.md` | Issue-Planner (Section 6) after plan approval | No |
-| Secondary | GitHub issue comment with `<!-- design-issue-{ID} -->` as first line | Issue-Planner (opt-in, same single "Yes" prompt as plan comment) | No |
+| Secondary | GitHub issue comment with `<!-- design-issue-{ID} -->` as first line | Code-Conductor at D9 Stop / Pause when durable handoff is needed | No |
 
 ### Design Cache Lookup Chain (Code-Conductor)
 
@@ -119,7 +118,7 @@ Summarizing introduces the same context-loss risk the cache is intended to solve
 
 #### DC2 — Session memory as primary, issue body as source of truth
 
-The session memory file is a cache, not the source of truth. The GitHub issue body remains authoritative. On session reset, Code-Conductor recreates the cache from the issue body (fallback creator role).
+The session memory file is a cache, not the source of truth. Solution-Designer still writes the authoritative design to the GitHub issue body unconditionally during design. On session reset, Code-Conductor first checks the latest matching `<!-- design-issue-{ID} -->` handoff comment if one was written at D9 Stop / Pause, then falls back to recreating the cache from the issue body.
 
 #### DC3 — No staleness detection
 
@@ -129,7 +128,8 @@ Design should be settled before implementation begins. Mid-implementation design
 
 | Agent | Responsibility |
 |-------|----------------|
-| Issue-Planner (Section 6) | Create design cache to session memory after plan approval; optionally persist as GitHub issue comment (same "Yes" prompt as plan) |
+| Issue-Planner (Section 6) | Create design cache to session memory after plan approval |
+| Code-Conductor (D9) | On explicit Stop / Pause, persist the current design snapshot to the canonical GitHub comment when the latest persisted handoff is missing or changed |
 | Code-Conductor (Step 1) | Read design cache using lookup chain above; recreate from issue body if absent (session reset recovery) |
 | Code-Conductor (Step 3) | Re-read design cache at major phase boundaries for alignment checks |
 | Code-Conductor (CE Gate) | Read design intent from cache (fallback: issue body) |
@@ -160,14 +160,14 @@ The session memory strategy (primary plan store at `/memories/session/plan-issue
 | Manual `/compact` (user-initiated) | Session memory files survive — accessible immediately after compaction |
 | Auto-compaction (VS Code 1.110+ trigger) | Session memory files survive — same durable store, same outcome |
 | Session end (conversation closed) | Session memory cleared — plan/design cache lost |
-| Cross-session or cloud agent handoff | Requires GitHub issue comment persistence (opt-in "Yes" at plan creation) |
+| Cross-session or cloud agent handoff | Requires an explicit D9 Stop / Pause so Code-Conductor persists the latest `plan-issue` / `design-issue` handoff comments |
 
 ### Progress Checkpointing (1.110 Addition)
 
 Code-Conductor now maintains progress annotations in the session memory plan file: each completed step's title line is annotated with `— ✅ DONE`. This ensures:
 
 1. **Deterministic post-compaction resume**: Code-Conductor can identify the first incomplete step by scanning for title lines not ending in `— ✅ DONE`, without re-deriving progress from git state.
-2. **Cross-session recovery**: If the plan was persisted as a GitHub issue comment, Code-Conductor recreates the session memory plan file from the comment on session reset, then uses branch-state inference to determine the resume point (the persisted comment does not contain `— ✅ DONE` annotations; those exist only in the live session memory file).
+2. **Cross-session recovery**: If the user explicitly chose Stop / Pause and Code-Conductor persisted the plan as a GitHub issue comment, Code-Conductor recreates the session memory plan file from the latest matching comment on session reset, then uses branch-state inference to determine the resume point (the persisted comment does not contain `— ✅ DONE` annotations; those exist only in the live session memory file).
 
 **Implementation**: Code-Conductor's Step 3 execution loop uses `vscode/memory str_replace` to append exactly `— ✅ DONE` to the completed step's title line. This is atomic (no risk of double annotation), preserves all other step content, and produces a scannable text marker.
 
