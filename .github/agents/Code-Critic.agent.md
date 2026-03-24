@@ -350,13 +350,13 @@ Every finding must also include these automation-routing fields:
 
 **Root cause tagging**: After identifying each finding, tag the `systemic_fix_type` — ask: _What kind of guardrail would prevent this defect class?_ This is a lightweight classification, not a full root cause analysis — Process-Review will perform deeper analysis on sustained findings retrospectively (Sub C).
 
-| Value | Meaning | Example |
-|---|---|---|
-| `instruction` | Missing or insufficient rule in an instruction file | Input validation rule missing from safe-operations |
-| `skill` | Missing guidance in a skill file | TDD skill doesn't cover this test pattern |
-| `agent-prompt` | Agent prompt doesn't enforce this practice | Code-Smith doesn't check for X before Y |
-| `plan-template` | Issue-Planner templates don't capture this requirement | Plans don't include rollback criteria |
-| `none` | Novel issue, no obvious systemic prevention | First-time edge case |
+| Value           | Meaning                                                | Example                                            |
+| --------------- | ------------------------------------------------------ | -------------------------------------------------- |
+| `instruction`   | Missing or insufficient rule in an instruction file    | Input validation rule missing from safe-operations |
+| `skill`         | Missing guidance in a skill file                       | TDD skill doesn't cover this test pattern          |
+| `agent-prompt`  | Agent prompt doesn't enforce this practice             | Code-Smith doesn't check for X before Y            |
+| `plan-template` | Issue-Planner templates don't capture this requirement | Plans don't include rollback criteria              |
+| `none`          | Novel issue, no obvious systemic prevention            | First-time edge case                               |
 
 - `defense_verdict`: disproved | conceded | insufficient-to-disprove — filled in by defense pass
 - `judge_confidence`: high | medium | low — filled in by judge
