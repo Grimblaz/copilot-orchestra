@@ -79,12 +79,15 @@ Describe 'write-calibration-entry.ps1' {
         $script:Invoke = {
             param(
                 [string]$WorkDir,
-                [string]$EntryJson
+                [string]$EntryJson = '',
+                [string]$EventJson = ''
             )
             Push-Location $WorkDir
             try {
-                $stdout = & pwsh -NoProfile -NonInteractive -File $script:ScriptFile `
-                    -EntryJson $EntryJson 2>&1
+                $scriptArgs = @()
+                if ($EntryJson) { $scriptArgs += @('-EntryJson', $EntryJson) }
+                if ($EventJson) { $scriptArgs += @('-ReactivationEventJson', $EventJson) }
+                $stdout = & pwsh -NoProfile -NonInteractive -File $script:ScriptFile @scriptArgs 2>&1
                 $exitCode = $LASTEXITCODE
                 # Separate ErrorRecord objects (stderr) from plain strings (stdout)
                 $errLines = ($stdout | Where-Object { $_ -is [System.Management.Automation.ErrorRecord] }) -join "`n"
@@ -592,70 +595,9 @@ Describe 'write-calibration-entry.ps1' {
                 trigger_source  = 'code_prosecution'
             }
 
-            # ------------------------------------------------------------------
-            # Helper: invoke with -ReactivationEventJson only
-            # ------------------------------------------------------------------
-            $script:InvokeEvent = {
-                param(
-                    [string]$WorkDir,
-                    [string]$EventJson
-                )
-                Push-Location $WorkDir
-                try {
-                    $stdout = & pwsh -NoProfile -NonInteractive -File $script:ScriptFile `
-                        -ReactivationEventJson $EventJson 2>&1
-                    $exitCode = $LASTEXITCODE
-                    $errLines = ($stdout | Where-Object { $_ -is [System.Management.Automation.ErrorRecord] }) -join "`n"
-                    $outLines = ($stdout | Where-Object { $_ -isnot [System.Management.Automation.ErrorRecord] }) -join "`n"
-                    return @{ ExitCode = $exitCode; Output = $outLines; Error = $errLines }
-                }
-                finally {
-                    Pop-Location
-                }
-            }
-
-            # ------------------------------------------------------------------
-            # Helper: invoke with both -EntryJson and -ReactivationEventJson
-            # ------------------------------------------------------------------
-            $script:InvokeBoth = {
-                param(
-                    [string]$WorkDir,
-                    [string]$EntryJson,
-                    [string]$EventJson
-                )
-                Push-Location $WorkDir
-                try {
-                    $stdout = & pwsh -NoProfile -NonInteractive -File $script:ScriptFile `
-                        -EntryJson $EntryJson -ReactivationEventJson $EventJson 2>&1
-                    $exitCode = $LASTEXITCODE
-                    $errLines = ($stdout | Where-Object { $_ -is [System.Management.Automation.ErrorRecord] }) -join "`n"
-                    $outLines = ($stdout | Where-Object { $_ -isnot [System.Management.Automation.ErrorRecord] }) -join "`n"
-                    return @{ ExitCode = $exitCode; Output = $outLines; Error = $errLines }
-                }
-                finally {
-                    Pop-Location
-                }
-            }
-
-            # ------------------------------------------------------------------
-            # Helper: invoke with neither -EntryJson nor -ReactivationEventJson
-            # ------------------------------------------------------------------
-            $script:InvokeNeither = {
-                param(
-                    [string]$WorkDir
-                )
-                Push-Location $WorkDir
-                try {
-                    $stdout = & pwsh -NoProfile -NonInteractive -File $script:ScriptFile 2>&1
-                    $exitCode = $LASTEXITCODE
-                    $errLines = ($stdout | Where-Object { $_ -is [System.Management.Automation.ErrorRecord] }) -join "`n"
-                    $outLines = ($stdout | Where-Object { $_ -isnot [System.Management.Automation.ErrorRecord] }) -join "`n"
-                    return @{ ExitCode = $exitCode; Output = $outLines; Error = $errLines }
-                }
-                finally {
-                    Pop-Location
-                }
-            }
+            # InvokeEvent/InvokeBoth/InvokeNeither all use the unified
+            # $script:Invoke helper (defined in top-level BeforeAll) with
+            # optional -EntryJson/-EventJson parameters.
         }
 
         # -- AST-based parameter contract tests --
@@ -689,7 +631,7 @@ Describe 'write-calibration-entry.ps1' {
 
         It 'exits non-zero when neither -EntryJson nor -ReactivationEventJson is provided' {
             $workDir = & $script:NewWorkDir
-            $result = & $script:InvokeNeither -WorkDir $workDir
+            $result = & $script:Invoke -WorkDir $workDir
 
             $result.ExitCode | Should -Not -Be 0 `
                 -Because 'at least one of -EntryJson or -ReactivationEventJson must be supplied'
@@ -702,7 +644,7 @@ Describe 'write-calibration-entry.ps1' {
             & $script:SeedFile -WorkDir $workDir -Entry $script:ValidEntry
 
             $eventJson = $script:ValidEvent | ConvertTo-Json -Depth 10 -Compress
-            $result = & $script:InvokeEvent -WorkDir $workDir -EventJson $eventJson
+            $result = & $script:Invoke -WorkDir $workDir -EventJson $eventJson
 
             $result.ExitCode | Should -Be 0 `
                 -Because 'a valid event-only write must succeed'
@@ -728,7 +670,7 @@ Describe 'write-calibration-entry.ps1' {
             $entryJson = $script:ValidEntry | ConvertTo-Json -Depth 10 -Compress
             $eventJson = $script:ValidEvent | ConvertTo-Json -Depth 10 -Compress
 
-            $result = & $script:InvokeBoth -WorkDir $workDir -EntryJson $entryJson -EventJson $eventJson
+            $result = & $script:Invoke -WorkDir $workDir -EntryJson $entryJson -EventJson $eventJson
 
             $result.ExitCode | Should -Be 0 `
                 -Because 'combined entry + event write must succeed'
@@ -750,7 +692,7 @@ Describe 'write-calibration-entry.ps1' {
 
             # Write first event
             $eventJson = $script:ValidEvent | ConvertTo-Json -Depth 10 -Compress
-            & $script:InvokeEvent -WorkDir $workDir -EventJson $eventJson
+            & $script:Invoke -WorkDir $workDir -EventJson $eventJson
 
             # Write second event with same category + triggered_at_pr but different expires_at_pr
             $updatedEvent = [ordered]@{
@@ -760,7 +702,7 @@ Describe 'write-calibration-entry.ps1' {
                 trigger_source  = 'ce_review'  # changed
             }
             $eventJson2 = $updatedEvent | ConvertTo-Json -Depth 10 -Compress
-            & $script:InvokeEvent -WorkDir $workDir -EventJson $eventJson2
+            & $script:Invoke -WorkDir $workDir -EventJson $eventJson2
 
             $dataFile = Join-Path $workDir '.copilot-tracking\calibration\review-data.json'
             $data = Get-Content $dataFile -Raw | ConvertFrom-Json
@@ -780,7 +722,7 @@ Describe 'write-calibration-entry.ps1' {
                 trigger_source  = 'code_prosecution'
             }
             $eventJson = $badEvent | ConvertTo-Json -Depth 10 -Compress
-            $result = & $script:InvokeEvent -WorkDir $workDir -EventJson $eventJson
+            $result = & $script:Invoke -WorkDir $workDir -EventJson $eventJson
 
             $result.ExitCode | Should -Not -Be 0 `
                 -Because 'event missing category must be rejected'
@@ -795,7 +737,7 @@ Describe 'write-calibration-entry.ps1' {
                 trigger_source = 'code_prosecution'
             }
             $eventJson = $badEvent | ConvertTo-Json -Depth 10 -Compress
-            $result = & $script:InvokeEvent -WorkDir $workDir -EventJson $eventJson
+            $result = & $script:Invoke -WorkDir $workDir -EventJson $eventJson
 
             $result.ExitCode | Should -Not -Be 0 `
                 -Because 'event missing triggered_at_pr must be rejected'
@@ -804,7 +746,7 @@ Describe 'write-calibration-entry.ps1' {
         It 'uses atomic write for event-only writes with no leftover .tmp file' {
             $workDir = & $script:NewWorkDir
             $eventJson = $script:ValidEvent | ConvertTo-Json -Depth 10 -Compress
-            $result = & $script:InvokeEvent -WorkDir $workDir -EventJson $eventJson
+            $result = & $script:Invoke -WorkDir $workDir -EventJson $eventJson
 
             $result.ExitCode | Should -Be 0 `
                 -Because 'valid event write must succeed'

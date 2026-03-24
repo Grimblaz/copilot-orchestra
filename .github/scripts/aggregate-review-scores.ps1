@@ -103,6 +103,17 @@ if ($null -eq $mergedPRs -or $mergedPRs.Count -eq 0) {
 }
 
 # ---------------------------------------------------------------------------
+# Shared helper: safe property read for PSCustomObject/hashtable
+# ---------------------------------------------------------------------------
+function Get-FlexProperty {
+    param($Object, [string]$Name)
+    if ($null -eq $Object) { return $null }
+    if ($Object -is [hashtable]) { return $Object[$Name] }
+    if ($Object.PSObject.Properties.Name -contains $Name) { return $Object.$Name }
+    return $null
+}
+
+# ---------------------------------------------------------------------------
 # 3b. Load local calibration file and build union merge lookup (non-orphan entries only)
 # ---------------------------------------------------------------------------
 
@@ -131,10 +142,13 @@ if (-not [string]::IsNullOrWhiteSpace($CalibrationFile) -and (Test-Path $Calibra
             Write-Warning "All $totalLocalEntries calibration entries were orphaned (no matching PR in GitHub fetch results). Check -CalibrationFile path and -Repo values."
         }
         # Read prosecution-depth overlay fields from calibration
-        $prosecutionDepthOverride = $calibJson.prosecution_depth_override
-        $timeDecayDays = if ($calibJson.time_decay_days) { [int]$calibJson.time_decay_days } else { 90 }
-        $prosecutionDepthState = if ($calibJson.prosecution_depth_state) { $calibJson.prosecution_depth_state } else { @{} }
-        $reActivationEvents = if ($calibJson.re_activation_events) { @($calibJson.re_activation_events) } else { @() }
+        $prosecutionDepthOverride = Get-FlexProperty $calibJson 'prosecution_depth_override'
+        $v = Get-FlexProperty $calibJson 'time_decay_days'
+        if ($v) { $timeDecayDays = [int]$v }
+        $v = Get-FlexProperty $calibJson 'prosecution_depth_state'
+        if ($v) { $prosecutionDepthState = $v }
+        $v = Get-FlexProperty $calibJson 're_activation_events'
+        if ($v) { $reActivationEvents = @($v) }
     }
     catch {
         Write-Warning "CalibrationFile '$CalibrationFile' could not be parsed: $_ — proceeding with GitHub data only."
@@ -469,6 +483,7 @@ if ($v2IssuesAnalyzed -gt 0) {
     # -------------------------------------------------------------------
     # prosecution_depth: per-category depth recommendation (7-step chain)
     # -------------------------------------------------------------------
+
     $overrideActive = ($null -ne $prosecutionDepthOverride -and $prosecutionDepthOverride -ne '')
     $depthStateChanged = $false
 
@@ -476,6 +491,9 @@ if ($v2IssuesAnalyzed -gt 0) {
     Write-Output "    override_active: $($overrideActive.ToString().ToLower())"
 
     foreach ($cat in $knownCategories) {
+        # Read per-category depth state once (used by time-decay and state tracking)
+        $catState = Get-FlexProperty $prosecutionDepthState $cat
+
         # Gather per-category stats
         $catEffective = 0.0
         $catSustainRate = 0.0
@@ -514,23 +532,7 @@ if ($v2IssuesAnalyzed -gt 0) {
 
         if ($null -eq $recommendation) {
             # Step 3: Time-decay check
-            $catState = $null
-            if ($prosecutionDepthState -is [hashtable]) {
-                $catState = $prosecutionDepthState[$cat]
-            }
-            elseif ($null -ne $prosecutionDepthState -and $prosecutionDepthState.PSObject.Properties.Name -contains $cat) {
-                $catState = $prosecutionDepthState.$cat
-            }
-
-            $skipObservedAt = $null
-            if ($null -ne $catState) {
-                if ($catState -is [hashtable]) {
-                    $skipObservedAt = $catState['skip_first_observed_at']
-                }
-                elseif ($catState.PSObject.Properties.Name -contains 'skip_first_observed_at') {
-                    $skipObservedAt = $catState.skip_first_observed_at
-                }
-            }
+            $skipObservedAt = Get-FlexProperty $catState 'skip_first_observed_at'
 
             if ($null -ne $skipObservedAt -and $skipObservedAt -ne '') {
                 try {
@@ -578,25 +580,9 @@ if ($v2IssuesAnalyzed -gt 0) {
         }
 
         # prosecution_depth_state tracking: record/clear skip_first_observed_at
-        $catStateObj = $null
-        if ($prosecutionDepthState -is [hashtable]) {
-            $catStateObj = $prosecutionDepthState[$cat]
-        }
-        elseif ($null -ne $prosecutionDepthState -and $prosecutionDepthState.PSObject.Properties.Name -contains $cat) {
-            $catStateObj = $prosecutionDepthState.$cat
-        }
-
         if ($recommendation -eq 'skip') {
             # Entering skip: record skip_first_observed_at if not already set
-            $existingObserved = $null
-            if ($null -ne $catStateObj) {
-                if ($catStateObj -is [hashtable]) {
-                    $existingObserved = $catStateObj['skip_first_observed_at']
-                }
-                elseif ($catStateObj.PSObject.Properties.Name -contains 'skip_first_observed_at') {
-                    $existingObserved = $catStateObj.skip_first_observed_at
-                }
-            }
+            $existingObserved = Get-FlexProperty $catState 'skip_first_observed_at'
             if ($null -eq $existingObserved -or $existingObserved -eq '') {
                 if ($prosecutionDepthState -isnot [hashtable]) {
                     $prosecutionDepthState = @{}
@@ -607,7 +593,7 @@ if ($v2IssuesAnalyzed -gt 0) {
         }
         else {
             # Leaving skip: clear state if it was set
-            if ($null -ne $catStateObj) {
+            if ($null -ne $catState) {
                 if ($prosecutionDepthState -is [hashtable]) {
                     $prosecutionDepthState.Remove($cat)
                 }

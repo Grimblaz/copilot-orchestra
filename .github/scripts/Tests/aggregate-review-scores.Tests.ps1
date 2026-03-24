@@ -443,6 +443,27 @@ Describe 'aggregate-review-scores.ps1 -CalibrationFile' {
                 'simplicity', 'script-automation', 'documentation-audit'
             )
 
+            # Query merged PRs without pipeline-metrics blocks for calibration entries.
+            # These PRs exist in the merged list (not orphaned) but lack body metrics,
+            # so the script falls back to calibration entries for their data.
+            $allPrJson = & gh pr list --repo 'Grimblaz/copilot-orchestra' --state merged --limit 100 --json number,body 2>$null
+            $script:NonMetricsPrNumbers = if ($allPrJson) {
+                @(($allPrJson | ConvertFrom-Json) |
+                    Where-Object { $_.body -notmatch 'pipeline-metrics' } |
+                    ForEach-Object { [int]$_.number })
+            } else {
+                @(9901)  # fallback if gh fails
+            }
+
+            # Query a public repo that has no pipeline-metrics in any PR body,
+            # giving pure calibration-only data for isolation tests.
+            $cleanPrJson = & gh pr list --repo 'github/docs' --state merged --limit 10 --json number 2>$null
+            $script:CleanRepoPrNumbers = if ($cleanPrJson) {
+                @(($cleanPrJson | ConvertFrom-Json) | ForEach-Object { [int]$_.number })
+            } else {
+                @(9901)  # fallback if gh fails
+            }
+
             # ---------------------------------------------------------------
             # Helper: generate findings array for a single category with
             # specified sustained / defense-sustained counts.
@@ -482,27 +503,30 @@ Describe 'aggregate-review-scores.ps1 -CalibrationFile' {
                     [object[]]$Findings,
                     [string]$Override = $null,
                     [object[]]$ReactivationEvents = $null,
-                    [object]$DepthState = $null
+                    [object]$DepthState = $null,
+                    [int[]]$PrNumbers = @(9901)
                 )
+                $entries = @()
+                foreach ($prNum in $PrNumbers) {
+                    $entries += [ordered]@{
+                        pr_number  = $prNum
+                        created_at = '2026-03-01T10:00:00Z'
+                        findings   = $Findings
+                        summary    = [ordered]@{
+                            prosecution_findings = $Findings.Count
+                            pass_1_findings      = $Findings.Count
+                            pass_2_findings      = 0
+                            pass_3_findings      = 0
+                            defense_disproved    = 0
+                            judge_accepted       = $Findings.Count
+                            judge_rejected       = 0
+                            judge_deferred       = 0
+                        }
+                    }
+                }
                 $calib = [ordered]@{
                     calibration_version = 1
-                    entries             = @(
-                        [ordered]@{
-                            pr_number  = 9901
-                            created_at = '2026-03-01T10:00:00Z'
-                            findings   = $Findings
-                            summary    = [ordered]@{
-                                prosecution_findings = $Findings.Count
-                                pass_1_findings      = $Findings.Count
-                                pass_2_findings      = 0
-                                pass_3_findings      = 0
-                                defense_disproved    = 0
-                                judge_accepted       = $Findings.Count
-                                judge_rejected       = 0
-                                judge_deferred       = 0
-                            }
-                        }
-                    )
+                    entries             = $entries
                 }
                 if (-not [string]::IsNullOrEmpty($Override)) {
                     $calib['prosecution_depth_override'] = $Override
@@ -584,15 +608,14 @@ Describe 'aggregate-review-scores.ps1 -CalibrationFile' {
                 -Because 're_activated field must appear in prosecution_depth categories'
         }
 
-        It 'reports recommendation skip when sustain_rate < 0.05 and effective_count >= 30' -Tag 'requires-gh' {
-            # RED: prosecution_depth section does not exist yet.
-            # Fixture: architecture — 1 sustained + 34 defense-sustained
-            # Expected sustain_rate ~ 0.029 (< 0.05), effective_count ~ 35 (>= 30)
+        It 'reports recommendation skip when sustain_rate below 0.05 and effective_count at least 30' -Tag 'requires-gh' {
+            # Fixture: architecture — 1 sustained + 34 defense-sustained per non-metrics PR
+            # Calibration dominates real data → sustain_rate ≈ 0.029 (< 0.05)
             if (-not $script:GhAvailable) { Set-ItResult -Skipped -Because 'gh CLI not found' }
 
             $workDir = & $script:NewWorkDir
             $findings = & $script:MakeCategoryFindings 'architecture' 1 34
-            $calib = & $script:BuildDepthCalibration -Findings $findings
+            $calib = & $script:BuildDepthCalibration -Findings $findings -PrNumbers $script:NonMetricsPrNumbers
             $calibPath = Join-Path $workDir 'skip-calib.json'
             & $script:WriteCalibrationFile -Path $calibPath -Data $calib
 
@@ -604,15 +627,14 @@ Describe 'aggregate-review-scores.ps1 -CalibrationFile' {
                 -Because 'sustain_rate < 0.05 with effective_count >= 30 must produce recommendation: skip'
         }
 
-        It 'reports recommendation light when sustain_rate < 0.15 and effective_count >= 20' -Tag 'requires-gh' {
-            # RED: prosecution_depth section does not exist yet.
-            # Fixture: security — 3 sustained + 22 defense-sustained
-            # Expected sustain_rate ~ 0.12 (< 0.15), effective_count ~ 25 (>= 20)
+        It 'reports recommendation light when sustain_rate below 0.15 and effective_count at least 20' -Tag 'requires-gh' {
+            # Fixture: security — 3 sustained + 22 defense-sustained per non-metrics PR
+            # Calibration dominates real data → sustain_rate ≈ 0.12 (< 0.15, >= 0.05)
             if (-not $script:GhAvailable) { Set-ItResult -Skipped -Because 'gh CLI not found' }
 
             $workDir = & $script:NewWorkDir
             $findings = & $script:MakeCategoryFindings 'security' 3 22
-            $calib = & $script:BuildDepthCalibration -Findings $findings
+            $calib = & $script:BuildDepthCalibration -Findings $findings -PrNumbers $script:NonMetricsPrNumbers
             $calibPath = Join-Path $workDir 'light-calib.json'
             & $script:WriteCalibrationFile -Path $calibPath -Data $calib
 
@@ -625,14 +647,13 @@ Describe 'aggregate-review-scores.ps1 -CalibrationFile' {
         }
 
         It 'reports recommendation full when sustain_rate >= 0.15' -Tag 'requires-gh' {
-            # RED: prosecution_depth section does not exist yet.
-            # Fixture: performance — 8 sustained + 12 defense-sustained
-            # Expected sustain_rate = 0.40 (>= 0.15), effective_count ~ 20 (>= 20)
+            # Fixture: performance — 8 sustained + 12 defense-sustained per non-metrics PR
+            # Calibration dominates real data → sustain_rate ≈ 0.40 (>= 0.15)
             if (-not $script:GhAvailable) { Set-ItResult -Skipped -Because 'gh CLI not found' }
 
             $workDir = & $script:NewWorkDir
             $findings = & $script:MakeCategoryFindings 'performance' 8 12
-            $calib = & $script:BuildDepthCalibration -Findings $findings
+            $calib = & $script:BuildDepthCalibration -Findings $findings -PrNumbers $script:NonMetricsPrNumbers
             $calibPath = Join-Path $workDir 'full-calib.json'
             & $script:WriteCalibrationFile -Path $calibPath -Data $calib
 
@@ -645,13 +666,13 @@ Describe 'aggregate-review-scores.ps1 -CalibrationFile' {
         }
 
         It 'reports recommendation full with sufficient_data false when effective_count < 20' -Tag 'requires-gh' {
-            # RED: prosecution_depth section does not exist yet.
-            # Fixture: simplicity — 3 sustained + 2 defense-sustained (5 total, < 20)
+            # Fixture: architecture findings only → simplicity gets data only from real
+            # pipeline-metrics PRs (small effective_count, < 20 → insufficient data)
             if (-not $script:GhAvailable) { Set-ItResult -Skipped -Because 'gh CLI not found' }
 
             $workDir = & $script:NewWorkDir
-            $findings = & $script:MakeCategoryFindings 'simplicity' 3 2
-            $calib = & $script:BuildDepthCalibration -Findings $findings
+            $findings = & $script:MakeCategoryFindings 'architecture' 1 0
+            $calib = & $script:BuildDepthCalibration -Findings $findings -PrNumbers $script:NonMetricsPrNumbers
             $calibPath = Join-Path $workDir 'insuff-calib.json'
             & $script:WriteCalibrationFile -Path $calibPath -Data $calib
 
@@ -666,8 +687,8 @@ Describe 'aggregate-review-scores.ps1 -CalibrationFile' {
         }
 
         It 'reports recommendation full with effective_count 0.0 for categories absent from data' -Tag 'requires-gh' {
-            # RED: prosecution_depth section does not exist yet.
-            # Fixture: only architecture findings — documentation-audit has zero data
+            # Uses github/docs (no pipeline-metrics) for pure calibration isolation.
+            # Architecture findings only → all other categories have effective_count 0.0.
             if (-not $script:GhAvailable) { Set-ItResult -Skipped -Because 'gh CLI not found' }
 
             $workDir = & $script:NewWorkDir
@@ -675,12 +696,12 @@ Describe 'aggregate-review-scores.ps1 -CalibrationFile' {
                 [ordered]@{ id = 'F1'; category = 'architecture'; judge_ruling = 'finding-sustained'
                             severity = 'medium'; points = 5; review_stage = 'main' }
             )
-            $calib = & $script:BuildDepthCalibration -Findings $findings
+            $calib = & $script:BuildDepthCalibration -Findings $findings -PrNumbers $script:CleanRepoPrNumbers
             $calibPath = Join-Path $workDir 'zero-calib.json'
             & $script:WriteCalibrationFile -Path $calibPath -Data $calib
 
             $result = & $script:InvokeAggregate -WorkDir $workDir `
-                -ExtraArgs @('-CalibrationFile', $calibPath)
+                -ExtraArgs @('-CalibrationFile', $calibPath, '-Repo', 'github/docs', '-Limit', '10')
 
             $result.ExitCode | Should -Be 0
             $result.Output | Should -Match '(?s)prosecution_depth:.*?documentation-audit:\s+recommendation:\s*full' `
