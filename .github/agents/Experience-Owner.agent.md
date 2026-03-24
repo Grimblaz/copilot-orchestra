@@ -148,7 +148,9 @@ Identify the customer-facing surface type:
 - CLI → invoke command in terminal with test args
 - SDK → example invocation in terminal
 - Batch / pipeline → invoke with representative test data
-- None → CE Gate not applicable; document reason
+- None → CE Gate not applicable; document reason. Process-only and docs-only issues may remain `ce_gate: false` when they do not change a customer-facing runtime surface.
+
+If the same feature spans 3 or more customer-facing surfaces, name each distinct surface group explicitly before planning begins. Group surfaces by journey meaning, not by component reuse. At minimum, keep these groups separate when present: deep-task/detail surfaces, checklist/flow surfaces, summary/preview surfaces, and parent/admin setup surfaces.
 
 ### Design Intent Reference
 
@@ -160,7 +162,7 @@ Document:
 
 1. Surface type (identified above)
 2. Tool availability (browser tools enabled? API accessible locally? CLI invocable?)
-3. Manual fallback if primary CE Gate tool is unavailable
+3. Manual fallback if primary CE Gate tool is unavailable. Manual fallback must still enumerate every distinct surface group in scope and explicitly mark each unexercised surface as uncovered with a reason; uncovered surfaces do not inherit coverage from sibling surfaces.
 4. Draft scenarios (2–4, both functional and intent types)
 
 ## Update Issue with Customer Framing
