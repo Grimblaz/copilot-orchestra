@@ -421,6 +421,7 @@ The `<!-- pipeline-metrics -->` format is extended from 18-field flat YAML (v1) 
 - `metrics_version: 2` — format version discriminator
 - `findings:` — array with per-finding entries; each entry includes `id`, `category`, `severity`, `points`, `pass`, `defense_verdict`, `judge_ruling`, `judge_confidence`, `review_stage`
 - `review_stage` values: `main | postfix | ce | design | proxy`
+- `systemic_fix_type` values (per finding): `instruction | skill | agent-prompt | plan-template | none` — what kind of guardrail would prevent this defect class; filled by Code-Critic at prosecution time; defaults to `none` when absent
 
 **Category values** (Code-Critic's 7 prosecution perspectives): `architecture | security | performance | pattern | simplicity | script-automation | documentation-audit`; `n/a` for CE, design, and proxy prosecution findings.
 
@@ -588,3 +589,15 @@ Three targeted additions to close the process gaps that allowed these defects th
 **Decision**: Implement exponential backoff (2^attempt × 30s: attempt 1 = 60s, attempt 2 = 120s) before retrying rate-limited subagent calls. After 2 consecutive failures for the same call, defer remaining work to the next session — save state to session memory, never silently drop findings.
 
 **Rationale**: In the PR #111 session, 2 rate-limited retries consumed prompt tokens with zero output (pure waste). Exponential backoff gives the rate-limit window time to reset without hammering the API. Sonnet→Opus fallback is considered before entering backoff because Anthropic models have separate per-model TPM limits. Deferred-not-dropped ensures quality — no findings are silently lost to rate limiting.
+
+---
+
+## Review Kaizen Sub A: Root Cause Tagging
+
+**Issue**: #149
+
+### Decision Log
+
+| # | Decision | Choice | Rationale |
+|---|----------|--------|------------|
+| D39 | `systemic_fix_type` root cause tagging | Code-Critic tags each prosecution finding with one of: `instruction`, `skill`, `agent-prompt`, `plan-template`, `none` — what kind of guardrail would prevent this defect class | Enables manual and automated (future Sub C) pattern recognition across PRs without requiring full root cause analysis at review time; backward-compatible (field optional, defaults to `none`) |
