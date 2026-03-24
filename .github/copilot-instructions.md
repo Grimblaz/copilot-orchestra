@@ -40,9 +40,9 @@ Pipeline-based agent orchestration:
 - Instruction files use `.instructions.md` extension in `.github/instructions/`
 - Design documents go in `Documents/Design/`, decision records in `Documents/Decisions/`
 - No auto-commit behavior in any agent — users commit manually
-- Plans are saved to session memory (`/memories/session/plan-issue-{ID}.md`), optionally persisted as GitHub issue comments
-- Design context is cached in session memory (`/memories/session/design-issue-{ID}.md`), created by Issue-Planner alongside the plan — full design content from the issue body, surviving conversation compaction; optionally persisted as a GitHub issue comment with `<!-- design-issue-{ID} -->` marker
-- VS Code auto-compacts conversation when context fills; session memory (`/memories/session/`) is the durable store — plans and design context survive compaction automatically (but not session end — use GitHub issue comments for cross-session durability)
+- Plans are saved to session memory (`/memories/session/plan-issue-{ID}.md`), which is the same-session source of truth for implementation handoff
+- Design context is cached in session memory (`/memories/session/design-issue-{ID}.md`), created by Issue-Planner alongside the plan from the current issue body; Solution-Designer still persists design details to the issue body unconditionally during design
+- VS Code auto-compacts conversation when context fills; session memory (`/memories/session/`) survives compaction within the same conversation. At D9, if the user explicitly chooses Stop / Pause / resume later, Code-Conductor persists durable GitHub handoff comments with `<!-- plan-issue-{ID} -->` / `<!-- design-issue-{ID} -->`; Continue uses session memory only
 - Design content goes in the GitHub issue body (Solution-Designer outputs there)
 - `Documents/Design/` files use domain-based naming (`{domain-slug}.md`) and are committed with the implementation PR by Code-Conductor (delegated to Doc-Keeper)
 - CE Gate uses `ce_gate: true` plan metadata and a `[CE GATE]` step for customer-experience and design-intent verification

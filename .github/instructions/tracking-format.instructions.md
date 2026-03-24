@@ -6,7 +6,7 @@ This document defines the standard YAML frontmatter format for tracking files st
 
 ## Directory Structure
 
-```
+```text
 .copilot-tracking/
 ├── research/
 │   └── {date}-{topic}.md
@@ -167,18 +167,21 @@ Plans saved to session memory (`/memories/session/plan-issue-{ID}.md`) do not ne
 
 ## Cloud Agent Handoff Protocol
 
-When using a cloud agent (e.g., Codex) for implementation, it creates its own branch from `main` and cannot read local files or VS Code session memory. Issue-Planner can optionally post the plan as a GitHub issue comment so the cloud agent can read it:
+When using a cloud agent (e.g., Codex) for implementation, it creates its own branch from `main` and cannot read local files or VS Code session memory. Session memory remains the same-session source of truth; durable GitHub handoff comments are written only if the user explicitly stops or pauses at Code-Conductor's D9 checkpoint:
 
 | Phase | Agent | Output Location |
 | --- | --- | --- |
-| Design | Issue Designer | Updates **issue body** with full design details |
-| Planning | Issue Planner | Saves plan to session memory (`/memories/session/plan-issue-{ID}.md`); optionally posts as a GitHub issue comment with `<!-- plan-issue-{ID} -->` marker (user opt-in) |
-| Implementation | Code Conductor | Reads plan from session memory; falls back to GitHub issue comment; reads issue body for design details only. Commits design doc to `Documents/Design/{domain-slug}.md` with the implementation PR |
+| Design | Solution-Designer | Updates **issue body** with full design details |
+| Planning | Issue-Planner | Saves plan to session memory (`/memories/session/plan-issue-{ID}.md`) and caches design context at `/memories/session/design-issue-{ID}.md` |
+| D9 handoff | Code-Conductor | Continue: reads session memory only. Stop / Pause: writes durable GitHub issue comments with `<!-- plan-issue-{ID} -->` and `<!-- design-issue-{ID} -->` markers when the latest persisted handoff is missing or changed |
+| Implementation | Code-Conductor | Reads plan from session memory first, then the latest matching GitHub issue comment; reads design cache from session memory first, then the latest matching GitHub issue comment, then the issue body. Commits design doc to `Documents/Design/{domain-slug}.md` with the implementation PR |
 
 ### Rules
 
 - **Design doc file** under `Documents/Design/` (e.g., `Documents/Design/{domain-slug}.md`) is committed during implementation, not during design
-- **Plan** lives in session memory (`/memories/session/plan-issue-{ID}.md`); for cross-session or cloud agent handoffs, Issue-Planner can optionally post the plan as a GitHub issue comment with `<!-- plan-issue-{ID} -->` marker
+- **Plan** lives in session memory (`/memories/session/plan-issue-{ID}.md`) as the same-session source of truth; cross-session or cloud-agent handoff depends on an explicit D9 Stop / Pause path that persists `<!-- plan-issue-{ID} -->` only when needed
+- **Design cache** lives in session memory (`/memories/session/design-issue-{ID}.md`) for same-session use, while Solution-Designer continues to persist the authoritative design to the issue body unconditionally
+- **Durable handoff comments** use latest-comment-wins semantics; Code-Conductor reads the latest matching `plan-issue` / `design-issue` marker comments when resuming after an explicit Stop / Pause
 - One branch, one PR — no prerequisite branch needed for context sharing
 - For local-only workflows (no cloud agent), agents may still commit design doc files under `Documents/Design/` to the feature branch first — the issue-based flow works for both
 
