@@ -971,6 +971,54 @@ Describe 'aggregate-review-scores.ps1 -CalibrationFile' {
                 [int]$eventsAfter[0]['expires_at_pr'] | Should -Be 999999 `
                     -Because 'the surviving event must be the active one with expires_at_pr=999999'
             }
+
+            It 'writes time-decay synthetic re-activation event to calibration file' -Tag 'requires-gh' {
+                if (-not $script:GhAvailable) { Set-ItResult -Skipped -Because 'gh CLI not found' }
+
+                # ARRANGE: architecture has a stale skip_first_observed_at (100 days ago) and
+                # skip-threshold findings (sustain_rate ~0.029 < 0.05, dominated by NonMetricsPRs).
+                # Time-decay must fire, promote the recommendation to light, and persist a
+                # synthetic re-activation event to the calibration file on disk.
+                $workDir = & $script:NewWorkDir
+                $staleDate = (Get-Date).AddDays(-100).ToString('o')
+                $findings = & $script:MakeCategoryFindings 'architecture' 1 34
+                $depthState = [ordered]@{
+                    architecture = [ordered]@{
+                        skip_first_observed_at = $staleDate
+                    }
+                }
+                $calib = & $script:BuildDepthCalibration -Findings $findings `
+                    -PrNumbers $script:NonMetricsPrNumbers -DepthState $depthState
+                $calibPath = Join-Path $workDir 'timedecay-writeback.json'
+                & $script:WriteCalibrationFile -Path $calibPath -Data $calib
+
+                # ACT
+                $result = & $script:InvokeAggregate -WorkDir $workDir `
+                    -ExtraArgs @('-CalibrationFile', $calibPath)
+
+                # ASSERT: time-decay promoted architecture to light (confirming the write-back path was entered)
+                $result.ExitCode | Should -Be 0
+                $result.Output | Should -Match '(?s)prosecution_depth:.*?architecture:\s+recommendation:\s*light' `
+                    -Because 'stale skip_first_observed_at must time-decay architecture from skip to light'
+
+                # ASSERT: synthetic re-activation event persisted to calibration file
+                $readBack = Get-Content $calibPath -Raw | ConvertFrom-Json -AsHashtable
+                $readBack | Should -Not -BeNullOrEmpty `
+                    -Because 'calibration file must still be readable after run'
+                $eventsAfter = $readBack['re_activation_events']
+                $eventsAfter | Should -Not -BeNullOrEmpty `
+                    -Because 'time-decay must persist a synthetic re-activation event to the calibration file'
+                $eventsAfter.Count | Should -Be 1 `
+                    -Because 'exactly one synthetic event must be written for the architecture time-decay trigger'
+                $eventsAfter[0]['category'] | Should -Be 'architecture' `
+                    -Because 'the synthetic event must record the category that triggered time-decay'
+                $eventsAfter[0]['trigger_source'] | Should -Be 'time_decay' `
+                    -Because 'trigger_source must be time_decay for a time-decay synthetic event'
+                [int]$eventsAfter[0]['triggered_at_pr'] | Should -BeGreaterThan 0 `
+                    -Because 'triggered_at_pr must equal the max merged PR number (a positive integer)'
+                [int]$eventsAfter[0]['expires_at_pr'] | Should -Be ([int]$eventsAfter[0]['triggered_at_pr'] + 50) `
+                    -Because 'expires_at_pr must be triggered_at_pr + 50 as computed by the time-decay logic'
+            }
         }
     }
 }

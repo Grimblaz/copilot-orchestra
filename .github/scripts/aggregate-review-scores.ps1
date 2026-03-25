@@ -554,11 +554,11 @@ if ($v2IssuesAnalyzed -gt 0) {
                         $recommendation = 'light'
                         $reActivated = $true
                         # Write synthetic re-activation event
-                        $reActivationEvents += [ordered]@{
+                        $reActivationEvents += @{
                             category        = $cat
                             triggered_at_pr = $maxMergedPrNumber
                             expires_at_pr   = $maxMergedPrNumber + 50
-                            trigger_source  = 'time-decay'
+                            trigger_source  = 'time_decay'
                             created_at      = $now.ToString('o')
                         }
                         $depthStateChanged = $true
