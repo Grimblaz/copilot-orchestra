@@ -31,10 +31,10 @@ Describe 'downstream ownership boundary contract' {
 
     BeforeAll {
         $script:RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '../../..')).Path
-        $script:CodeConductor = Join-Path $script:RepoRoot '.github\agents\Code-Conductor.agent.md'
-        $script:HubModeUx = Join-Path $script:RepoRoot 'Documents\Design\hub-mode-ux.md'
-        $script:SafeOperations = Join-Path $script:RepoRoot '.github\instructions\safe-operations.instructions.md'
-        $script:ProcessReview = Join-Path $script:RepoRoot '.github\agents\Process-Review.agent.md'
+        $script:CodeConductor = Join-Path $script:RepoRoot '.github/agents/Code-Conductor.agent.md'
+        $script:HubModeUx = Join-Path $script:RepoRoot 'Documents/Design/hub-mode-ux.md'
+        $script:SafeOperations = Join-Path $script:RepoRoot '.github/instructions/safe-operations.instructions.md'
+        $script:ProcessReview = Join-Path $script:RepoRoot '.github/agents/Process-Review.agent.md'
 
         $script:ReadContent = {
             param([string]$Path)
@@ -59,43 +59,43 @@ Describe 'downstream ownership boundary contract' {
 
         $script:SharedContractPatterns = @(
             @{
-                Name = 'work-class triad'
+                Name    = 'work-class triad'
                 Pattern = $script:OwnershipWorkClassesPattern
             },
             @{
-                Name = 'pre-edit gate'
+                Name    = 'pre-edit gate'
                 Pattern = $script:PreEditGatePattern
             },
             @{
-                Name = 'mid-run fail-closed stop'
+                Name    = 'mid-run fail-closed stop'
                 Pattern = $script:MidRunFailClosedPattern
             },
             @{
-                Name = 'pre-edit visible stop text'
+                Name    = 'pre-edit visible stop text'
                 Pattern = $script:PreEditVisibleStopTextPattern
             },
             @{
-                Name = 'mid-run visible stop text'
+                Name    = 'mid-run visible stop text'
                 Pattern = $script:MidRunVisibleStopTextPattern
             },
             @{
-                Name = 'routing reuse guarantee'
+                Name    = 'routing reuse guarantee'
                 Pattern = $script:RoutingReusePattern
             },
             @{
-                Name = 'process-gap-upstream fallback'
+                Name    = 'process-gap-upstream fallback'
                 Pattern = $script:ProcessGapFallbackPattern
             },
             @{
-                Name = 'distinct gotcha flow'
+                Name    = 'distinct gotcha flow'
                 Pattern = $script:DistinctGotchaFlowPattern
             },
             @{
-                Name = 'repository-aware bypass'
+                Name    = 'repository-aware bypass'
                 Pattern = $script:RepositoryAwareBypassPattern
             },
             @{
-                Name = 'dirty upstream state is not permission'
+                Name    = 'dirty upstream state is not permission'
                 Pattern = $script:DirtyUpstreamStatePattern
             }
         )
