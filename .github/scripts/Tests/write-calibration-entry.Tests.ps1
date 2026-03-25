@@ -614,15 +614,15 @@ Describe 'write-calibration-entry.ps1' {
             $ast = [System.Management.Automation.Language.Parser]::ParseFile(
                 $script:ScriptFile, [ref]$null, [ref]$null)
             $entryParam = $ast.ParamBlock.Parameters |
-                Where-Object { $_.Name.VariablePath.UserPath -eq 'EntryJson' }
+            Where-Object { $_.Name.VariablePath.UserPath -eq 'EntryJson' }
             $mandatoryAttr = $entryParam.Attributes |
-                Where-Object { $_.TypeName.Name -eq 'Parameter' } |
-                Where-Object {
-                    $_.NamedArguments | Where-Object {
-                        $_.ArgumentName -eq 'Mandatory' -and
-                        ($_.Argument.Extent.Text -eq '$true' -or $_.ExpressionOmitted)
-                    }
+            Where-Object { $_.TypeName.Name -eq 'Parameter' } |
+            Where-Object {
+                $_.NamedArguments | Where-Object {
+                    $_.ArgumentName -eq 'Mandatory' -and
+                    ($_.Argument.Extent.Text -eq '$true' -or $_.ExpressionOmitted)
                 }
+            }
             $mandatoryAttr | Should -BeNullOrEmpty `
                 -Because '-EntryJson must no longer be mandatory when -ReactivationEventJson exists'
         }
@@ -699,7 +699,7 @@ Describe 'write-calibration-entry.ps1' {
                 category        = 'security'
                 triggered_at_pr = 85
                 expires_at_pr   = 100          # changed
-                trigger_source  = 'ce_review'  # changed
+                trigger_source  = 'ce_prosecution'  # changed
             }
             $eventJson2 = $updatedEvent | ConvertTo-Json -Depth 10 -Compress
             & $script:Invoke -WorkDir $workDir -EventJson $eventJson2

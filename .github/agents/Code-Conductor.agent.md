@@ -278,7 +278,7 @@ Before composing pass prompts, obtain prosecution depth recommendations:
 6. Compose per-pass exclusion instructions:
    - **Pass 1**: Exclude `skip` categories
    - **Passes 2-3**: Exclude `skip` AND `light` categories
-7. Safe fallback: if aggregate script **fails**, **YAML parsing fails**, **output contains `insufficient_data: true`**, or **`prosecution_depth:` block is absent from parsed output** → all categories `full`. Log: `'Prosecution depth: all full (fallback — {reason})'`
+7. Safe fallback: if aggregate script **fails**, **YAML parsing fails**, or **`prosecution_depth:` block is absent from parsed output** → all categories `full`. Log: `'Prosecution depth: all full (fallback — {reason})'`
 
 Append the following exclusion section to each Code-Critic pass prompt:
 

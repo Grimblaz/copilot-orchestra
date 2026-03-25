@@ -714,10 +714,10 @@ Re-activated categories show their `trigger_source` in the Rationale column.
 **Pipeline metrics addition**:
 
 ```yaml
-prosecution_depth_used:
-  light: [security]
-  skip: [pattern]
-  override: false
+prosecution_depth_light: [security]
+prosecution_depth_skip: [pattern]
+prosecution_depth_override: false
+prosecution_depth_reactivations: 0
 ```
 
 ### Calibration Data Schema (relevant keys)
@@ -735,10 +735,12 @@ prosecution_depth_used:
       "triggered_at_pr": 85,
       "expires_at_pr": 90,
       "trigger_source": "ce_prosecution",
-      "triggered_at": "2026-03-20T14:30:00Z"
+      "created_at": "2026-03-20T14:30:00Z"
     }
   ]
 }
 ```
 
-`trigger_source` allowed values: `code_prosecution | ce_prosecution | github_proxy | post_fix | time_decay | manual_override`
+`trigger_source` allowed values: `code_prosecution | ce_prosecution | github_proxy | time_decay | manual_override`
+
+> **Note**: `trigger_source` values are not runtime-validated by `write-calibration-entry.ps1`. All callers are responsible for emitting a canonical value. Test fixtures must use canonical values to avoid propagating stale names as documentation.

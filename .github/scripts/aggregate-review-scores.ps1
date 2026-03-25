@@ -493,7 +493,7 @@ if ($v2IssuesAnalyzed -gt 0) {
     # prosecution_depth: per-category depth recommendation (7-step chain)
     # -------------------------------------------------------------------
 
-    $overrideActive = ($null -ne $prosecutionDepthOverride -and $prosecutionDepthOverride -ne '')
+    $overrideActive = ($prosecutionDepthOverride -ieq 'full')
     $depthStateChanged = $false
 
     Write-Output "  prosecution_depth:"

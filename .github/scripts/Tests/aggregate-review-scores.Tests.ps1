@@ -750,7 +750,7 @@ Describe 'aggregate-review-scores.ps1 -CalibrationFile' {
                     category        = 'pattern'
                     triggered_at_pr = 100
                     expires_at_pr   = 999999
-                    trigger_source  = 'manual'
+                    trigger_source  = 'manual_override'
                     created_at      = '2026-03-01T10:00:00Z'
                 }
             )
@@ -815,7 +815,7 @@ Describe 'aggregate-review-scores.ps1 -CalibrationFile' {
                     category        = 'security'
                     triggered_at_pr = 100
                     expires_at_pr   = 999999
-                    trigger_source  = 'manual'
+                    trigger_source  = 'manual_override'
                     created_at      = '2026-03-01T10:00:00Z'
                 }
             )
@@ -938,14 +938,14 @@ Describe 'aggregate-review-scores.ps1 -CalibrationFile' {
                         category        = 'architecture'
                         triggered_at_pr = 90
                         expires_at_pr   = 999999  # far future — stays active
-                        trigger_source  = 'manual'
+                        trigger_source  = 'manual_override'
                         created_at      = '2026-03-01T10:00:00Z'
                     },
                     [ordered]@{
                         category        = 'security'
                         triggered_at_pr = 1
                         expires_at_pr   = 2       # PR 2 is already merged — expired
-                        trigger_source  = 'manual'
+                        trigger_source  = 'manual_override'
                         created_at      = '2020-01-01T00:00:00Z'
                     }
                 )
