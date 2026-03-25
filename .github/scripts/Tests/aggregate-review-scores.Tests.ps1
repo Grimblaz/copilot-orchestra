@@ -843,5 +843,134 @@ Describe 'aggregate-review-scores.ps1 -CalibrationFile' {
                     -Because "override must force '$cat' to full regardless of re-activation or time-decay signals"
             }
         }
+
+        # ==================================================================
+        # Context: write-back persistence
+        # Verifies that the calibration file is updated on disk after an
+        # aggregate run that modifies prosecution_depth_state or prunes
+        # expired re-activation events.
+        # ==================================================================
+        Context 'write-back persistence' {
+
+            It 'write-back: entering skip writes skip_first_observed_at to calibration file' -Tag 'requires-gh' {
+                if (-not $script:GhAvailable) { Set-ItResult -Skipped -Because 'gh CLI not found' }
+
+                # ARRANGE: calibration where pattern enters skip
+                # (1 sustained + 34 defense-sustained -> sustain_rate ~= 0.029 < 0.05, effective_count >= 30)
+                $workDir = & $script:NewWorkDir
+                $findings = & $script:MakeCategoryFindings 'pattern' 1 34
+                $calib = & $script:BuildDepthCalibration -Findings $findings -PrNumbers $script:NonMetricsPrNumbers
+                $calibPath = Join-Path $workDir 'skip-writeback.json'
+                & $script:WriteCalibrationFile -Path $calibPath -Data $calib
+
+                # ACT
+                $result = & $script:InvokeAggregate -WorkDir $workDir `
+                    -ExtraArgs @('-CalibrationFile', $calibPath)
+
+                # ASSERT: fixture produced skip recommendation (confirms write-back path was entered)
+                $result.ExitCode | Should -Be 0
+                $result.Output | Should -Match '(?s)prosecution_depth:.*?pattern:\s+recommendation:\s*skip' `
+                    -Because 'fixture must produce skip recommendation so write-back path is triggered'
+
+                # ASSERT: calibration file updated with skip_first_observed_at
+                $readBack = Get-Content $calibPath -Raw | ConvertFrom-Json -AsHashtable
+                $readBack | Should -Not -BeNullOrEmpty `
+                    -Because 'calibration file must still be readable after run'
+                $readBack['prosecution_depth_state'] | Should -Not -BeNullOrEmpty `
+                    -Because 'prosecution_depth_state must be written to calibration file when a category enters skip'
+                $readBack['prosecution_depth_state']['pattern'] | Should -Not -BeNullOrEmpty `
+                    -Because 'pattern state must be persisted when the category enters skip'
+                $skipDate = $readBack['prosecution_depth_state']['pattern']['skip_first_observed_at']
+                $skipDate | Should -Not -BeNullOrEmpty `
+                    -Because 'skip_first_observed_at must be written when a category first enters skip'
+                { [datetime]$skipDate } | Should -Not -Throw `
+                    -Because 'skip_first_observed_at must be a valid datetime string'
+            }
+
+            It 'write-back: transitioning from skip to full clears skip_first_observed_at from calibration file' -Tag 'requires-gh' {
+                if (-not $script:GhAvailable) { Set-ItResult -Skipped -Because 'gh CLI not found' }
+
+                # ARRANGE: pre-seeded skip state for pattern, but findings now show high sustain_rate
+                # (8 sustained + 12 defense-sustained -> sustain_rate = 0.4 >= 0.15 -> full)
+                $workDir = & $script:NewWorkDir
+                $findings = & $script:MakeCategoryFindings 'pattern' 8 12
+                $depthState = [ordered]@{
+                    pattern = [ordered]@{
+                        skip_first_observed_at = '2026-02-01T00:00:00Z'
+                    }
+                }
+                $calib = & $script:BuildDepthCalibration -Findings $findings `
+                    -PrNumbers $script:NonMetricsPrNumbers -DepthState $depthState
+                $calibPath = Join-Path $workDir 'leave-skip-writeback.json'
+                & $script:WriteCalibrationFile -Path $calibPath -Data $calib
+
+                # ACT
+                $result = & $script:InvokeAggregate -WorkDir $workDir `
+                    -ExtraArgs @('-CalibrationFile', $calibPath)
+
+                # ASSERT: pattern recommendation is now full (exited skip)
+                $result.ExitCode | Should -Be 0
+                $result.Output | Should -Match '(?s)prosecution_depth:.*?pattern:\s+recommendation:\s*full' `
+                    -Because 'sustain_rate >= 0.15 must produce recommendation: full (pattern exited skip)'
+
+                # ASSERT: skip_first_observed_at cleared from calibration file
+                $readBack = Get-Content $calibPath -Raw | ConvertFrom-Json -AsHashtable
+                $readBack | Should -Not -BeNullOrEmpty `
+                    -Because 'calibration file must still be readable after run'
+                $depthStateAfter = $readBack['prosecution_depth_state']
+                if ($null -ne $depthStateAfter -and $null -ne $depthStateAfter['pattern']) {
+                    $depthStateAfter['pattern']['skip_first_observed_at'] | Should -BeNullOrEmpty `
+                        -Because 'skip_first_observed_at must be cleared when category exits skip'
+                }
+                # If prosecution_depth_state has no pattern key at all, the contract is also satisfied
+            }
+
+            It 'write-back: expired re-activation events are pruned on write-back' -Tag 'requires-gh' {
+                if (-not $script:GhAvailable) { Set-ItResult -Skipped -Because 'gh CLI not found' }
+
+                # ARRANGE: two re-activation events (one active, one expired) plus a skip-entering
+                # category fixture so that $depthStateChanged is set and write-back runs.
+                # pattern enters skip -> $depthStateChanged = $true -> write-back triggers event pruning.
+                $workDir = & $script:NewWorkDir
+                $findings = & $script:MakeCategoryFindings 'pattern' 1 34  # pattern -> skip
+                $reactivationEvents = @(
+                    [ordered]@{
+                        category        = 'architecture'
+                        triggered_at_pr = 90
+                        expires_at_pr   = 999999  # far future — stays active
+                        trigger_source  = 'manual'
+                        created_at      = '2026-03-01T10:00:00Z'
+                    },
+                    [ordered]@{
+                        category        = 'security'
+                        triggered_at_pr = 1
+                        expires_at_pr   = 2       # PR 2 is already merged — expired
+                        trigger_source  = 'manual'
+                        created_at      = '2020-01-01T00:00:00Z'
+                    }
+                )
+                $calib = & $script:BuildDepthCalibration -Findings $findings `
+                    -PrNumbers $script:NonMetricsPrNumbers -ReactivationEvents $reactivationEvents
+                $calibPath = Join-Path $workDir 'prune-events-writeback.json'
+                & $script:WriteCalibrationFile -Path $calibPath -Data $calib
+
+                # ACT
+                $result = & $script:InvokeAggregate -WorkDir $workDir `
+                    -ExtraArgs @('-CalibrationFile', $calibPath)
+
+                # ASSERT: script succeeded
+                $result.ExitCode | Should -Be 0
+
+                # ASSERT: calibration file re_activation_events contains only the active event
+                $readBack = Get-Content $calibPath -Raw | ConvertFrom-Json -AsHashtable
+                $eventsAfter = $readBack['re_activation_events']
+                $eventsAfter | Should -Not -BeNullOrEmpty `
+                    -Because 'the active re-activation event must survive pruning'
+                $eventsAfter.Count | Should -Be 1 `
+                    -Because 'the expired event (expires_at_pr=2) must be pruned; only the active event survives'
+                [int]$eventsAfter[0]['expires_at_pr'] | Should -Be 999999 `
+                    -Because 'the surviving event must be the active one with expires_at_pr=999999'
+            }
+        }
     }
 }

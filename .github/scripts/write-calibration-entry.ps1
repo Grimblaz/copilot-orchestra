@@ -7,7 +7,7 @@
     JSON string representing the calibration entry to write. At least one of -EntryJson or -ReactivationEventJson is required.
 
 .PARAMETER ReactivationEventJson
-    JSON string representing a re-activation event to write. Required fields: category, triggered_at_pr.
+    JSON string representing a re-activation event to write. Required fields: category, triggered_at_pr, expires_at_pr, trigger_source.
 #>
 
 [CmdletBinding()]
@@ -158,6 +158,18 @@ if (-not [string]::IsNullOrWhiteSpace($ReactivationEventJson)) {
     }
     if (-not (Test-HasProperty $reactivationEvent 'triggered_at_pr')) {
         Write-ValidationError "Re-activation event missing required field: triggered_at_pr"
+    }
+    if (-not (Test-HasProperty $reactivationEvent 'expires_at_pr')) {
+        Write-ValidationError "re-activation event missing required field 'expires_at_pr'"
+    }
+    if (-not (Test-HasProperty $reactivationEvent 'trigger_source')) {
+        Write-ValidationError "re-activation event missing required field 'trigger_source'"
+    }
+    # Range check (only if both are present):
+    if ((Test-HasProperty $reactivationEvent 'expires_at_pr') -and (Test-HasProperty $reactivationEvent 'triggered_at_pr')) {
+        if ([int]$reactivationEvent.expires_at_pr -le [int]$reactivationEvent.triggered_at_pr) {
+            Write-ValidationError "re-activation event 'expires_at_pr' ($($reactivationEvent.expires_at_pr)) must be greater than 'triggered_at_pr' ($($reactivationEvent.triggered_at_pr))"
+        }
     }
 
     $reactivationEvent = ConvertTo-NormalizedObject $reactivationEvent

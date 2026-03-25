@@ -278,7 +278,7 @@ Before composing pass prompts, obtain prosecution depth recommendations:
 6. Compose per-pass exclusion instructions:
    - **Pass 1**: Exclude `skip` categories
    - **Passes 2-3**: Exclude `skip` AND `light` categories
-7. Safe fallback: if aggregate script fails or YAML parsing fails → all categories `full`
+7. Safe fallback: if aggregate script **fails**, **YAML parsing fails**, **output contains `insufficient_data: true`**, or **`prosecution_depth:` block is absent from parsed output** → all categories `full`. Log: `'Prosecution depth: all full (fallback — {reason})'`
 
 Append the following exclusion section to each Code-Critic pass prompt:
 
@@ -345,7 +345,9 @@ Route express-eligible findings directly to the specialist dispatch queue with a
 
 After the judge emits rulings, check sustained findings against the prosecution depth map recorded during Prosecution Depth Setup:
 
-1. For each sustained finding (judge ruling: `finding-sustained`), check if its `category` was at `light` or `skip` depth
+**Scope**: Apply only to main-review findings (`review_stage: main`). Post-fix prosecution (`review_stage: postfix`) always runs at full depth — a sustained finding in a depth-reduced category during post-fix does not signal a calibration miss.
+
+1. For each sustained finding (judge ruling: `sustained` or `finding-sustained`; `sustained` = judged findings; `finding-sustained` = express-lane findings), check if its `category` was at `light` or `skip` depth
 2. If a sustained finding was in a lightened/skipped category, write a re-activation event:
 
    ```powershell
@@ -353,7 +355,8 @@ After the judge emits rulings, check sustained findings against the prosecution 
    ```
 
 3. Log: `"Re-activation triggered for {category} — sustained finding at {depth} depth (persists for 5 PRs)"`
-4. If no depth map was recorded (prosecution depth setup skipped or failed), skip this check silently
+4. Increment `prosecution_depth_reactivations` in pipeline metrics by 1 for each event written.
+5. If no depth map was recorded (prosecution depth setup skipped or failed), skip this check silently
 
 ### GitHub Review Intake & Judgment
 
@@ -599,6 +602,8 @@ Always include in the PR body:
 
 When CE prosecution or GitHub proxy prosecution produces sustained findings:
 
+**Scope**: CE findings use `review_stage: ce`; proxy findings use `review_stage: proxy`. Both stages run at actual (not depth-reduced) depth, so a sustained finding in a depth-reduced category is a genuine calibration signal — the re-activation trigger is correct for these stages.
+
 1. Map the finding's category to the prosecution depth map. For findings with `category: n/a`, infer category using keyword heuristics:
    - Security keywords (auth, token, secret, permission, injection, XSS, CSRF) → `security`
    - Performance keywords (latency, cache, memory, slow, timeout, N+1) → `performance`
@@ -607,6 +612,7 @@ When CE prosecution or GitHub proxy prosecution produces sustained findings:
    - Ambiguous → re-activate ALL matching categories
 2. If the inferred/declared category was at `light` or `skip` depth, write a re-activation event with `trigger_source: "ce_prosecution"` or `"github_proxy"` respectively
 3. Follow the same `write-calibration-entry.ps1 -ReactivationEventJson` call pattern as code prosecution re-activation
+4. Increment `prosecution_depth_reactivations` in pipeline metrics by 1 for each event written.
 
 ### PR Body Adversarial Review Scores
 
@@ -691,7 +697,7 @@ rate_limit_deferred: {true|false}
 prosecution_depth_light: []  # list of category names at light depth
 prosecution_depth_skip: []   # list of category names at skip depth
 prosecution_depth_override: false  # true if global override was active
-prosecution_depth_reactivations: 0  # count of re-activation events triggered during this PR
+prosecution_depth_reactivations: 0  # count of re-activation events written via write-calibration-entry.ps1 -ReactivationEventJson during this PR (from Post-Judgment or CE/Proxy re-activation detection); 0 when no events are written
 findings:
   - id: F1
     category: documentation-audit
@@ -724,7 +730,7 @@ findings:
 -->
 ```
 
-**Default values**: `0` for numeric fields when the stage ran but found nothing. `n/a` for categorical fields when the stage was skipped entirely (e.g., `ce_gate_result: not-applicable`, `ce_gate_intent: n/a` when `ce_gate: false`). `ce_gate_defects_found: n/a` when the CE Gate did not run (`ce_gate: false` or `⏭️ CE Gate not applicable`). For proxy prosecution (GitHub review intake): `pass_1_findings`, `pass_2_findings`, `pass_3_findings` → `n/a` (3-pass structure replaced by proxy pass); route total findings count to `prosecution_findings` only. `postfix_*` numeric fields default to `0` when post-fix review was triggered but found nothing; `n/a` when not triggered (`postfix_triggered: false`). Set `postfix_triggered: true` when trigger conditions are met and post-fix prosecution executes (regardless of whether any findings were accepted). Set `postfix_triggered: false` when the skip rule applies or trigger criteria are not satisfied. For `findings:` array: emit as an empty list (`findings: []`) when no findings exist. For proxy prosecution (GitHub review intake), include all validated GitHub findings with `review_stage: proxy`. New optimization fields: `express_lane_count`, `batch_dispatch_calls`, `batch_dispatch_findings`, `rate_limit_retries` default to `0` when the stage ran; `n/a` when the relevant phase was not active for the current review mode (e.g., `express_lane_count: n/a` for proxy, CE, or design review; `batch_dispatch_calls`/`batch_dispatch_findings: n/a` only for review modes where specialist dispatch is not active — such as standalone design-review flows that stop after prosecution). `postfix_passes` defaults to `n/a` when post-fix review was not triggered; `1` or `2` to reflect actual passes run. `rate_limit_deferred` defaults to `false`. `prosecution_depth_light` and `prosecution_depth_skip` default to empty lists `[]` when no categories are at those depths. `prosecution_depth_override` defaults to `false`. `prosecution_depth_reactivations` defaults to `0`. `express_lane: true` is present in the findings array only for express-laned items — absence means the item went through the full prosecution→defense→judge pipeline. `systemic_fix_type` defaults to `none` when absent — older PRs and findings without root cause tagging are handled gracefully by downstream consumers.
+**Default values**: `0` for numeric fields when the stage ran but found nothing. `n/a` for categorical fields when the stage was skipped entirely (e.g., `ce_gate_result: not-applicable`, `ce_gate_intent: n/a` when `ce_gate: false`). `ce_gate_defects_found: n/a` when the CE Gate did not run (`ce_gate: false` or `⏭️ CE Gate not applicable`). For proxy prosecution (GitHub review intake): `pass_1_findings`, `pass_2_findings`, `pass_3_findings` → `n/a` (3-pass structure replaced by proxy pass); route total findings count to `prosecution_findings` only. `postfix_*` numeric fields default to `0` when post-fix review was triggered but found nothing; `n/a` when not triggered (`postfix_triggered: false`). Set `postfix_triggered: true` when trigger conditions are met and post-fix prosecution executes (regardless of whether any findings were accepted). Set `postfix_triggered: false` when the skip rule applies or trigger criteria are not satisfied. For `findings:` array: emit as an empty list (`findings: []`) when no findings exist. For proxy prosecution (GitHub review intake), include all validated GitHub findings with `review_stage: proxy`. New optimization fields: `express_lane_count`, `batch_dispatch_calls`, `batch_dispatch_findings`, `rate_limit_retries` default to `0` when the stage ran; `n/a` when the relevant phase was not active for the current review mode (e.g., `express_lane_count: n/a` for proxy, CE, or design review; `batch_dispatch_calls`/`batch_dispatch_findings: n/a` only for review modes where specialist dispatch is not active — such as standalone design-review flows that stop after prosecution). `postfix_passes` defaults to `n/a` when post-fix review was not triggered; `1` or `2` to reflect actual passes run. `rate_limit_deferred` defaults to `false`. `prosecution_depth_light` and `prosecution_depth_skip` default to empty lists `[]` when no categories are at those depths. `prosecution_depth_override` defaults to `false`. `prosecution_depth_reactivations` defaults to `0` (no re-activation events written via `write-calibration-entry.ps1 -ReactivationEventJson` during this PR; incremented by the Post-Judgment and CE/Proxy re-activation detection steps). `express_lane: true` is present in the findings array only for express-laned items — absence means the item went through the full prosecution→defense→judge pipeline. `systemic_fix_type` defaults to `none` when absent — older PRs and findings without root cause tagging are handled gracefully by downstream consumers.
 
 **Verdict mapping**: Map verdicts from the judge's score summary table to the corresponding metric fields:
 

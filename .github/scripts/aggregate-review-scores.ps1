@@ -146,7 +146,16 @@ if (-not [string]::IsNullOrWhiteSpace($CalibrationFile) -and (Test-Path $Calibra
         $v = Get-FlexProperty $calibJson 'time_decay_days'
         if ($v) { $timeDecayDays = [int]$v }
         $v = Get-FlexProperty $calibJson 'prosecution_depth_state'
-        if ($v) { $prosecutionDepthState = $v }
+        if ($v) {
+            $prosecutionDepthState = $v
+            # Ensure hashtable (ConvertFrom-Json without -AsHashtable yields PSCustomObject;
+            # .Keys access under Set-StrictMode throws PropertyNotFoundException on PSCustomObject)
+            if ($prosecutionDepthState -is [PSCustomObject]) {
+                $h = @{}
+                $prosecutionDepthState.PSObject.Properties | ForEach-Object { $h[$_.Name] = $_.Value }
+                $prosecutionDepthState = $h
+            }
+        }
         $v = Get-FlexProperty $calibJson 're_activation_events'
         if ($v) { $reActivationEvents = @($v) }
     }
@@ -505,6 +514,8 @@ if ($v2IssuesAnalyzed -gt 0) {
 
         $recommendation = 'full'
         $reActivated = $false
+        # ≥20 threshold for depth recommendation (higher bar than by_category ≥15 — depth changes have
+        # direct behavioral consequences; statistical confidence for depth decisions requires more data)
         $sufficientData = $catEffective -ge 20.0
 
         # 7-step priority chain (evaluated top-down, first match wins)
@@ -585,14 +596,19 @@ if ($v2IssuesAnalyzed -gt 0) {
             $existingObserved = Get-FlexProperty $catState 'skip_first_observed_at'
             if ($null -eq $existingObserved -or $existingObserved -eq '') {
                 if ($prosecutionDepthState -isnot [hashtable]) {
-                    $prosecutionDepthState = @{}
+                    $newState = @{}
+                    $prosecutionDepthState.PSObject.Properties | ForEach-Object { $newState[$_.Name] = $_.Value }
+                    $prosecutionDepthState = $newState
                 }
                 $prosecutionDepthState[$cat] = @{ skip_first_observed_at = $now.ToString('o') }
                 $depthStateChanged = $true
             }
         }
         else {
-            # Leaving skip: clear state if it was set
+            # Clear skip_first_observed_at when leaving skip (including when re-activation forces full).
+            # This intentionally resets the 90-day time-decay clock: the re-activation window
+            # (5 PRs) is expected to produce fresh calibration data before the category returns
+            # to skip, at which point the time-decay observation period restarts.
             if ($null -ne $catState) {
                 if ($prosecutionDepthState -is [hashtable]) {
                     $prosecutionDepthState.Remove($cat)
@@ -613,6 +629,7 @@ if ($v2IssuesAnalyzed -gt 0) {
     if ($depthStateChanged -and
         -not [string]::IsNullOrWhiteSpace($CalibrationFile) -and
         (Test-Path $CalibrationFile)) {
+        $tempPath = $null
         try {
             $calibContent = Get-Content -Path $CalibrationFile -Raw | ConvertFrom-Json
             # Convert prosecutionDepthState hashtable to PSCustomObject for JSON
@@ -621,13 +638,22 @@ if ($v2IssuesAnalyzed -gt 0) {
                 $stateObj[$k] = $prosecutionDepthState[$k]
             }
             $calibContent | Add-Member -NotePropertyName 'prosecution_depth_state' -NotePropertyValue ([PSCustomObject]$stateObj) -Force
+            # Prune expired events before persisting (events still active: expires_at_pr > $maxMergedPrNumber)
+            $reActivationEvents = @($reActivationEvents | Where-Object {
+                [int]$_.expires_at_pr -gt $maxMergedPrNumber
+            })
             $calibContent | Add-Member -NotePropertyName 're_activation_events' -NotePropertyValue @($reActivationEvents) -Force
 
             $tempPath = "$CalibrationFile.$([System.Guid]::NewGuid().ToString('N')).tmp"
             $calibContent | ConvertTo-Json -Depth 10 | Set-Content -Path $tempPath -Encoding UTF8
+            # Validate before promotion (mirrors write-calibration-entry.ps1 safety pattern)
+            $null = Get-Content $tempPath -Raw | ConvertFrom-Json
             Move-Item -Path $tempPath -Destination $CalibrationFile -Force
         }
         catch {
+            if ($null -ne $tempPath -and (Test-Path $tempPath)) {
+                Remove-Item $tempPath -Force -ErrorAction SilentlyContinue
+            }
             Write-Warning "Failed to write prosecution_depth_state to calibration file: $_"
             # Non-fatal — state write failure does not affect YAML output
         }
