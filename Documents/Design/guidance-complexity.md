@@ -47,7 +47,7 @@ Guardrail additions accumulate asymmetrically — new rules are proposed with no
 
 Phase 2 implementation is **complete** (issue #213, see Phase 2 section below). The original readiness criteria that triggered Phase 2 work were:
 
-1. `prosecution_depth_state` exists in `.copilot-tracking/calibration/review-data.json` (currently absent — only 4 calibration entries exist, ~20 effective count per category needed for depth transitions)
+1. `prosecution_depth_state` exists in `.copilot-tracking/calibration/review-data.json` (was absent at Phase 2 inception — only 4 calibration entries existed; ~20 effective per category needed for depth transitions)
 2. At least one category has `recommendation: skip` or `recommendation: light` (compound-signal confirmation of a sustained low-defect-rate pattern)
 3. At least one `consolidation event` candidate can be identified from calibration data
 
@@ -138,7 +138,7 @@ When those conditions are met, reduce the ceiling by 10 directives and reassess 
 
 ## Phase 2 — Consolidation Monitoring & Tiered Advisory
 
-Implements the data-dependent mechanisms from D3–D9 that require calibration history. Phase 2 activation is issue #213.
+Implements the data-dependent mechanisms from D7–D9 that require calibration history. Phase 2 activation is issue #213.
 
 ### D7 — Persistent Over-Ceiling Detection
 
@@ -301,7 +301,7 @@ When a rule section is retired as part of D3 (compound-signal retirement), move 
 - `-ComplexityJsonPath` parameter in `aggregate-review-scores.ps1`; per-agent `complexity_over_ceiling_history` write-back to calibration JSON (D7)
 - Tiered advisory in Process-Review §4.9 — extraction advisory replaces compression advisory at `persistent_threshold` (D8)
 - Agent Creation Complexity Budget convention documented; quick-validate gate enforces it (D9)
-- `consolidation_events[]` logged when agent drops from over-ceiling tracking
+- `consolidation_events[]` logged when an agent drops from over-ceiling tracking
 
 **Phase 3 (future PR, requires calibration maturity):**
 

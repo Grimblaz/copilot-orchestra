@@ -315,7 +315,7 @@ Emit exactly this structure when returning results to Code-Conductor:
 **Step 1b — Run the guidance complexity measurement**:
 
 ```powershell
-$complexityTempFile = "$env:TEMP/complexity-output-${PID}.json"
+$complexityTempFile = Join-Path ([System.IO.Path]::GetTempPath()) "complexity-output-${PID}.json"
 try {
     $complexityOutput = pwsh -NoProfile -NonInteractive -File .github/scripts/measure-guidance-complexity.ps1 | ConvertFrom-Json
     if ($null -ne $complexityOutput -and $null -eq $complexityOutput.error) {
@@ -495,12 +495,14 @@ For each pattern being considered for a guardrail proposal with `systemic_fix_ty
    Retrieve `{consecutive_over_ceiling}` and `{persistent_threshold}` from the matching entry in the `extraction_agents:` block (fields: `consecutive_over_ceiling`, `persistent_threshold`).
    → Tag proposal `extraction_recommended: true`, `compression_required: true`
    → Emit D8 extraction advisory (REPLACES D2 compression advisory — do NOT emit both for the same agent):
+
    > **Extraction advisory (D8)**: Target agent `{agent-basename}` has exceeded its guidance-complexity ceiling for `{consecutive_over_ceiling}` consecutive tracked periods (persistent_threshold: `{persistent_threshold}`). Compression alone is unlikely to resolve persistent over-ceiling exceedance. Recommended action: extract a skill using the `skill-creator` skill (`.github/skills/skill-creator/SKILL.md`) based on the D6 extraction criteria in `Documents/Design/guidance-complexity.md`. See the D8 section for extraction advisory format and the archive convention for retiring replaced rules. The proposal is still emitted — this advisory is non-blocking.
 
    **Sub-case B — over ceiling but extraction threshold NOT yet met** (agent in `agents_over_ceiling` but NOT in `extraction_agents:`):
    Retrieve `{total_directives}` via: `($complexityOutput.agents | Where-Object { $_.file -eq $agentBasename }).total_directives`.
    → Tag proposal `compression_required: true`, `extraction_recommended: false`
    → Emit D2 compression advisory (unchanged):
+
    > **Compression advisory (D2)**: Target agent `{agent-basename}` exceeds its complexity ceiling (`{total_directives}` directives). Before adding a new guardrail, consider consolidating existing rules in the target section first. See `Documents/Design/guidance-complexity.md` — Rule Compression Approach section for the consolidation steps. The proposal is still emitted — this flag is advisory only.
 
 4. If **not over ceiling** → tag `compression_required: false`, `extraction_recommended: false`

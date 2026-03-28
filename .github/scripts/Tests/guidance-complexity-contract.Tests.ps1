@@ -110,7 +110,7 @@ Describe 'guidance complexity ceiling contract' {
         $configJson = Get-Content -Path $script:ConfigPath -Raw | ConvertFrom-Json
         $configJson.persistent_threshold | Should -Not -BeNullOrEmpty `
             -Because 'config schema requires persistent_threshold for consolidation monitoring (Phase 2 D7)'
-        [bool]($configJson.persistent_threshold -is [ValueType] -and $configJson.persistent_threshold -gt 0) | Should -BeTrue `
+        [bool]($configJson.persistent_threshold -is [ValueType] -and $configJson.persistent_threshold -gt 0 -and $configJson.persistent_threshold % 1 -eq 0) | Should -BeTrue `
             -Because 'persistent_threshold must be a positive integer — the consecutive-over-ceiling count threshold before extraction advisory fires'
     }
 

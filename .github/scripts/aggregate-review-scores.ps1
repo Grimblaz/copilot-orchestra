@@ -119,6 +119,43 @@ function Get-FlexProperty {
 }
 
 # ---------------------------------------------------------------------------
+# Shared helper: coerce PSCustomObject to hashtable
+# ---------------------------------------------------------------------------
+function ConvertTo-Hashtable {
+    param([PSCustomObject]$InputObject)
+    $h = @{}
+    $InputObject.PSObject.Properties | ForEach-Object {
+        $val = $_.Value
+        if ($val -is [datetime]) {
+            $val = $val.ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ')
+        }
+        $h[$_.Name] = $val
+    }
+    return $h
+}
+
+# ---------------------------------------------------------------------------
+# Shared helper: emit extraction_agents YAML block
+# ---------------------------------------------------------------------------
+function Write-ExtractionAgentsYaml {
+    param(
+        [hashtable]$ComplexityOverCeilingHistory,
+        [int]$PersistentThreshold
+    )
+    $candidates = @($ComplexityOverCeilingHistory.Keys | Where-Object {
+        [int](Get-FlexProperty $ComplexityOverCeilingHistory[$_] 'consecutive_count') -ge $PersistentThreshold
+    } | Sort-Object)
+    if ($candidates.Count -eq 0) { return }
+    Write-Output 'extraction_agents:'
+    foreach ($agent in $candidates) {
+        $cnt = [int](Get-FlexProperty $ComplexityOverCeilingHistory[$agent] 'consecutive_count')
+        Write-Output "  - file: $agent"
+        Write-Output "    consecutive_over_ceiling: $cnt"
+        Write-Output "    persistent_threshold: $PersistentThreshold"
+    }
+}
+
+# ---------------------------------------------------------------------------
 # Shared helper: check whether a pattern (key + evidence PRs) is already in
 # a proposals list. Works with both hashtable and PSCustomObject elements.
 # ---------------------------------------------------------------------------
@@ -189,9 +226,7 @@ if (-not [string]::IsNullOrWhiteSpace($CalibrationFile) -and (Test-Path $Calibra
         if ($v) {
             $complexityOverCeilingHistory = $v
             if ($complexityOverCeilingHistory -is [PSCustomObject]) {
-                $h = @{}
-                $complexityOverCeilingHistory.PSObject.Properties | ForEach-Object { $h[$_.Name] = $_.Value }
-                $complexityOverCeilingHistory = $h
+                $complexityOverCeilingHistory = ConvertTo-Hashtable $complexityOverCeilingHistory
             }
         }
         $v = Get-FlexProperty $calibJson 'consolidation_events'
@@ -470,9 +505,7 @@ if (-not [string]::IsNullOrWhiteSpace($ComplexityJsonPath) -and (Test-Path $Comp
                 $entry = $complexityOverCeilingHistory[$agentFile]
                 # Coerce PSCustomObject to hashtable for mutation
                 if ($entry -is [PSCustomObject]) {
-                    $h = @{}
-                    $entry.PSObject.Properties | ForEach-Object { $h[$_.Name] = $_.Value }
-                    $entry = $h
+                    $entry = ConvertTo-Hashtable $entry
                     $complexityOverCeilingHistory[$agentFile] = $entry
                 }
                 # Idempotency: skip increment if already processed for this max PR number
@@ -530,6 +563,7 @@ if (-not $overallSufficient) {
     Write-Output "message: `"Minimum effective sample size of 5 required (current: ${essFmt})`""
     # Flush complexity history write-back before insufficient-data exit
     if ($complexityHistoryChanged -and (Test-Path $CalibrationFile -PathType Leaf)) {
+        $earlyTmp = $null
         try {
             $earlyCalib = Get-Content -Raw $CalibrationFile | ConvertFrom-Json
             $earlyCalib | Add-Member -Force -NotePropertyName 'complexity_over_ceiling_history' -NotePropertyValue $(if ($complexityOverCeilingHistory.Count -gt 0) { [PSCustomObject]($complexityOverCeilingHistory) } else { $null })
@@ -548,18 +582,7 @@ if (-not $overallSufficient) {
         Write-Warning "complexity-tracking: calibration file not found at '$CalibrationFile' — consecutive_count cannot persist across runs. Complexity history will not advance toward extraction threshold until the calibration file exists."
     }
     # Emit extraction_agents in insufficient-data path if threshold met
-    $earlyExtractionCandidates = @($complexityOverCeilingHistory.Keys | Where-Object {
-        [int](Get-FlexProperty $complexityOverCeilingHistory[$_] 'consecutive_count') -ge $persistentThreshold
-    } | Sort-Object)
-    if ($earlyExtractionCandidates.Count -gt 0) {
-        Write-Output 'extraction_agents:'
-        foreach ($agent in $earlyExtractionCandidates) {
-            $cnt = [int](Get-FlexProperty $complexityOverCeilingHistory[$agent] 'consecutive_count')
-            Write-Output "  - file: $agent"
-            Write-Output "    consecutive_over_ceiling: $cnt"
-            Write-Output "    persistent_threshold: $persistentThreshold"
-        }
-    }
+    Write-ExtractionAgentsYaml -ComplexityOverCeilingHistory $complexityOverCeilingHistory -PersistentThreshold $persistentThreshold
     exit 0
 }
 
@@ -882,9 +905,7 @@ if ($v2IssuesAnalyzed -gt 0) {
                     foreach ($k in ($complexityOverCeilingHistory.Keys | Sort-Object)) {
                         $entryVal = $complexityOverCeilingHistory[$k]
                         if ($entryVal -is [PSCustomObject]) {
-                            $eh = @{}
-                            $entryVal.PSObject.Properties | ForEach-Object { $eh[$_.Name] = $_.Value }
-                            $entryVal = $eh
+                            $entryVal = ConvertTo-Hashtable $entryVal
                         }
                         $histObj[$k] = [PSCustomObject]$entryVal
                     }
@@ -971,15 +992,4 @@ else {
 # extraction_agents: per-agent extraction advisory (Phase 2 D7)
 # Emits agents where consecutive_over_ceiling >= persistent_threshold.
 # ---------------------------------------------------------------------------
-$extractionCandidates = @($complexityOverCeilingHistory.Keys | Where-Object {
-    [int](Get-FlexProperty $complexityOverCeilingHistory[$_] 'consecutive_count') -ge $persistentThreshold
-} | Sort-Object)
-if ($extractionCandidates.Count -gt 0) {
-    Write-Output 'extraction_agents:'
-    foreach ($agent in $extractionCandidates) {
-        $cnt = [int](Get-FlexProperty $complexityOverCeilingHistory[$agent] 'consecutive_count')
-        Write-Output "  - file: $agent"
-        Write-Output "    consecutive_over_ceiling: $cnt"
-        Write-Output "    persistent_threshold: $persistentThreshold"
-    }
-}
+Write-ExtractionAgentsYaml -ComplexityOverCeilingHistory $complexityOverCeilingHistory -PersistentThreshold $persistentThreshold

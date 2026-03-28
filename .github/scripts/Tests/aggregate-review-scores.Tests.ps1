@@ -2060,9 +2060,10 @@ Describe 'aggregate-review-scores.ps1 -CalibrationFile' {
                 -Because 'history entry must still exist after a genuine increment'
             [int]$entry['consecutive_count'] | Should -Be 2 `
                 -Because 'genuine increment (different PR number) must raise consecutive_count from 1 to 2'
-            $entry['first_observed_at'] | Should -Be '2026-01-01T00:00:00Z' `
+            $seedTime = [DateTime]::Parse('2026-01-01T00:00:00Z', $null, [System.Globalization.DateTimeStyles]::RoundtripKind)
+            $entry['first_observed_at'] | Should -Be $seedTime `
                 -Because 'first_observed_at must be preserved on genuine increment — only set on first observation, never overwritten'
-            $entry['last_observed_at'] | Should -Not -Be '2026-01-01T00:00:00Z' `
+            $entry['last_observed_at'] | Should -Not -Be $seedTime `
                 -Because 'last_observed_at must be updated to reflect the new observation time'
         }
     }
