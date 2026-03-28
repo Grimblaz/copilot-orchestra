@@ -24,6 +24,7 @@ param(
 $ErrorActionPreference = 'Stop'
 
 # ── Constants ────────────────────────────────────────────────────────────────────
+# Intentionally more lenient than default config ceiling (128) to prevent false positives on config load failure
 $Script:DefaultCeiling   = 150
 $Script:KeywordPattern   = '\b(MUST|NEVER|ALWAYS|REQUIRED|MANDATORY)\b'
 $Script:ChecklistPattern = '^\s*-\s\[[ xX]\]'
@@ -52,12 +53,20 @@ function Get-CeilingForFile {
         # Per-agent ceiling takes priority over default_ceiling
         $ceilings = $Script:ConfigData.ceilings
         if ($null -ne $ceilings -and $null -ne $ceilings.PSObject.Properties[$FileName]) {
-            return [int]($ceilings.PSObject.Properties[$FileName].Value.max_directives)
+            $perAgentCeiling = $ceilings.PSObject.Properties[$FileName].Value.max_directives
+            if ($null -ne $perAgentCeiling) {
+                return [int]$perAgentCeiling
+            }
+            # Fall through to default_ceiling — per-agent entry exists but max_directives is absent
         }
         # Fall back to default_ceiling from config
         $dc = $Script:ConfigData.PSObject.Properties['default_ceiling']
         if ($null -ne $dc) {
-            return [int]($dc.Value.max_directives)
+            $dcMaxDirectives = $dc.Value.max_directives
+            if ($null -ne $dcMaxDirectives) {
+                return [int]$dcMaxDirectives
+            }
+            # Fall through to $Script:DefaultCeiling — default_ceiling exists but max_directives is absent
         }
     }
 
@@ -176,9 +185,10 @@ try {
     $output | ConvertTo-Json -Depth 10
 } catch {
     # Ensure valid JSON output and exit 0 even on unexpected failure
+    # Use sentinel value so .agents_over_ceiling.Count returns 1 (non-zero), making quick-validate fail visibly
     [ordered]@{
         config_source       = $Script:ConfigSource
-        agents_over_ceiling = @()
+        agents_over_ceiling = @('__script-error__')
         agents              = @()
         error               = $_.Exception.Message
     } | ConvertTo-Json -Depth 5

@@ -324,7 +324,9 @@ pwsh -NonInteractive .github/scripts/aggregate-review-scores.ps1
 $complexityOutput = pwsh -NoProfile -NonInteractive -File .github/scripts/measure-guidance-complexity.ps1 | ConvertFrom-Json
 ```
 
-If the script errors (non-zero exit or `ConvertFrom-Json` throws), set `$complexityOutput = $null` and emit: `Complexity measurement unavailable — §4.9 ceiling check skipped.` The `$complexityOutput` variable is consumed by §4.9 Step 1b.
+If the script cannot be executed (script file not found, pwsh unavailable, or output is non-JSON), set `$complexityOutput = $null` and emit: `Complexity measurement unavailable — §4.9 ceiling check skipped.` The `$complexityOutput` variable is consumed by §4.9 Step 1b.
+
+> **Note**: If the script runs but fails internally, it emits valid JSON with `agents_over_ceiling: ['__script-error__']` and an `error` field — `$complexityOutput` will be non-null. Check `$complexityOutput.agents_over_ceiling[0] -eq '__script-error__'` to detect this case and treat as null.
 
 **Step 2 — Parse output**:
 
@@ -454,7 +456,9 @@ For each entry already marked `<!-- gotcha-status: upstream:{url} -->`: check if
 
 Read the `systemic_patterns:` section from the aggregation script's YAML output. If the section is absent or empty, emit "Root cause analysis: no systemic patterns found" and skip to kaizen metric.
 
-**Step 1b — Check agent complexity ceiling** (for `agent-prompt` proposals only):
+**Step 1b — Check agent complexity ceiling** (applied per-proposal within Step 2, `agent-prompt` proposals only):
+
+Apply this check within Step 2 for each `agent-prompt` proposal as its `target_file` is identified.
 
 Read `$complexityOutput` from §4.7. If `$complexityOutput` is `$null`, skip this step.
 
@@ -463,6 +467,7 @@ For each pattern being considered for a guardrail proposal with `systemic_fix_ty
 1. Extract the target agent basename from `target_file` (the filename portion of `.github/agents/{Name}.agent.md`)
 2. Check whether that basename appears in `$complexityOutput.agents_over_ceiling`
 3. If **over ceiling** → tag the eventual proposal `compression_required: true` and emit this advisory in the report:
+   Retrieve `{total_directives}` via: `($complexityOutput.agents | Where-Object { $_.file -eq $agentBasename }).total_directives`.
    > **Compression advisory (D2)**: Target agent `{agent-basename}` exceeds its complexity ceiling (`{total_directives}` directives). Before adding a new guardrail, consider consolidating existing rules in the target section first. See `Documents/Design/guidance-complexity.md` — Rule Compression Approach section for the consolidation steps. The proposal is still emitted — this flag is advisory only.
 4. If **not over ceiling** → tag `compression_required: false`
 
@@ -489,6 +494,7 @@ guardrail_proposals:
     category: security
     target_file: .github/instructions/safe-operations.instructions.md
     target_section: "Section 1: File Operation Rules"
+    compression_advisory: "none — ceiling not exceeded"  # advisory text when compression_required: true; "none — ceiling not exceeded" otherwise
     proposed_change: "Add rule: all user-facing endpoints must validate input against schema before processing"
     evidence:
       - pr: 78, finding: F3

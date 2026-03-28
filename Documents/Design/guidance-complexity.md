@@ -93,6 +93,20 @@ Config file at `.github/config/guidance-complexity.json`. Schema:
 
 **Initial ceiling values** are set above current agent directive counts so no agents trigger on day one (advisory, zero false triggers at deployment). Ceilings are tunable as the system is used.
 
+### Ceiling Management
+
+**Rationale for the initial buffer**: The initial ceiling includes a ~50-unit buffer above current agent directive counts. This ensures zero false triggers at deployment while establishing a measurement baseline for what "normal" directive density looks like across agents.
+
+**Tightening criteria**: Once the system has been operating for several Process-Review cycles, consider reducing the ceiling when:
+
+- 3 or more Process-Review cycles have completed with no agent exceeding 80% of the ceiling
+- Calibration data shows sustain rates are stable (no regression after recent changes)
+- At least one category has reached `recommendation: skip` or `recommendation: light` depth
+
+When those conditions are met, reduce the ceiling by 10 directives and reassess after the next 3 cycles. Reassess annually with accumulated calibration data to keep ceilings meaningful.
+
+**Responsibility**: Ceiling management is the operator's responsibility, guided by Phase 2 monitoring data (issue #213). The script is advisory-only and will not automatically tighten ceilings.
+
 **Override mechanism**: Lines containing `<!-- complexity-override: {reason} -->` are excluded from directive counting. Use when a section legitimately needs many directives and compression is not appropriate.
 
 ---

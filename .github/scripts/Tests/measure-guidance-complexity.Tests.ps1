@@ -254,6 +254,31 @@ You MUST do this.
     }
 
     # ==================================================================
+    # 2a. Checklist + keyword overlap (design-intent documentation)
+    # ==================================================================
+    Context 'checklist line that also contains a directive keyword' {
+
+        It 'counts a checklist line with a directive keyword as 2 directives (checklist + keyword signals are cumulative)' {
+            $dir = & $script:NewTempDir
+            $content = @'
+# Test Agent
+
+- [ ] MUST verify this.
+'@
+            & $script:NewAgentFile -Dir $dir -Name 'Test.agent.md' -Content $content | Out-Null
+
+            $result = & $script:Invoke -AgentsPath "$dir\*.agent.md" -ConfigPath $script:SharedConfigPath
+            $json   = $result.Raw | ConvertFrom-Json
+            $agent  = @($json.agents) | Where-Object { $_.file -match 'Test\.agent\.md' }
+
+            # Design intent: checklist signal (1) + keyword signal (1) = 2 total_directives.
+            # This documents that the counting is cumulative, not deduplicated.
+            $agent.total_directives | Should -Be 2 -Because 'a checklist line containing MUST counts as 2 directives: 1 checklist item + 1 keyword'
+            $agent.checklist_items  | Should -Be 1 -Because 'the line is still one checklist item'
+        }
+    }
+
+    # ==================================================================
     # 3. Fenced code block exclusion
     # ==================================================================
     Context 'fenced code block exclusion' {
@@ -495,6 +520,42 @@ You MUST do this.
 
             $result.ExitCode | Should -Be 0 -Because 'ceilings are advisory (soft) — the script must always exit 0'
         }
+
+        It 'uses per-agent override ceiling instead of default when a named entry exists in ceilings' {
+            $dir = & $script:NewTempDir
+            # 6 MUSTs — exceeds the per-agent ceiling of 5, well under default of 1000
+            $content = "# Test Agent`nMUST. MUST. MUST. MUST. MUST. MUST."
+            & $script:NewAgentFile -Dir $dir -Name 'MyAgent.agent.md' -Content $content | Out-Null
+            $configPath = & $script:WriteConfig -Dir $dir -Config @{
+                version         = 1
+                default_ceiling = @{ max_directives = 1000 }
+                ceilings        = @{ 'MyAgent.agent.md' = @{ max_directives = 5 } }
+            }
+
+            $result = & $script:Invoke -AgentsPath "$dir\*.agent.md" -ConfigPath $configPath
+            $json   = $result.Raw | ConvertFrom-Json
+
+            @($json.agents_over_ceiling) | Should -Contain 'MyAgent.agent.md' `
+                -Because '6 directives exceeds the per-agent ceiling of 5; the per-agent override must take precedence over the default of 1000'
+        }
+
+        It 'falls through to default ceiling when per-agent entry exists but has no max_directives field' {
+            $dir = & $script:NewTempDir
+            # 6 MUSTs — exceeds the default ceiling of 5
+            $content = "# Test Agent`nMUST. MUST. MUST. MUST. MUST. MUST."
+            & $script:NewAgentFile -Dir $dir -Name 'MyAgent.agent.md' -Content $content | Out-Null
+            $configPath = & $script:WriteConfig -Dir $dir -Config @{
+                version         = 1
+                default_ceiling = @{ max_directives = 5 }
+                ceilings        = @{ 'MyAgent.agent.md' = @{} }
+            }
+
+            $result = & $script:Invoke -AgentsPath "$dir\*.agent.md" -ConfigPath $configPath
+            $json   = $result.Raw | ConvertFrom-Json
+
+            @($json.agents_over_ceiling) | Should -Contain 'MyAgent.agent.md' `
+                -Because '6 directives exceeds the default ceiling of 5; a per-agent entry with no max_directives must fall through to the default ceiling'
+        }
     }
 
     # ==================================================================
@@ -502,7 +563,7 @@ You MUST do this.
     # ==================================================================
     Context 'section count and nesting depth' {
 
-        It 'reports section_count equal to the number of ## headings' {
+        It 'section_count equals the number of ##+ headings (all depths)' {
             $dir = & $script:NewTempDir
             $content = @'
 # Test Agent
@@ -526,6 +587,28 @@ Content.
             $agent  = @($json.agents) | Where-Object { $_.file -match 'Test\.agent\.md' }
 
             $agent.section_count | Should -Be 3 -Because 'three ## headings must yield section_count of 3'
+        }
+
+        It 'section_count includes ### and deeper headings alongside ## headings' {
+            $dir = & $script:NewTempDir
+            $content = @'
+# Test Agent
+
+## Intro
+
+Top-level section content.
+
+### Details
+
+Subsection content.
+'@
+            & $script:NewAgentFile -Dir $dir -Name 'Test.agent.md' -Content $content | Out-Null
+
+            $result = & $script:Invoke -AgentsPath "$dir\*.agent.md" -ConfigPath $script:SharedConfigPath
+            $json   = $result.Raw | ConvertFrom-Json
+            $agent  = @($json.agents) | Where-Object { $_.file -match 'Test\.agent\.md' }
+
+            $agent.section_count | Should -Be 2 -Because '## Intro and ### Details are both ##+ headings; section_count must be 2'
         }
 
         It 'reports max_nesting_depth of 1 when only ## headings are present' {

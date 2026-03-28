@@ -35,9 +35,9 @@ Describe 'guidance complexity ceiling contract' {
         $script:ProcessReviewContent = Get-Content -Path $script:ProcessReview -Raw
 
         # Extract individual sections: from heading until the next same-level heading or end of file
-        $script:Section47 = [regex]::Match($script:ProcessReviewContent, '(?is)### 4\.7\b.*?(?=### 4\.\d|\Z)').Value
-        $script:Section48 = [regex]::Match($script:ProcessReviewContent, '(?is)### 4\.8\b.*?(?=### 4\.\d|\Z)').Value
-        $script:Section49 = [regex]::Match($script:ProcessReviewContent, '(?is)### 4\.9\b.*?(?=### 4\.\d|\Z)').Value
+        $script:Section47 = [regex]::Match($script:ProcessReviewContent, '(?is)### 4\.7\b.*?(?=### 4\.\d+|\Z)').Value
+        $script:Section48 = [regex]::Match($script:ProcessReviewContent, '(?is)### 4\.8\b.*?(?=### 4\.\d+|\Z)').Value
+        $script:Section49 = [regex]::Match($script:ProcessReviewContent, '(?is)### 4\.9\b.*?(?=### 4\.\d+|\Z)').Value
 
         # Extract the single "When to run" line from each section for scope-consistency checks
         $script:WhenToRun48 = [regex]::Match($script:Section48, '(?m)^\*\*When to run\*\*.*$').Value
@@ -80,6 +80,8 @@ Describe 'guidance complexity ceiling contract' {
             -Because '§4.9 When to run must name CE Gate Track 2 as the skip condition'
         $script:WhenToRun49 | Should -Not -Match 'unlike §4\.8' `
             -Because '§4.9 When to run must not reference §4.8 as a contrast (old contrast text removed by issue #211)'
+        $script:WhenToRun49 | Should -Match 'calibration' `
+            -Because '§4.9 should run during calibration-only mode, not just full retrospectives'
     }
 
     It 'requires the guidance-complexity config file to exist with a valid schema' {
