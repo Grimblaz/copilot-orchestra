@@ -2,5 +2,8 @@
   "[markdown]": {
     "editor.formatOnSave": true,
     "editor.defaultFormatter": "DavidAnson.vscode-markdownlint"
+  },
+  "[powershell]": {
+    "editor.formatOnSave": true
   }
 }

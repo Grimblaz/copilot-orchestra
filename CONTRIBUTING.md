@@ -12,15 +12,19 @@ For the best experience with Copilot Orchestra:
 - GitHub Copilot extension
 - [markdownlint-cli2](https://github.com/DavidAnson/markdownlint-cli2) — Markdown auto-formatter (used in the pre-commit hook and by agents): `npm install -g markdownlint-cli2`
 
+### Recommended Tooling
+
+- PowerShell 7+ (`pwsh`) with `PSScriptAnalyzer` — recommended for automatic `.ps1` formatting in VS Code and the pre-commit hook: `pwsh -NoProfile -Command "Install-Module PSScriptAnalyzer -Scope CurrentUser"`
+
 ### Recommended Settings
 
-Enable the pre-commit hook to auto-format Markdown files before every commit (covers agents and manual edits):
+Enable the pre-commit hook to auto-format staged Markdown and PowerShell files before every commit (covers agents and manual edits):
 
 ```sh
 git config core.hooksPath .githooks
 ```
 
-The hook runs `markdownlint-cli2 --fix` on staged `.md` files (including `.agent.md` agent definitions) and re-stages them — commits are never blocked.
+The hook runs `markdownlint-cli2 --fix` on staged `.md` files (including `.agent.md` agent definitions) and re-stages any Markdown changes. When `pwsh` and `PSScriptAnalyzer` are available, it also runs `Invoke-Formatter` on staged `.ps1` files and re-stages any PowerShell changes. If PowerShell tooling is missing, the hook warns and skips the PowerShell lane rather than blocking the commit.
 
 Enable the built-in GitHub MCP server for seamless issue and PR workflows:
 
