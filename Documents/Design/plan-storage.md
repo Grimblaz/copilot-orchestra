@@ -89,7 +89,7 @@ The design cache stores the full design content from the GitHub issue body in a 
 
 | Layer | Location | Created by | Required |
 |-------|----------|------------|----------|
-| Primary | `/memories/session/design-issue-{ID}.md` | Issue-Planner (Section 6) after plan approval | No |
+| Primary | `/memories/session/design-issue-{ID}.md` | Issue-Planner (Section 6) after plan approval when the cache is absent, or when current-pass issue/design updates require a refresh | No |
 | Secondary | GitHub issue comment with `<!-- design-issue-{ID} -->` as first line | Code-Conductor at D9 Stop / Pause when durable handoff is needed | No |
 
 ### Design Cache Lookup Chain (Code-Conductor)
@@ -124,11 +124,15 @@ The session memory file is a cache, not the source of truth. Solution-Designer s
 
 Design should be settled before implementation begins. Mid-implementation design changes are exceptional — if they occur, the user should restart the affected plan steps. Adding issue-body re-reads at every phase boundary would reintroduce the API-call dependency the cache is meant to eliminate.
 
+#### DC4 — Conditional creation avoids redundant cache churn
+
+Issue-Planner should check for `/memories/session/design-issue-{ID}.md` before creating it. When the cache already exists and the current planning pass did not refresh the issue body or other design-relevant content during research/refinement, re-reading the issue body and deleting and recreating the file adds no value. If the current planning pass did refresh design-relevant issue content before approval, Issue-Planner should recreate the cache from the latest issue body before handoff. This preserves the issue-218 dedup goal, aligns Issue-Planner with Code-Conductor's check-before-create pattern, and preserves DC2: the issue body remains the source of truth, while the session-memory copy is refreshed only when the current pass made the cached snapshot stale.
+
 ### Design Cache Agent Responsibilities
 
 | Agent | Responsibility |
 |-------|----------------|
-| Issue-Planner (Section 6) | Create design cache to session memory after plan approval |
+| Issue-Planner (Section 6) | Check for an existing design cache after plan approval; keep it unless current-pass issue/design updates require a refresh, then create or refresh it from the issue body |
 | Code-Conductor (D9) | On explicit Stop / Pause, persist the current design snapshot to the canonical GitHub comment when the latest persisted handoff is missing or changed after normalizing away transport-only formatting drift, including line-ending normalization and trailing newlines/whitespace |
 | Code-Conductor (Step 1) | Read design cache using lookup chain above; recreate from issue body if absent (session reset recovery) |
 | Code-Conductor (Step 3) | Re-read design cache at major phase boundaries for alignment checks |
