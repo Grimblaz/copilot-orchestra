@@ -1,33 +1,103 @@
 #!/bin/sh
-# Pre-commit hook: auto-format staged Markdown files with markdownlint-cli2.
+# Pre-commit hook: auto-format staged Markdown and PowerShell files.
 #
 # Install once per clone:
 #   git config core.hooksPath .githooks
 #
 # Requires: markdownlint-cli2 (npm install -g markdownlint-cli2)
 
+# Collect staged files once (added, copied, or modified - not deleted).
+staged_files=$(git diff --cached --name-only --diff-filter=ACM)
+
+# Markdown lane
 if ! command -v markdownlint-cli2 > /dev/null 2>&1; then
   echo "⚠ markdownlint-cli2 not found — skipping Markdown auto-format."
   echo "  Install with: npm install -g markdownlint-cli2"
-  exit 0
+else
+  # Collect staged .md files, including .agent.md agent definitions.
+  staged_md=$(printf '%s\n' "$staged_files" | grep -E '\.md$')
+
+  if [ -n "$staged_md" ]; then
+    echo "→ markdownlint-cli2 --fix on staged Markdown files..."
+    printf '%s\n' "$staged_md" | while IFS= read -r f; do
+      # --fix applies auto-fixable rules (blank lines around headings, etc.)
+      # Errors that cannot be auto-fixed are reported but do not block the commit.
+      _hash_before=$(git hash-object -- "$f")
+      markdownlint-cli2 --fix "$f" || true
+      _hash_after=$(git hash-object -- "$f")
+      # Only re-stage if markdownlint changed the file — avoids unnecessary restaging.
+      [ "$_hash_before" != "$_hash_after" ] && git add -- "$f"
+    done
+  fi
 fi
 
-# Collect staged .md files (added, copied, or modified — not deleted)
-staged_md=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(md|agent\.md)$')
+# PowerShell lane
+staged_ps1=$(printf '%s\n' "$staged_files" | grep -E '\.ps1$')
 
-if [ -z "$staged_md" ]; then
+if [ -n "$staged_ps1" ]; then
+  if ! command -v pwsh > /dev/null 2>&1; then
+    echo "⚠ pwsh not found — skipping PowerShell auto-format."
+    echo "  Install PowerShell 7+: https://aka.ms/powershell-install"
+  elif ! pwsh -NoProfile -NonInteractive -Command "if (Get-Command Invoke-Formatter -ErrorAction SilentlyContinue) { exit 0 }; try { Import-Module PSScriptAnalyzer -ErrorAction Stop | Out-Null } catch { }; if (Get-Command Invoke-Formatter -ErrorAction SilentlyContinue) { exit 0 } else { exit 1 }" > /dev/null 2>&1; then
+    echo "⚠ Invoke-Formatter not available — skipping PowerShell auto-format."
+    echo "  Install with: pwsh -NoProfile -Command \"Install-Module PSScriptAnalyzer -Scope CurrentUser\""
+  else
+    echo "→ Invoke-Formatter on staged PowerShell files..."
+    printf '%s\n' "$staged_ps1" | while IFS= read -r f; do
+      _hash_before=$(git hash-object -- "$f")
+      ps_error=$(PRE_COMMIT_FORMAT_PATH="$f" pwsh -NoProfile -NonInteractive -Command '
+try {
+  if (-not (Get-Command Invoke-Formatter -ErrorAction SilentlyContinue)) {
+    Import-Module PSScriptAnalyzer -ErrorAction Stop | Out-Null
+  }
+
+  $resolvedPath = (Resolve-Path -LiteralPath $env:PRE_COMMIT_FORMAT_PATH -ErrorAction Stop).ProviderPath
+  $originalBytes = [System.IO.File]::ReadAllBytes($resolvedPath)
+  $hasUtf8Bom = $originalBytes.Length -ge 3 -and $originalBytes[0] -eq 0xEF -and $originalBytes[1] -eq 0xBB -and $originalBytes[2] -eq 0xBF
+
+  $reader = [System.IO.StreamReader]::new($resolvedPath, $true)
+  try {
+    $current = $reader.ReadToEnd()
+    $encoding = $reader.CurrentEncoding
+  } finally {
+    $reader.Dispose()
+  }
+
+  $formatted = Invoke-Formatter -ScriptDefinition $current -ErrorAction Stop
+  if ($null -eq $formatted -or $current -ceq $formatted) {
+    exit 0
+  }
+
+  if ($encoding.WebName -eq "utf-8" -and -not $hasUtf8Bom) {
+    $encoding = [System.Text.UTF8Encoding]::new($false)
+  }
+
+  $writer = [System.IO.StreamWriter]::new($resolvedPath, $false, $encoding)
+  try {
+    $writer.Write($formatted)
+  } finally {
+    $writer.Dispose()
+  }
+
   exit 0
-fi
+} catch {
+  Write-Error $_
+  exit 1
+}
+' 2>&1)
+      if [ $? -ne 0 ]; then
+        ps_error_first_line=$(printf '%s\n' "$ps_error" | sed -n '1p')
+        echo "⚠ Invoke-Formatter failed for $f — leaving file unchanged."
+        [ -n "$ps_error_first_line" ] && echo "  Error: $ps_error_first_line"
+        echo "  Retry with: format the file in VS Code (Format Document), then re-stage it with: git add -- \"$f\""
+        continue
+      fi
 
-echo "→ markdownlint-cli2 --fix on staged Markdown files..."
-printf '%s\n' "$staged_md" | while IFS= read -r f; do
-  # --fix applies auto-fixable rules (blank lines around headings, etc.)
-  # Errors that cannot be auto-fixed are reported but do not block the commit.
-  _hash_before=$(git hash-object -- "$f")
-  markdownlint-cli2 --fix "$f" || true
-  _hash_after=$(git hash-object -- "$f")
-  # Only re-stage if markdownlint changed the file — avoids unnecessary restaging.
-  [ "$_hash_before" != "$_hash_after" ] && git add -- "$f"
-done
+      _hash_after=$(git hash-object -- "$f")
+      # This keeps the existing working-tree/restage model explicit for partially staged files.
+      [ "$_hash_before" != "$_hash_after" ] && git add -- "$f"
+    done
+  fi
+fi
 
 exit 0
