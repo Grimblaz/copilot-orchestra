@@ -446,7 +446,7 @@ Describe 'aggregate-review-scores.ps1 -CalibrationFile' {
             # Query merged PRs without pipeline-metrics blocks for calibration entries.
             # These PRs exist in the merged list (not orphaned) but lack body metrics,
             # so the script falls back to calibration entries for their data.
-            $allPrJson = & gh pr list --repo 'Grimblaz/copilot-orchestra' --state merged --limit 100 --json number,body 2>$null
+            $allPrJson = & gh pr list --repo 'Grimblaz/copilot-orchestra' --state merged --limit 100 --json number, body 2>$null
             $script:NonMetricsPrNumbers = if ($allPrJson) {
                 @(($allPrJson | ConvertFrom-Json) |
                     Where-Object { $_.body -notmatch 'pipeline-metrics' } |
@@ -1406,7 +1406,8 @@ Describe 'aggregate-review-scores.ps1 -CalibrationFile' {
             $findings = @(
                 [ordered]@{ id = 'F1'; category = 'architecture'; judge_ruling = 'finding-sustained'
                     severity = 'medium'; points = 5; review_stage = 'main'
-                    systemic_fix_type = 'instruction' }
+                    systemic_fix_type = 'instruction' 
+                }
             )
             $calib = & $script:BuildDepthCalibration `
                 -Findings $findings `
@@ -1442,7 +1443,8 @@ Describe 'aggregate-review-scores.ps1 -CalibrationFile' {
             # → denominator is 0 → kaizen_rate must be 0.00
             $findings = @(
                 [ordered]@{ id = 'F1'; category = 'architecture'; judge_ruling = 'finding-sustained'
-                    severity = 'medium'; points = 5; review_stage = 'main' }
+                    severity = 'medium'; points = 5; review_stage = 'main' 
+                }
             )
             $calib = & $script:BuildDepthCalibration -Findings $findings -PrNumbers @(9901)
             $calibPath = Join-Path $workDir 'kaizen-nosuffix.json'
@@ -1492,10 +1494,12 @@ Describe 'aggregate-review-scores.ps1 -CalibrationFile' {
             $findings = @(
                 [ordered]@{ id = 'F1'; category = 'security'; judge_ruling = 'finding-sustained'
                     severity = 'medium'; points = 5; review_stage = 'main'
-                    systemic_fix_type = 'instruction' },
+                    systemic_fix_type = 'instruction' 
+                },
                 [ordered]@{ id = 'F2'; category = 'pattern'; judge_ruling = 'finding-sustained'
                     severity = 'medium'; points = 5; review_stage = 'main'
-                    systemic_fix_type = 'skill' }
+                    systemic_fix_type = 'skill' 
+                }
             )
             $calib = & $script:BuildSystemicCalibration `
                 -Findings $findings `
@@ -1520,10 +1524,12 @@ Describe 'aggregate-review-scores.ps1 -CalibrationFile' {
             $findings = @(
                 [ordered]@{ id = 'F1'; category = 'security'; judge_ruling = 'finding-sustained'
                     severity = 'medium'; points = 5; review_stage = 'main'
-                    systemic_fix_type = 'instruction' },
+                    systemic_fix_type = 'instruction' 
+                },
                 [ordered]@{ id = 'F2'; category = 'pattern'; judge_ruling = 'finding-sustained'
                     severity = 'medium'; points = 5; review_stage = 'main'
-                    systemic_fix_type = 'skill' }
+                    systemic_fix_type = 'skill' 
+                }
             )
             $proposals = @(
                 [ordered]@{
@@ -1560,7 +1566,8 @@ Describe 'aggregate-review-scores.ps1 -CalibrationFile' {
             $findings = @(
                 [ordered]@{ id = 'F1'; category = 'security'; judge_ruling = 'finding-sustained'
                     severity = 'medium'; points = 5; review_stage = 'main'
-                    systemic_fix_type = 'instruction' }
+                    systemic_fix_type = 'instruction' 
+                }
             )
             $calib = & $script:BuildSystemicCalibration `
                 -Findings $findings `
@@ -1608,7 +1615,8 @@ Describe 'aggregate-review-scores.ps1 -CalibrationFile' {
             $findings = @(
                 [ordered]@{ id = 'F1'; category = 'security'; judge_ruling = 'finding-sustained'
                     severity = 'medium'; points = 5; review_stage = 'main'
-                    systemic_fix_type = 'instruction' }
+                    systemic_fix_type = 'instruction' 
+                }
             )
             $calib = & $script:BuildSystemicCalibration `
                 -Findings $findings `
@@ -1643,7 +1651,8 @@ Describe 'aggregate-review-scores.ps1 -CalibrationFile' {
             $findings = @(
                 [ordered]@{ id = 'F1'; category = 'security'; judge_ruling = 'finding-sustained'
                     severity = 'medium'; points = 5; review_stage = 'main'
-                    systemic_fix_type = 'instruction' }
+                    systemic_fix_type = 'instruction' 
+                }
             )
             $calib = & $script:BuildSystemicCalibration `
                 -Findings $findings `
@@ -1728,7 +1737,7 @@ Describe 'aggregate-review-scores.ps1 -CalibrationFile' {
         BeforeAll {
             # Guard: ensure NonMetricsPrNumbers is available when this context runs in isolation
             if (-not $script:NonMetricsPrNumbers) {
-                $allPrJsonGuard = & gh pr list --repo 'Grimblaz/copilot-orchestra' --state merged --limit 100 --json number,body 2>$null
+                $allPrJsonGuard = & gh pr list --repo 'Grimblaz/copilot-orchestra' --state merged --limit 100 --json number, body 2>$null
                 $script:NonMetricsPrNumbers = if ($allPrJsonGuard) {
                     @(($allPrJsonGuard | ConvertFrom-Json) |
                         Where-Object { $_.body -notmatch 'pipeline-metrics' } |
@@ -1744,8 +1753,8 @@ Describe 'aggregate-review-scores.ps1 -CalibrationFile' {
                     config_source       = 'test'
                     agents_over_ceiling = @($AgentsOverCeiling)
                     agents              = @($AgentsOverCeiling | ForEach-Object {
-                        [ordered]@{ file = $_; total_directives = 150; section_count = 20; sections = @() }
-                    })
+                            [ordered]@{ file = $_; total_directives = 150; section_count = 20; sections = @() }
+                        })
                 }
                 $complexity | ConvertTo-Json -Depth 5 | Set-Content -Path $Path -Encoding UTF8
             }
@@ -1786,8 +1795,8 @@ Describe 'aggregate-review-scores.ps1 -CalibrationFile' {
             $workDir = & $script:NewWorkDir
             $calibPath = Join-Path $workDir 'backward-compat.json'
             & $script:WriteCalibrationFile -Path $calibPath -Data ([ordered]@{
-                calibration_version = 1; entries = @()
-            })
+                    calibration_version = 1; entries = @()
+                })
 
             $result = & $script:InvokeAggregate -WorkDir $workDir `
                 -ExtraArgs @('-CalibrationFile', $calibPath)
@@ -1808,8 +1817,8 @@ Describe 'aggregate-review-scores.ps1 -CalibrationFile' {
 
             $calibPath = Join-Path $workDir 'increment-calib.json'
             & $script:WriteCalibrationFile -Path $calibPath -Data ([ordered]@{
-                calibration_version = 1; entries = @()
-            })
+                    calibration_version = 1; entries = @()
+                })
 
             $result = & $script:InvokeAggregate -WorkDir $workDir `
                 -ExtraArgs @('-CalibrationFile', $calibPath, '-ComplexityJsonPath', $complexityPath)
@@ -1831,8 +1840,8 @@ Describe 'aggregate-review-scores.ps1 -CalibrationFile' {
 
             $calibPath = Join-Path $workDir 'firstobs-calib.json'
             & $script:WriteCalibrationFile -Path $calibPath -Data ([ordered]@{
-                calibration_version = 1; entries = @()
-            })
+                    calibration_version = 1; entries = @()
+                })
 
             $result = & $script:InvokeAggregate -WorkDir $workDir `
                 -ExtraArgs @('-CalibrationFile', $calibPath, '-ComplexityJsonPath', $complexityPath)
@@ -1859,8 +1868,8 @@ Describe 'aggregate-review-scores.ps1 -CalibrationFile' {
 
             $calibPath = Join-Path $workDir 'idempotency-calib.json'
             & $script:WriteCalibrationFile -Path $calibPath -Data ([ordered]@{
-                calibration_version = 1; entries = @()
-            })
+                    calibration_version = 1; entries = @()
+                })
 
             # First run — establishes last_pr_number (the current max merged PR number)
             $result1 = & $script:InvokeAggregate -WorkDir $workDir `
@@ -1929,8 +1938,8 @@ Describe 'aggregate-review-scores.ps1 -CalibrationFile' {
 
             $calibPath = Join-Path $workDir 'multi-calib.json'
             & $script:WriteCalibrationFile -Path $calibPath -Data ([ordered]@{
-                calibration_version = 1; entries = @()
-            })
+                    calibration_version = 1; entries = @()
+                })
 
             $result = & $script:InvokeAggregate -WorkDir $workDir `
                 -ExtraArgs @('-CalibrationFile', $calibPath, '-ComplexityJsonPath', $complexityPath)
@@ -1959,9 +1968,9 @@ Describe 'aggregate-review-scores.ps1 -CalibrationFile' {
             try {
                 # Write custom config with persistent_threshold=2
                 $customConfig = [ordered]@{
-                    version           = 1
-                    ceilings          = [ordered]@{}
-                    default_ceiling   = [ordered]@{ max_directives = 128 }
+                    version              = 1
+                    ceilings             = [ordered]@{}
+                    default_ceiling      = [ordered]@{ max_directives = 128 }
                     persistent_threshold = 2
                 }
                 $customConfig | ConvertTo-Json -Depth 5 | Set-Content -Path $configPath -Encoding UTF8
@@ -2009,8 +2018,8 @@ Describe 'aggregate-review-scores.ps1 -CalibrationFile' {
             $workDir = & $script:NewWorkDir
             $calibPath = Join-Path $workDir 'nonexistent-calib.json'
             & $script:WriteCalibrationFile -Path $calibPath -Data ([ordered]@{
-                calibration_version = 1; entries = @()
-            })
+                    calibration_version = 1; entries = @()
+                })
 
             $result = & $script:InvokeAggregate -WorkDir $workDir `
                 -ExtraArgs @('-CalibrationFile', $calibPath, `
