@@ -69,7 +69,7 @@ Diagnostic workflows for common orchestration failure patterns.
 
 **Analysis**:
 
-- Search for duplicate topics in workspace docs: Use `grep_search` with query `subject` and `includePattern: "**/*.md"`. For session memory, use the `memory` tool (`view /memories/session/` then read individual files) to check for overlapping topics.
+- Search for duplicate topics in workspace docs: Use `grep_search` with query `subject` and `includePattern: "**/*.md"`. For session memory, use the `vscode/memory` tool (`view /memories/session/` then read individual files) to check for overlapping topics.
 - Check file ages: Which is canonical?
 - Review references: Which files link to which?
 
@@ -97,10 +97,10 @@ Diagnostic workflows for common orchestration failure patterns.
 
 ## Gotchas
 
-| Trigger | Gotcha | Fix |
-| ------- | ------ | --- |
-| Diagnosing premature implementation without checking git log dates | Incorrectly attributes cause to agent confusion rather than sequencing failure | Check `git log --diff-filter=A --name-only` to verify creation order |
-| Treating contradictory instructions as a single-file problem | Root cause may span multiple agents and instruction files | Search workspace-wide before proposing consolidation |
-| Fixing terminal stalls by rerunning the same command | Repeated retries accumulate output buffer and mask the underlying block | Switch to `isBackground: true` and check output with `get_terminal_output` |
-| Assuming agent confusion caused a validation gap | May have been missing validation commands in the plan, not role overlap | Check the plan file: were validation steps present and ordered correctly? |
-| Applying scenario fixes without updating the plan for next time | Same pattern recurs on next issue | Route systemic improvements to the plan template or instruction file via Process-Review |
+| Trigger                                                            | Gotcha                                                                         | Fix                                                                                     |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------- |
+| Diagnosing premature implementation without checking git log dates | Incorrectly attributes cause to agent confusion rather than sequencing failure | Check `git log --diff-filter=A --name-only` to verify creation order                    |
+| Treating contradictory instructions as a single-file problem       | Root cause may span multiple agents and instruction files                      | Search workspace-wide before proposing consolidation                                    |
+| Fixing terminal stalls by rerunning the same command               | Repeated retries accumulate output buffer and mask the underlying block        | Switch to `isBackground: true` and check output with `execute/getTerminalOutput`              |
+| Assuming agent confusion caused a validation gap                   | May have been missing validation commands in the plan, not role overlap        | Check the plan file: were validation steps present and ordered correctly?               |
+| Applying scenario fixes without updating the plan for next time    | Same pattern recurs on next issue                                              | Route systemic improvements to the plan template or instruction file via Process-Review |

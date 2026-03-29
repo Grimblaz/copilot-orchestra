@@ -569,9 +569,9 @@ Invoke-Scenario `
 Invoke-Scenario `
     -Name 'S13: Calibration + stale issue tracking artifact → issue artifact only' `
     -GitConfig @{
-    'branch--show-current'       = 'main'
-    'symbolic-ref-origin-HEAD'   = 'refs/remotes/origin/main'
-    'ls-remote-feature/issue-185-*' = ''
+    'branch--show-current'            = 'main'
+    'symbolic-ref-origin-HEAD'        = 'refs/remotes/origin/main'
+    'ls-remote-feature/issue-185-*'   = ''
     'branch-list-feature/issue-185-*' = '  feature/issue-185-red'
 } `
     -WorkDir $s13WorkDir `

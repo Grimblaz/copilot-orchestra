@@ -143,8 +143,8 @@ function Write-ExtractionAgentsYaml {
         [int]$PersistentThreshold
     )
     $candidates = @($ComplexityOverCeilingHistory.Keys | Where-Object {
-        [int](Get-FlexProperty $ComplexityOverCeilingHistory[$_] 'consecutive_count') -ge $PersistentThreshold
-    } | Sort-Object)
+            [int](Get-FlexProperty $ComplexityOverCeilingHistory[$_] 'consecutive_count') -ge $PersistentThreshold
+        } | Sort-Object)
     if ($candidates.Count -eq 0) { return }
     Write-Output 'extraction_agents:'
     foreach ($agent in $candidates) {
@@ -573,7 +573,8 @@ if (-not $overallSufficient) {
             # Validate before promotion (mirrors write-calibration-entry.ps1 safety pattern)
             $null = Get-Content $earlyTmp -Raw | ConvertFrom-Json
             Move-Item -Path $earlyTmp -Destination $CalibrationFile -Force
-        } catch {
+        }
+        catch {
             if ($null -ne $earlyTmp -and (Test-Path $earlyTmp)) { Remove-Item $earlyTmp -Force -ErrorAction SilentlyContinue }
             Write-Warning "Could not flush complexity history before early exit: $_"
         }

@@ -332,7 +332,7 @@ Extracted "Common Scenarios" section (5 workflows) from `Process-Review.agent.md
 | Workstream | Artifact | Outcome |
 |---|---|---|
 | W3a | `.github/config/PSScriptAnalyzerSettings.psd1` | 6 rules suppressed with documented rationale; 9 scripts remediated; 0 violations remain |
-| W3b | `.github/scripts/Tests/script-safety-contract.Tests.ps1` | 3 contract tests: `.Clone()` prohibition, StrictMode enforcement, `$knownCategories` dual-definition |
+| W3b | `.github/scripts/Tests/script-safety-contract.Tests.ps1` | 3 contract tests: `.Clone()` prohibition, Invoke-Expression/iex prohibition, `$knownCategories` dual-definition |
 | W3c | `copilot-instructions.md` quick-validate | PSScriptAnalyzer conditional check added |
 
 ### W4 — Backlog Triage
