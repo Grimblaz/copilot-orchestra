@@ -45,7 +45,7 @@ if [ -n "$staged_ps1" ]; then
     echo "→ Invoke-Formatter on staged PowerShell files..."
     printf '%s\n' "$staged_ps1" | while IFS= read -r f; do
       _hash_before=$(git hash-object -- "$f")
-      if ! PRE_COMMIT_FORMAT_PATH="$f" pwsh -NoProfile -NonInteractive -Command '
+      ps_error=$(PRE_COMMIT_FORMAT_PATH="$f" pwsh -NoProfile -NonInteractive -Command '
 try {
   if (-not (Get-Command Invoke-Formatter -ErrorAction SilentlyContinue)) {
     Import-Module PSScriptAnalyzer -ErrorAction Stop | Out-Null
@@ -84,8 +84,11 @@ try {
   Write-Error $_
   exit 1
 }
-' > /dev/null 2>&1; then
+' 2>&1)
+      if [ $? -ne 0 ]; then
+        ps_error_first_line=$(printf '%s\n' "$ps_error" | sed -n '1p')
         echo "⚠ Invoke-Formatter failed for $f — leaving file unchanged."
+        [ -n "$ps_error_first_line" ] && echo "  Error: $ps_error_first_line"
         echo "  Retry with: format the file in VS Code (Format Document), then re-stage it with: git add -- \"$f\""
         continue
       fi
