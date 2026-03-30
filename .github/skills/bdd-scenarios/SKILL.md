@@ -56,7 +56,7 @@ Override rule: when in doubt, classify as `[manual]`. Test-Writer may reclassify
 
 - IDs are **immutable after plan approval** — once S1, S2, S3 are assigned in the issue body and the plan is approved, those IDs do not change.
 - If a scenario is split during implementation, the original ID remains; new sub-scenarios get the next sequential IDs (e.g., S1 stays S1; new scenario becomes S5).
-- IDs are **never reused** — when a scenario is removed, its ID is retired, not reassigned.
+- IDs are **never reused** — when a scenario is **removed**, its ID is retired, not reassigned (the `### SN` heading is preserved with `[REMOVED]` as the title — see ID Extraction Format below).
 - **Authority: the issue body is the authoritative source for scenario IDs**. The plan cites them; it does not define them. Post-approval additions to the issue body require a plan amendment.
 
 ## ID Extraction Format
