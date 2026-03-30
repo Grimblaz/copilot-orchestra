@@ -15,9 +15,10 @@ REST API for task management, supporting task creation, assignment, and status t
 
 ## BDD Framework
 
-<!-- Phase 1: BDD is activated solely by the presence of the `## BDD Framework` heading above.
-     The `bdd: true` key is reserved for Phase 2 framework mapping (e.g., cucumber.js, behave);
-     it has no effect in Phase 1 and is not required.
+bdd: cucumber.js
+
+<!-- Phase 2: `bdd: {framework}` enables Gherkin file generation and runner dispatch at CE Gate time.
+     Recognized values: cucumber.js, behave, jest-cucumber, cucumber (JVM).
      To DISABLE BDD, remove the `## BDD Framework` section heading entirely. -->
 
 ## Architecture
