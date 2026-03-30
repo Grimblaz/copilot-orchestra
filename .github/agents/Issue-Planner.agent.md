@@ -119,6 +119,8 @@ When the consumer repo's `copilot-instructions.md` contains a `## BDD Framework`
 | Functional but requires UI interaction              | `[manual]` (override) |
 | Any scenario requiring human judgment in CE Gate    | `[manual]` (override) |
 
+Override rule: when in doubt, classify as `[manual]`.
+
 _(Classification rubric is duplicated from `bdd-scenarios/SKILL.md` for quick reference. If you update one, update the other.)_
 
 When BDD is enabled, list each scenario in the `[CE GATE]` step by ID with its classification: `SN: {description} [auto/manual]`. For example:
@@ -271,7 +273,7 @@ Rules:
 - NO code blocks — describe changes, link to files/symbols
 - NO questions at the end — ask during workflow via #tool:vscode/askQuestions
 - Include execution metadata in plan steps (mode + requirement contract expectations) so implementers can execute without re-deriving process rules.
-- Insert a dedicated **`[CE GATE]`** numbered step as the final implementation step after the Code-Critic review step (and after all accepted Code-Critic findings are resolved). Format: `N. [CE GATE] — Surface: {type} — Design Intent: {link to issue section or one-line summary of intended UX} — Scenarios: {functional + intent scenarios to exercise and verify} — Method: {how Conductor exercises each scenario}`. When BDD is enabled, list each scenario by ID with classification: `SN: {description} [auto/manual]`. This is a blocking step; Code-Conductor must not advance past it without completing the CE Gate or emitting the documented skip marker. Omit only when `ce_gate: false` in frontmatter.
+- Insert a dedicated **`[CE GATE]`** numbered step as the final implementation step after the Code-Critic review step (and after all accepted Code-Critic findings are resolved). Format: `N. [CE GATE] — Surface: {type} — Design Intent: {link to issue section or one-line summary of intended UX} — Scenarios: {functional + intent scenarios to exercise and verify} — Method: {how Conductor exercises each scenario}`. When BDD is enabled, list each scenario by ID with classification: `SN: {description} [auto/manual]`. _(Also documented in BDD Scenario Classification section above. If you update one, update the other.)_ This is a blocking step; Code-Conductor must not advance past it without completing the CE Gate or emitting the documented skip marker. Omit only when `ce_gate: false` in frontmatter.
 - For backend/non-UI/CLI projects, the CE Gate surface is the API or CLI — identify appropriate scenarios for customer-perspective verification.
 - Keep scannable
 - **Agent file insertion strategies** — when a plan step modifies `.agent.md` files, categorize each file as exactly one of: (a) **clean insert** — no existing identity/personality text at the canonical insertion point (top of body, immediately before the main heading); (b) **fragment replacement** — existing identity/personality text is present at the canonical insertion point; (c) **stance-preserving insert** — a named stance section (e.g., `## Adversarial Analysis Stance`) sits at the insertion point and must be preserved. Behavioral guidance found elsewhere in the body (not at the canonical insertion point) does not qualify as a fragment — classify those files as clean inserts.

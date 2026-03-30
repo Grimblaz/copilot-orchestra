@@ -187,7 +187,7 @@ After framing is complete, update the GitHub issue body with:
 
 - Customer problem statement
 - User segments and journeys
-- Scenarios (functional + intent) — use `## Scenarios` (H2) as the section heading in the issue body so Code-Conductor's pre-flight extraction can correctly anchor to it. Individual scenario headings (`### SN — {title} (Type)`) go inside this section.
+- Scenarios (functional + intent) — use `## Scenarios` (H2) as the section heading in the issue body so Code-Conductor's pre-flight extraction can correctly anchor to it. When BDD is enabled, individual scenario headings (`### SN — {title} (Type)`) go inside this section.
 - Named design decisions framing (D1–DN owner field)
 - Customer surface identification
 - Design intent reference

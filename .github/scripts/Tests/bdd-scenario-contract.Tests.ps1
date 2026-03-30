@@ -105,6 +105,10 @@ Describe 'Code-Conductor BDD CE Gate pre-flight contract' {
     It 'Code-Conductor PR body includes per-scenario coverage table with ID, Type, Class, Result, Evidence columns' {
         $script:CCContent | Should -Match '(?is)\|\s*ID\s*\|\s*Type\s*\|\s*Class\s*\|\s*Result\s*\|\s*Evidence\s*\|' -Because 'issue #223 requires Code-Conductor to include a per-scenario coverage table with ID, Type, Class, Result, and Evidence columns in the PR body'
     }
+
+    It 'Code-Conductor CE Gate pre-flight scopes S\d+ extraction between ## Scenarios and next H2' {
+        $script:CCContent | Should -Match '(?is)Scope.{0,100}extraction.{0,100}(## Scenarios|Scenarios heading).{0,100}next H2' -Because 'issue #223 requires Code-Conductor to scope ### S\d+ extraction to content between ## Scenarios and the next H2 heading, preventing false-positive matches outside this boundary'
+    }
 }
 
 Describe 'Code-Critic BDD CE prosecution contract' {
