@@ -1339,7 +1339,7 @@ Describe 'aggregate-review-scores.ps1 -CalibrationFile' {
         It 'excludes unknown categories from systemic patterns' -Tag 'requires-gh' {
             # Both valid (security) and unknown findings are present; section must
             # appear for the valid finding but must not contain an unknown category key.
-            if (-not $script:GhAvailable) { Set-ItResult -Skipped -Because 'gh CLI not found' }
+            if (-not $script:GhAvailable) { Set-ItResult -Skipped -Because 'gh CLI not found'; return }
 
             $workDir = & $script:NewWorkDir
             $findings = @(
@@ -1366,7 +1366,7 @@ Describe 'aggregate-review-scores.ps1 -CalibrationFile' {
                 -Because 'systemic_patterns section must appear when valid known-category findings exist'
             $result.Output | Should -Match '(?ms)^  systemic_patterns:\r?\n(?:(?!^  \S).*\r?\n)*?      security:' `
                 -Because 'known categories must still appear inside the systemic_patterns block for the same fixture'
-            $result.Output | Should -Not -Match '(?s)systemic_patterns:.*?unknown-cat:' `
+            $result.Output | Should -Not -Match '(?ms)^  systemic_patterns:\r?\n(?:(?!^  \S).*\r?\n)*?      unknown-cat:' `
                 -Because 'unknown categories must be excluded from systemic_patterns'
         }
 
