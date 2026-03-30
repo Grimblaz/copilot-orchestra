@@ -37,6 +37,119 @@ Describe 'aggregate-review-scores.ps1 -CalibrationFile' {
 
         # Check gh CLI availability (gh-dependent tests are tagged requires-gh)
         $script:GhAvailable = $null -ne (Get-Command gh -ErrorAction SilentlyContinue)
+        $script:CleanCalibrationRepo = 'github/docs'
+        $script:CleanCalibrationLimit = 10
+        $script:PipelineMetricsBlockPattern = '(?s)<!--\s*pipeline-metrics\s*(.*?)-->'
+        $script:CleanCalibrationPrNumber = $null
+        $script:CleanCalibrationBaselineIssuesAnalyzed = $null
+        $script:CleanCalibrationWindowReady = $false
+        $script:CleanCalibrationBootstrapReady = $false
+        $script:CleanCalibrationWindowSignature = ''
+        $script:CleanCalibrationWindowSkipReason =
+        'clean calibration bootstrap query failed or returned no usable merged PR window'
+        $script:CleanCalibrationBootstrapSkipReason =
+        'clean calibration bootstrap did not produce a usable real PR candidate'
+        $script:CleanCalibrationWindowStabilitySkipReason =
+        'clean calibration bootstrap latest-10 github/docs window changed after bootstrap'
+        $script:TestHasPipelineMetricsBlock = {
+            param([AllowNull()][string]$Body)
+
+            $bodyText = if ($null -eq $Body) { '' } else { $Body }
+            return [regex]::IsMatch($bodyText, $script:PipelineMetricsBlockPattern)
+        }
+        $script:GetCleanCalibrationWindowSnapshot = {
+            $cleanCalibrationPrListJson = & gh pr list --repo $script:CleanCalibrationRepo `
+                --state merged --limit $script:CleanCalibrationLimit --json 'number,body' 2>$null
+            if ($LASTEXITCODE -ne 0 -or -not $cleanCalibrationPrListJson) {
+                return @()
+            }
+
+            $cleanCalibrationWindow = @($cleanCalibrationPrListJson | ConvertFrom-Json)
+            return @(
+                $cleanCalibrationWindow | ForEach-Object {
+                    [pscustomobject]@{
+                        number      = [int]$_.number
+                        has_metrics = [bool](& $script:TestHasPipelineMetricsBlock -Body $_.body)
+                    }
+                }
+            )
+        }
+        $script:GetCleanCalibrationWindowSignature = {
+            param([object[]]$WindowSnapshot)
+
+            if ($null -eq $WindowSnapshot -or $WindowSnapshot.Count -eq 0) {
+                return ''
+            }
+
+            return (@(
+                    $WindowSnapshot | ForEach-Object {
+                        '{0}:{1}' -f [int]$_.number, ([int][bool]$_.has_metrics)
+                    }
+                ) -join ',')
+        }
+        $script:AssertCleanCalibrationWindowStable = {
+            param([switch]$RequireBootstrapCandidate)
+
+            if (-not $script:CleanCalibrationWindowReady) {
+                Set-ItResult -Skipped -Because $script:CleanCalibrationWindowSkipReason
+                return $false
+            }
+            if ($RequireBootstrapCandidate -and -not $script:CleanCalibrationBootstrapReady) {
+                Set-ItResult -Skipped -Because $script:CleanCalibrationBootstrapSkipReason
+                return $false
+            }
+
+            try {
+                $currentWindowSnapshot = @(& $script:GetCleanCalibrationWindowSnapshot)
+            }
+            catch {
+                Set-ItResult -Skipped -Because "clean calibration live-window stability check failed: $($_.Exception.Message)"
+                return $false
+            }
+
+            if ($currentWindowSnapshot.Count -eq 0) {
+                Set-ItResult -Skipped -Because 'clean calibration live-window stability check returned no usable merged PR window'
+                return $false
+            }
+
+            $currentWindowSignature = & $script:GetCleanCalibrationWindowSignature -WindowSnapshot $currentWindowSnapshot
+            if ($currentWindowSignature -ne $script:CleanCalibrationWindowSignature) {
+                Set-ItResult -Skipped -Because $script:CleanCalibrationWindowStabilitySkipReason
+                return $false
+            }
+
+            return $true
+        }
+        if ($script:GhAvailable) {
+            try {
+                $cleanCalibrationWindow = @(& $script:GetCleanCalibrationWindowSnapshot)
+                if ($cleanCalibrationWindow.Count -gt 0) {
+                    $script:CleanCalibrationWindowReady = $true
+                    $script:CleanCalibrationWindowSignature = & $script:GetCleanCalibrationWindowSignature `
+                        -WindowSnapshot $cleanCalibrationWindow
+                    $script:CleanCalibrationBaselineIssuesAnalyzed = @(
+                        $cleanCalibrationWindow |
+                            Where-Object { $_.has_metrics }
+                    ).Count
+
+                    $cleanCalibrationCandidate = @(
+                        $cleanCalibrationWindow |
+                            Where-Object { -not $_.has_metrics } |
+                            Select-Object -First 1
+                    )
+                    if ($cleanCalibrationCandidate.Count -gt 0) {
+                        $script:CleanCalibrationPrNumber = [int]$cleanCalibrationCandidate[0].number
+                        $script:CleanCalibrationBootstrapReady = $true
+                    }
+                }
+            }
+            catch {
+                $script:CleanCalibrationWindowSkipReason =
+                "clean calibration bootstrap query failed: $($_.Exception.Message)"
+                $script:CleanCalibrationBootstrapSkipReason =
+                "clean calibration bootstrap query failed: $($_.Exception.Message)"
+            }
+        }
 
         # ------------------------------------------------------------------
         # Parse script AST for parameter introspection tests (no gh needed)
@@ -52,13 +165,15 @@ Describe 'aggregate-review-scores.ps1 -CalibrationFile' {
         $script:ParamNames = $script:AllParams | ForEach-Object { $_.Name.VariablePath.UserPath }
 
         # ------------------------------------------------------------------
-        # Calibration fixture: one valid local entry for a fake PR (pr_number=9901)
+        # Calibration fixture: one valid local entry for a real merged PR in a repo
+        # whose PR bodies do not use pipeline-metrics, so local calibration data is
+        # the only source for that PR.
         # ------------------------------------------------------------------
         $script:ValidCalibration = [ordered]@{
             calibration_version = 1
             entries             = @(
                 [ordered]@{
-                    pr_number  = 9901
+                    pr_number  = $script:CleanCalibrationPrNumber
                     created_at = '2026-01-15T10:00:00Z'
                     findings   = @(
                         [ordered]@{
@@ -109,14 +224,15 @@ Describe 'aggregate-review-scores.ps1 -CalibrationFile' {
 
         # ------------------------------------------------------------------
         # Stale-timestamp calibration fixture: created_at is ancient (year 2000),
-        # giving a decay weight ≈ 0 under the default lambda (0.023 * ~9500 days).
-        # Used to verify that GitHub's mergedAt overrides the local value.
+        # which would round to an effective sample size of 0.0 if the script used
+        # the local timestamp. Used to verify that GitHub's mergedAt overrides the
+        # local value for a real merged PR.
         # ------------------------------------------------------------------
         $script:StaleTimestampCalibration = [ordered]@{
             calibration_version = 1
             entries             = @(
                 [ordered]@{
-                    pr_number  = 9901
+                    pr_number  = $script:CleanCalibrationPrNumber
                     created_at = '2000-01-01T00:00:00Z'
                     findings   = @(
                         [ordered]@{
@@ -172,9 +288,9 @@ Describe 'aggregate-review-scores.ps1 -CalibrationFile' {
                 $rawOutput = & pwsh @allArgs 2>&1
                 $exitCode = $LASTEXITCODE
                 $errLines = ($rawOutput |
-                    Where-Object { $_ -is [System.Management.Automation.ErrorRecord] }) -join "`n"
+                        Where-Object { $_ -is [System.Management.Automation.ErrorRecord] }) -join "`n"
                 $outLines = ($rawOutput |
-                    Where-Object { $_ -isnot [System.Management.Automation.ErrorRecord] }) -join "`n"
+                        Where-Object { $_ -isnot [System.Management.Automation.ErrorRecord] }) -join "`n"
                 return @{ ExitCode = $exitCode; Output = $outLines; Error = $errLines }
             }
             finally {
@@ -280,14 +396,24 @@ Describe 'aggregate-review-scores.ps1 -CalibrationFile' {
             # RED: -CalibrationFile is not recognized; parameter binding error.
             # Once implemented: output must contain "data_source:" (value is one of
             # "local", "github", or "merged") when a calibration file is provided.
-            if (-not $script:GhAvailable) { Set-ItResult -Skipped -Because 'gh CLI not found' }
+            if (-not $script:GhAvailable) { Set-ItResult -Skipped -Because 'gh CLI not found'; return }
+            if (-not (& $script:AssertCleanCalibrationWindowStable -RequireBootstrapCandidate)) {
+                return
+            }
 
             $workDir = & $script:NewWorkDir
             $calibPath = Join-Path $workDir 'calib.json'
             & $script:WriteCalibrationFile -Path $calibPath -Data $script:ValidCalibration
 
             $result = & $script:InvokeAggregate -WorkDir $workDir `
-                -ExtraArgs @('-CalibrationFile', $calibPath)
+                -ExtraArgs @(
+                '-Repo',
+                $script:CleanCalibrationRepo,
+                '-Limit',
+                '10',
+                '-CalibrationFile',
+                $calibPath
+            )
 
             $result.ExitCode | Should -Be 0
             $result.Output | Should -Match 'data_source:' `
@@ -317,75 +443,95 @@ Describe 'aggregate-review-scores.ps1 -CalibrationFile' {
         It 'excludes orphan local entries not present in the GitHub merged PR list' -Tag 'requires-gh' {
             # Requires gh CLI
             # RED: -CalibrationFile not recognized; exit code non-zero.
-            # Once implemented: an orphan entry (pr_number=99999999) must not inflate
-            # issues_analyzed beyond the GitHub-only baseline.
-            if (-not $script:GhAvailable) { Set-ItResult -Skipped -Because 'gh CLI not found' }
+            # Once implemented: orphan entries must not add to the analyzed-issues
+            # count beyond what the exact fetched clean-repo window already contributes.
+            if (-not $script:GhAvailable) { Set-ItResult -Skipped -Because 'gh CLI not found'; return }
+            if (-not (& $script:AssertCleanCalibrationWindowStable)) {
+                return
+            }
 
             $workDir = & $script:NewWorkDir
 
-            # Baseline: run without -CalibrationFile (GitHub-only, current behavior)
-            $baselineResult = & $script:InvokeAggregate -WorkDir $workDir -ExtraArgs @()
-
-            # Run with the orphan-only calibration file
             $calibPath = Join-Path $workDir 'orphan-calib.json'
             & $script:WriteCalibrationFile -Path $calibPath -Data $script:OrphanCalibration
             $withOrphanResult = & $script:InvokeAggregate -WorkDir $workDir `
-                -ExtraArgs @('-CalibrationFile', $calibPath)
+                -ExtraArgs @(
+                '-Repo',
+                $script:CleanCalibrationRepo,
+                '-Limit',
+                '10',
+                '-CalibrationFile',
+                $calibPath
+            )
 
-            # Extract issues_analyzed from both runs
-            $baselineMatch = [regex]::Match($baselineResult.Output, 'issues_analyzed:\s*(\d+)')
             $orphanMatch = [regex]::Match($withOrphanResult.Output, 'issues_analyzed:\s*(\d+)')
 
-            if ($baselineMatch.Success -and $orphanMatch.Success) {
-                $orphanMatch.Groups[1].Value | Should -Be $baselineMatch.Groups[1].Value `
-                    -Because 'orphan local entries must not inflate issues_analyzed count'
+            $withOrphanResult.ExitCode | Should -Be 0 `
+                -Because '-CalibrationFile with orphan-only entries must not crash the script'
+            $withOrphanResult.Output | Should -Match 'data_source:\s*github' `
+                -Because 'orphan local entries must not contribute local calibration data'
+
+            if ($orphanMatch.Success) {
+                [int]$orphanMatch.Groups[1].Value | Should -Be $script:CleanCalibrationBaselineIssuesAnalyzed `
+                    -Because 'orphan local entries must leave issues_analyzed at the same count contributed by the fetched clean-repo window'
             }
             else {
-                # At minimum the parameter must have been accepted (exit 0)
-                $withOrphanResult.ExitCode | Should -Be 0 `
-                    -Because '-CalibrationFile with orphan-only entries must not crash the script'
+                $withOrphanResult.Output | Should -Match 'insufficient_data:\s*true' `
+                    -Because 'orphan-only calibration data must not add analyzable issues beyond the fetched clean-repo window baseline'
             }
         }
 
         It 'uses GitHub mergedAt timestamp as authoritative over local created_at' -Tag 'requires-gh' {
             # Requires gh CLI
             # RED: -CalibrationFile not recognized; exit code non-zero.
-            # Once implemented: the local entry for pr_number=9901 has created_at='2000-01-01'
-            # (ancient -> decay weight ≈ 0). If GitHub's mergedAt is used instead, the
-            # effective_sample_size contribution for any real recent PR is NOT suppressed.
-            # Assertion: effective_sample_size with the stale local file must be >= baseline
-            # (stale local timestamp must not reduce existing PR weights).
-            if (-not $script:GhAvailable) { Set-ItResult -Skipped -Because 'gh CLI not found' }
+            # Once implemented: the local entry targets a real merged PR in a repo whose
+            # PR bodies have no pipeline-metrics. If the script incorrectly uses the local
+            # created_at='2000-01-01', effective_sample_size rounds to 0.0. If GitHub's
+            # mergedAt is authoritative, the matched PR contributes a positive weight.
+            if (-not $script:GhAvailable) { Set-ItResult -Skipped -Because 'gh CLI not found'; return }
+            if (-not (& $script:AssertCleanCalibrationWindowStable -RequireBootstrapCandidate)) {
+                return
+            }
 
             $workDir = & $script:NewWorkDir
-
-            # Baseline: run without -CalibrationFile
-            $baselineResult = & $script:InvokeAggregate -WorkDir $workDir -ExtraArgs @()
 
             # Run with stale-timestamp calibration file
             $calibPath = Join-Path $workDir 'stale-calib.json'
             & $script:WriteCalibrationFile -Path $calibPath -Data $script:StaleTimestampCalibration
             $withStaleResult = & $script:InvokeAggregate -WorkDir $workDir `
-                -ExtraArgs @('-CalibrationFile', $calibPath)
-
-            # Extract effective_sample_size from both runs (matches in both output formats)
-            $baselineEssMatch = [regex]::Match(
-                $baselineResult.Output, 'effective_sample_size:\s*([\d.]+)'
+                -ExtraArgs @(
+                '-Repo',
+                $script:CleanCalibrationRepo,
+                '-Limit',
+                '10',
+                '-CalibrationFile',
+                $calibPath
             )
+
+            # Extract effective_sample_size and issues_analyzed from the single run.
             $withStaleEssMatch = [regex]::Match(
                 $withStaleResult.Output, 'effective_sample_size:\s*([\d.]+)'
             )
+            $withStaleIssuesMatch = [regex]::Match(
+                $withStaleResult.Output, 'issues_analyzed:\s*(\d+)'
+            )
 
-            if ($baselineEssMatch.Success -and $withStaleEssMatch.Success) {
-                $baselineEss = [double]$baselineEssMatch.Groups[1].Value
+            $withStaleResult.ExitCode | Should -Be 0 `
+                -Because '-CalibrationFile with stale timestamps must not crash the script'
+            $withStaleResult.Output | Should -Match 'data_source:\s*merged' `
+                -Because 'the real matching PR must keep the run on the merged GitHub plus local calibration path'
+
+            if ($withStaleEssMatch.Success -and $withStaleIssuesMatch.Success) {
                 $withStaleEss = [double]$withStaleEssMatch.Groups[1].Value
-                $withStaleEss | Should -BeGreaterOrEqual $baselineEss `
-                    -Because 'GitHub mergedAt must override local stale timestamp; PR weights must not decrease'
+                [int]$withStaleIssuesMatch.Groups[1].Value |
+                    Should -Be ($script:CleanCalibrationBaselineIssuesAnalyzed + 1) `
+                        -Because 'the matched local entry must add exactly one analyzed issue beyond the fetched clean-repo window baseline'
+                $withStaleEss | Should -BeGreaterThan 0.0 `
+                    -Because 'GitHub mergedAt must override the stale local created_at; otherwise effective_sample_size would round to 0.0'
             }
             else {
-                # At minimum the parameter must have been accepted (exit 0)
-                $withStaleResult.ExitCode | Should -Be 0 `
-                    -Because '-CalibrationFile with stale timestamps must not crash the script'
+                $withStaleResult.Output | Should -Match 'effective_sample_size:\s*[1-9]' `
+                    -Because 'GitHub mergedAt must produce a non-zero effective sample size for the real matched PR'
             }
         }
     }
@@ -415,17 +561,17 @@ Describe 'aggregate-review-scores.ps1 -CalibrationFile' {
 
         It 'both injection paths (local-entries and v2 PR-body) are present in the script' {
             ($script:ScriptLines | Select-String 'express_lane.*True').Count |
-            Should -BeGreaterOrEqual 2 `
-                -Because 'both the local-entries loop (Change B) and v2 PR-body loop (Change C) must contain the express-lane guard'
+                Should -BeGreaterOrEqual 2 `
+                    -Because 'both the local-entries loop (Change B) and v2 PR-body loop (Change C) must contain the express-lane guard'
             ($script:ScriptLines | Select-String 'finding-sustained').Count |
-            Should -BeGreaterOrEqual 2 `
-                -Because 'both injection paths must set judge_ruling to finding-sustained'
+                Should -BeGreaterOrEqual 2 `
+                    -Because 'both injection paths must set judge_ruling to finding-sustained'
         }
 
         It '$isSustained treats finding-sustained as a sustained ruling' {
             ($script:ScriptLines | Select-String 'isSustained.*finding-sustained|finding-sustained.*isSustained') |
-            Should -Not -BeNullOrEmpty `
-                -Because '$isSustained must combine both sustained and finding-sustained so express-lane findings are counted correctly'
+                Should -Not -BeNullOrEmpty `
+                    -Because '$isSustained must combine both sustained and finding-sustained so express-lane findings are counted correctly'
         }
     }
 
@@ -446,11 +592,11 @@ Describe 'aggregate-review-scores.ps1 -CalibrationFile' {
             # Query merged PRs without pipeline-metrics blocks for calibration entries.
             # These PRs exist in the merged list (not orphaned) but lack body metrics,
             # so the script falls back to calibration entries for their data.
-            $allPrJson = & gh pr list --repo 'Grimblaz/copilot-orchestra' --state merged --limit 100 --json number, body 2>$null
+            $allPrJson = & gh pr list --repo 'Grimblaz/copilot-orchestra' --state merged --limit 100 --json 'number,body' 2>$null
             $script:NonMetricsPrNumbers = if ($allPrJson) {
                 @(($allPrJson | ConvertFrom-Json) |
-                    Where-Object { $_.body -notmatch 'pipeline-metrics' } |
-                    ForEach-Object { [int]$_.number })
+                        Where-Object { $_.body -notmatch 'pipeline-metrics' } |
+                        ForEach-Object { [int]$_.number })
             }
             else {
                 @(9901)  # fallback if gh fails
@@ -1737,11 +1883,11 @@ Describe 'aggregate-review-scores.ps1 -CalibrationFile' {
         BeforeAll {
             # Guard: ensure NonMetricsPrNumbers is available when this context runs in isolation
             if (-not $script:NonMetricsPrNumbers) {
-                $allPrJsonGuard = & gh pr list --repo 'Grimblaz/copilot-orchestra' --state merged --limit 100 --json number, body 2>$null
+                $allPrJsonGuard = & gh pr list --repo 'Grimblaz/copilot-orchestra' --state merged --limit 100 --json 'number,body' 2>$null
                 $script:NonMetricsPrNumbers = if ($allPrJsonGuard) {
                     @(($allPrJsonGuard | ConvertFrom-Json) |
-                        Where-Object { $_.body -notmatch 'pipeline-metrics' } |
-                        ForEach-Object { [int]$_.number })
+                            Where-Object { $_.body -notmatch 'pipeline-metrics' } |
+                            ForEach-Object { [int]$_.number })
                 }
                 else { @(9901) }
             }
