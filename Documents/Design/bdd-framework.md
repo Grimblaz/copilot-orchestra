@@ -74,7 +74,7 @@ Issue-Planner classifies each scenario as `[auto]` or `[manual]` in the CE GATE 
 Format in plan:
 
 ```text
-### SN — <title> (Functional) [auto]
+S1: {description} [auto/manual]
 ```
 
 ---
@@ -89,7 +89,7 @@ Step 4 of Code-Conductor runs the BDD pre-flight gate when BDD is enabled:
 4. If any IDs missing → present `vscode/askQuestions`:
    - **Re-exercise** — ask Experience-Owner to exercise the missing scenario(s) and update evidence
    - **Waive** — record a documented waiver in the PR body with justification
-   - **Abort** — write abort marker and stop
+   - **Abort** — stop the recovery cycle; emit `❌ CE Gate aborted — pre-flight: {N} of {M} scenarios uncovered` in the PR body; PR creation continues with the abort marker and documented reason
 
 **Abort marker** (written to PR body when chosen):
 
@@ -105,11 +105,11 @@ Step 4 of Code-Conductor runs the BDD pre-flight gate when BDD is enabled:
 
 When BDD is enabled, Code-Conductor includes a CE Gate coverage table in the PR body:
 
-| Scenario | Type | Class | Status |
-|----------|------|-------|--------|
-| S1 — \<title\> | Functional | [auto] | ✅ Exercised |
-| S2 — \<title\> | Intent | [manual] | ✅ Exercised |
-| S3 — \<title\> | Functional | [auto] | ⚠️ Waived — \<reason\> |
+| ID  | Type       | Class    | Result                  | Evidence             |
+| --- | ---------- | -------- | ----------------------- | -------------------- |
+| S1  | Functional | [auto]   | ✅ Passed               | {brief description}  |
+| S2  | Intent     | [manual] | ✅ Passed               | {brief description}  |
+| S3  | Functional | [auto]   | ⚠️ Waived — {reason}   | {link to waiver}     |
 
 ---
 
@@ -134,7 +134,7 @@ BDD scenarios flow into the CE Gate as follows:
 4. Experience-Owner exercises each scenario and records S-ID labels in Evidence Summary
 5. Code-Critic CE prosecution evaluates each S-ID individually in the adversarial review
 
-Repos **without** `## BDD Framework` head keep the existing natural-language CE Gate workflow — no structural changes to Evidence Summary format or CE prosecution perspectives.
+Repos **without** `## BDD Framework` **heading** keep the existing natural-language CE Gate workflow — no structural changes to Evidence Summary format or CE prosecution perspectives.
 
 See [customer-experience-gate.md](customer-experience-gate.md) for the full CE Gate protocol (delegation model, two-track defect response, fix-revalidate budget).
 

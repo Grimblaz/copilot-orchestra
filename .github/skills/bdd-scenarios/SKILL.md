@@ -65,7 +65,8 @@ When reading scenario IDs from an issue body:
 
 - Match the pattern `### S\d+` headings within the `## Scenarios` section. Scope the extraction to content between the `## Scenarios` heading and the next H2 heading (`##`) — do not match `### S\d+` patterns outside this boundary.
 - Extract the full heading: `### SN — {title} (Type)`
-- IDs are ordinal integers starting at 1; gaps are valid (S1, S3, S4 — S2 was retired)
+- IDs are ordinal integers starting at 1; there must be **no gaps** in the sequence.
+- When a scenario is retired, keep its `### SN` heading and replace the title with `[REMOVED]` (e.g., `### S2 — [REMOVED] (manual)`) instead of deleting the heading; this preserves the immutable ID space and allows extraction regex to still match retired-but-preserved headings.
 - For CE Gate pre-flight, extract all IDs present at plan-approval time and verify each appears in Experience-Owner's evidence summary
 
 ## BDD Detection Mechanism
@@ -74,7 +75,8 @@ BDD structured scenarios are only active when the consumer repo's `copilot-instr
 
 ## Gotchas
 
-- **S-IDs vs Specification's AC-NNN format**: This skill uses `SN` IDs (S1, S2, S3) for CE Gate scenarios. Specification agent uses `AC-NNN` for acceptance criteria. These are different namespaces — do not mix them or treat AC-NNN as a scenario ID.
+- **S-IDs vs Specification's AC-NNN format**: This skill uses S-IDs (S1, S2, S3) for CE Gate scenarios. Specification agent uses `AC-NNN` for acceptance criteria. These are different namespaces — do not mix them or treat AC-NNN as a scenario ID.
 - **Customer language principle**: G/W/T keywords are structural framing only. The clause content must be in customer terms — no method names, no file paths, no agent names, no implementation details. "When the system calls ExperienceOwner.FrameScenarios()" is wrong; "When the team begins feature planning" is correct.
 - **BDD detection gating**: All BDD-specific behavior (G/W/T authoring, classification, pre-flight, per-scenario prosecution) is conditional on `## BDD Framework` presence. Repos without this section keep the existing natural-language workflow unchanged — do not apply rubric, IDs, or pre-flight to natural-language scenarios.
+- **Issue-body source of truth**: The `## Scenarios` section in the GitHub issue body is the authoritative store for scenario IDs. Any abbreviated or derived authoring path (e.g., generating scenarios only in the plan's `[CE GATE]` step) **must** also write the full scenarios back into the issue body using the GitHub issue update tool — Code-Conductor's CE Gate pre-flight reads from the issue body and will treat missing issue-body scenarios as coverage gaps.
 - **Phase 2 scope boundary**: This skill covers Phase 1 only (structured authoring + traceability + coverage detection). Gherkin file conversion and consumer-side BDD framework runner configuration are Phase 2 scope — do not include or suggest those patterns here.
