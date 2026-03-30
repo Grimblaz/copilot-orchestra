@@ -109,6 +109,8 @@ Phase 2 is active when **both** conditions are met in the consumer repo's `copil
 
 > **jest-cucumber limitation**: jest-cucumber does not support per-scenario Gherkin tag filtering via CLI. Runner dispatch for jest-cucumber runs the entire `features/` directory as one suite. All `[auto]` scenarios receive the same evidence record (suite-level pass/fail rather than per-scenario). Per-scenario conflict detection (`source: runner+eo`) is not available for jest-cucumber projects.
 
+> **cucumber (JVM Cucumber) note**: Runner commands assume Gradle (`./gradlew`). Maven-based projects will fail the pre-check and fall back to Phase 1 (EO exercises all scenarios). No runner dispatch occurs for Maven+Cucumber consumers.
+
 ### Gherkin Conversion Rules
 
 For each `[auto]` scenario in the issue's `## Scenarios` section:
@@ -180,7 +182,32 @@ def step_impl(context):
 
 **jest-cucumber**: Use `loadFeature` + `defineFeature` pattern with steps mapped to `@S{N}` scenario.
 
-**cucumber (JVM Cucumber)**: Java `@Given`/`@When`/`@Then` annotations in a step definitions class.
+**cucumber (JVM Cucumber)** (Java):
+
+```java
+import io.cucumber.java.en.Given;
+import io.cucumber.java.en.When;
+import io.cucumber.java.en.Then;
+
+public class StepDefinitions {
+
+    // S1 — User completes onboarding
+    @Given("a new user has opened the application for the first time")
+    public void givenNewUserOpened() {
+        throw new io.cucumber.java.PendingException(); // TODO: implement setup
+    }
+
+    @When("they follow the onboarding prompts")
+    public void whenTheyFollowPrompts() {
+        throw new io.cucumber.java.PendingException(); // TODO: implement action
+    }
+
+    @Then("they reach the home screen with personalized content")
+    public void thenTheyReachHomeScreen() {
+        throw new io.cucumber.java.PendingException(); // TODO: implement assertion — Intent: verify onboarding completion
+    }
+}
+```
 
 ### Runner Dispatch Protocol
 
