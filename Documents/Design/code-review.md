@@ -440,6 +440,8 @@ The aggregation script (`.github/scripts/aggregate-review-scores.ps1`) outputs Y
 - `bias_direction` (slightly_prosecution | slightly_defense | balanced)
 - `insufficient_data: true` when effective_sample_size < 5; `skipped_prs: N` emitted in both the insufficient-data block and the full calibration block (count of PRs skipped due to `gh` errors during processing)
 
+CE Gate planning note: when a script emits a new output block in more than one conditional path, the plan requires at least one CE Gate scenario for each path where the block appears. Each scenario's acceptance criterion must specify the expected behavior of every consuming agent in that path, not merely output format. The motivating example is the issue #213 `aggregate-review-scores.ps1` to Process-Review normal-path versus early-exit or `insufficient_data` path split. If the block appears in only one conditional path, this rule is out of scope.
+
 ### Process-Review Integration
 
 Process-Review §4.7 runs the aggregation script automatically. Recommendations follow defined signal thresholds:
