@@ -100,14 +100,14 @@ Phase 2 is active when **both** conditions are met in the consumer repo's `copil
 
 ### Framework Mapping Table
 
-| Framework | Tag Format | Default Output Dir | Runner Command Template | Version Check Command |
-| --- | --- | --- | --- | --- |
-| cucumber.js | `@S{N}` | `features/` | `npx cucumber-js --tags @S{N}` | `npx cucumber-js --version` |
-| behave | `@S{N}` | `features/` | `behave --tags @S{N}` | `behave --version` |
-| jest-cucumber | `@S{N}` | `features/` | `npx jest --testPathPattern features` | `npx jest --version` |
-| cucumber (JVM Cucumber) | `@S{N}` | `src/test/resources/features/` | `./gradlew test -Dcucumber.filter.tags=@S{N}` | `./gradlew --version` |
+| Framework               | Tag Format | Default Output Dir             | Runner Command Template                       | Version Check Command       |
+| ----------------------- | ---------- | ------------------------------ | --------------------------------------------- | --------------------------- |
+| cucumber.js             | `@S{N}`    | `features/`                    | `npx cucumber-js --tags @S{N}`                | `npx cucumber-js --version` |
+| behave                  | `@S{N}`    | `features/`                    | `behave --tags @S{N}`                         | `behave --version`          |
+| jest-cucumber           | `@S{N}`    | `features/`                    | `npx jest --testPathPattern features`         | `npx jest --version`        |
+| cucumber (JVM Cucumber) | `@S{N}`    | `src/test/resources/features/` | `./gradlew test -Dcucumber.filter.tags=@S{N}` | `./gradlew --version`       |
 
-> **jest-cucumber limitation**: jest-cucumber does not support per-scenario Gherkin tag filtering via CLI. Runner dispatch for jest-cucumber runs the entire `features/` directory as one suite. All `[auto]` scenarios receive the same evidence record (suite-level pass/fail rather than per-scenario). Per-scenario conflict detection (`source: runner+eo`) is not available for jest-cucumber projects.
+> **jest-cucumber limitation**: jest-cucumber does not support per-scenario Gherkin tag filtering via CLI. Runner dispatch for jest-cucumber runs the entire `features/` directory as one suite. All `[auto]` scenarios receive the same evidence record (suite-level pass/fail rather than per-scenario). Conflict detection (`source: runner+eo, result: conflict`) is still reachable: if the suite fails and EO passes during the delegated re-exercise, the conflict is recorded at suite granularity (all `[auto]` scenarios may resolve to conflict). Per-scenario runner granularity is what is not available — the suite-level result applies uniformly to all `[auto]` scenarios.
 
 > **cucumber (JVM Cucumber) note**: Runner commands assume Gradle (`./gradlew`). Maven-based projects will fail the pre-check and fall back to Phase 1 (EO exercises all scenarios). No runner dispatch occurs for Maven+Cucumber consumers.
 
@@ -144,20 +144,23 @@ Generate step definition stubs alongside the `.feature` file **only if the stub 
 **cucumber.js** (JavaScript/TypeScript):
 
 ```javascript
-const { Given, When, Then } = require('@cucumber/cucumber');
+const { Given, When, Then } = require("@cucumber/cucumber");
 
 // S1 — User completes onboarding
-Given('a new user has opened the application for the first time', async function () {
-  // TODO: implement setup
-  return 'pending';
-});
-When('they follow the onboarding prompts', async function () {
+Given(
+  "a new user has opened the application for the first time",
+  async function () {
+    // TODO: implement setup
+    return "pending";
+  },
+);
+When("they follow the onboarding prompts", async function () {
   // TODO: implement action
-  return 'pending';
+  return "pending";
 });
-Then('they reach the home screen with personalized content', async function () {
+Then("they reach the home screen with personalized content", async function () {
   // TODO: implement assertion — Intent: verify onboarding completion
-  return 'pending';
+  return "pending";
 });
 ```
 
@@ -223,13 +226,13 @@ Code-Conductor dispatches the framework runner at CE Gate. Process:
 
 **Unified evidence record schema** (5 fields):
 
-| Field | Type | Description |
-| --- | --- | --- |
-| `scenario_id` | string | Scenario ID (e.g., `S1`) |
-| `source` | enum | `runner` \| `eo` \| `runner+eo` |
-| `result` | enum | `pass` \| `fail` \| `conflict` |
-| `detail` | string | Summary or first stderr line |
-| `raw_exit_code` | int | Runner exit code (runner source only) |
+| Field           | Type   | Description                           |
+| --------------- | ------ | ------------------------------------- |
+| `scenario_id`   | string | Scenario ID (e.g., `S1`)              |
+| `source`        | enum   | `runner` \| `eo` \| `runner+eo`       |
+| `result`        | enum   | `pass` \| `fail` \| `conflict`        |
+| `detail`        | string | Summary or first stderr line          |
+| `raw_exit_code` | int    | Runner exit code (runner source only) |
 
 **Evidence merge rules**:
 

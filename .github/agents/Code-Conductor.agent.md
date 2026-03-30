@@ -1,4 +1,4 @@
-﻿---
+---
 name: Code-Conductor
 description: "Plan-driven workflow orchestrator that executes multi-step implementations autonomously"
 argument-hint: "Describe the task or provide plan document path"
@@ -658,10 +658,10 @@ Always include in the PR body:
 
 Read the `Class` value (`[auto]` or `[manual]`) from the plan's `[CE GATE]` step scenario entries (e.g., `S1: {description} [auto]`). Read the `Type` value (`Functional` or `Intent`) from the scenario heading `### SN — {title} (Type)` in the issue body's `## Scenarios` section. When BDD is enabled, replace the "Scenarios exercised (brief list)" with the per-scenario coverage table below:
 
-| ID  | Type       | Class    | Result    | Evidence            | Source      |
-| --- | ---------- | -------- | --------- | ------------------- | ----------- |
-| S1  | Functional | [auto]   | ✅ Passed | {brief description} | Runner      |
-| S2  | Intent     | [manual] | ✅ Passed | {brief description} | EO          |
+| ID  | Type       | Class    | Result    | Evidence            | Source |
+| --- | ---------- | -------- | --------- | ------------------- | ------ |
+| S1  | Functional | [auto]   | ✅ Passed | {brief description} | Runner |
+| S2  | Intent     | [manual] | ✅ Passed | {brief description} | EO     |
 
 #### CE and Proxy Prosecution Re-Activation
 

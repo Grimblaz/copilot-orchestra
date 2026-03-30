@@ -155,8 +155,8 @@ Describe 'bdd-scenarios SKILL.md Phase 2 contract' {
         $script:SkillContent | Should -Match '(?is)cucumber\.js.{0,500}behave.{0,500}jest-cucumber.{0,500}cucumber' -Because 'issue #227 requires the bdd-scenarios skill Phase 2 section to document all four supported frameworks: cucumber.js, behave, jest-cucumber, and cucumber (JVM)'
     }
 
-    It 'SKILL.md documents unified evidence record with source, result, detail, and raw_exit_code fields' {
-        $script:SkillContent | Should -Match '(?is)(source.{0,50}result.{0,50}detail.{0,50}raw_exit_code)' -Because 'issue #227 requires the bdd-scenarios skill to document the unified evidence record schema with source, result, detail, and raw_exit_code fields'
+    It 'SKILL.md documents unified evidence record with scenario_id, source, result, detail, and raw_exit_code fields' {
+        $script:SkillContent | Should -Match '(?is)(scenario_id.{0,100}source.{0,100}result.{0,100}detail.{0,100}raw_exit_code)' -Because 'issue #227 requires the bdd-scenarios skill to document the unified evidence record schema with scenario_id, source, result, detail, and raw_exit_code fields'
     }
 
     It 'SKILL.md documents runner dispatch protocol with pre-check step' {
