@@ -23,6 +23,7 @@ function Test-AllowlistedWhitespacePath {
 function Test-BinaryLikeContent {
     param(
         [Parameter(Mandatory)]
+        [AllowEmptyCollection()]
         [byte[]]$Bytes
     )
 
@@ -32,6 +33,7 @@ function Test-BinaryLikeContent {
 function Get-NewlineSequence {
     param(
         [Parameter(Mandatory)]
+        [AllowEmptyString()]
         [string]$Content
     )
 
@@ -66,6 +68,16 @@ try {
     $originalBytes[1] -eq 0xBB -and
     $originalBytes[2] -eq 0xBF
 
+    if (-not $hasUtf8Bom) {
+        try {
+            [System.Text.UTF8Encoding]::new($false, $true).GetString($originalBytes) | Out-Null
+        }
+        catch {
+            Write-Warning "normalize-whitespace skipped non-UTF-8-safe content: $resolvedPath"
+            exit 0
+        }
+    }
+
     $reader = [System.IO.StreamReader]::new($resolvedPath, $true)
     try {
         $current = $reader.ReadToEnd()
@@ -76,7 +88,7 @@ try {
     }
 
     $newline = Get-NewlineSequence -Content $current
-    $normalized = [regex]::Replace($current, '[ \t]+(?=(\r\n|\n|\r)|$)', '')
+    $normalized = [regex]::Replace($current, '[ \t]+(?=(?:\r\n|\n|\r)|$)', '')
     $normalized = [regex]::Replace($normalized, '(?:\r\n|\n|\r)+\z', '')
     $normalized += $newline
 
@@ -88,17 +100,31 @@ try {
         $encoding = [System.Text.UTF8Encoding]::new($hasUtf8Bom)
     }
 
-    $writer = [System.IO.StreamWriter]::new($resolvedPath, $false, $encoding)
+    $tempPath = [System.IO.Path]::Combine(
+        [System.IO.Path]::GetDirectoryName($resolvedPath),
+        [System.IO.Path]::GetRandomFileName()
+    )
+    $wroteOk = $false
     try {
-        $writer.Write($normalized)
+        $tempWriter = [System.IO.StreamWriter]::new($tempPath, $false, $encoding)
+        try {
+            $tempWriter.Write($normalized)
+        }
+        finally {
+            $tempWriter.Dispose()
+        }
+        [System.IO.File]::Move($tempPath, $resolvedPath, $true)
+        $wroteOk = $true
     }
     finally {
-        $writer.Dispose()
+        if (-not $wroteOk -and (Test-Path -LiteralPath $tempPath)) {
+            Remove-Item -LiteralPath $tempPath -ErrorAction SilentlyContinue
+        }
     }
 
     exit 0
 }
 catch {
     Write-Warning "normalize-whitespace failed for ${Path}: $($_.Exception.Message)"
-    exit 0
+    exit 1
 }

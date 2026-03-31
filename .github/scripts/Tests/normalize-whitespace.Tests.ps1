@@ -208,6 +208,54 @@ Describe 'normalize-whitespace.ps1' {
             $result.ExitCode | Should -Be 0 -Because 'unsupported files must not make the hook path fatal'
             $afterHex | Should -Be $beforeHex -Because 'unsupported files should be skipped rather than mutated'
         }
+
+        It 'normalizes a CRLF file — removes trailing whitespace and blank lines while preserving CRLF endings' {
+            $dir = & $script:NewTempDir
+            $path = Join-Path $dir 'crlf-dirty.yml'
+            $inputBytes = [System.Text.Encoding]::UTF8.GetBytes("key: value   `r`nother: stuff   `r`n`r`n")
+            [System.IO.File]::WriteAllBytes($path, $inputBytes)
+
+            $result = & $script:InvokeHelper -Path $path
+            $afterBytes = & $script:ReadBytes -Path $path
+            $afterText = [System.Text.Encoding]::UTF8.GetString($afterBytes)
+
+            $result.ExitCode | Should -Be 0 -Because 'CRLF normalization should be a successful path'
+            $afterText | Should -Be "key: value`r`nother: stuff`r`n" `
+                -Because 'trailing whitespace and trailing blank lines must be removed while CRLF endings are preserved'
+            $afterBytes | Should -Contain 0x0D `
+                -Because 'CRLF line endings must be preserved as 0x0D 0x0A byte pairs, not converted to bare LF'
+        }
+
+        It 'leaves an already-normalized CRLF file byte-for-byte unchanged' {
+            $dir = & $script:NewTempDir
+            $path = Join-Path $dir 'crlf-clean.yml'
+            $inputBytes = [System.Text.Encoding]::UTF8.GetBytes("key: value`r`nother: stuff`r`n")
+            [System.IO.File]::WriteAllBytes($path, $inputBytes)
+            $beforeHex = [System.Convert]::ToHexString((& $script:ReadBytes -Path $path))
+
+            $result = & $script:InvokeHelper -Path $path
+            $afterHex = [System.Convert]::ToHexString((& $script:ReadBytes -Path $path))
+
+            $result.ExitCode | Should -Be 0 -Because 'already-normalized CRLF files should not be treated as errors'
+            $afterHex | Should -Be $beforeHex `
+                -Because 'a CRLF file with no trailing whitespace or blank lines must remain byte-for-byte unchanged'
+        }
+
+        It 'writes exactly one final newline to an empty allowlisted file' {
+            $dir = & $script:NewTempDir
+            $path = Join-Path $dir 'empty.json'
+            [System.IO.File]::WriteAllBytes($path, [byte[]]@())
+
+            $result = & $script:InvokeHelper -Path $path
+            $afterBytes = & $script:ReadBytes -Path $path
+
+            $result.ExitCode | Should -Be 0 `
+                -Because 'empty allowlisted file gets exactly one final newline by normalization contract'
+            $afterBytes.Length | Should -Be 1 `
+                -Because 'empty allowlisted file gets exactly one final newline by normalization contract'
+            $afterBytes[0] | Should -Be 0x0A `
+                -Because 'empty allowlisted file gets exactly one final newline by normalization contract'
+        }
     }
 }
 
@@ -262,4 +310,10 @@ Describe '.githooks/pre-commit whitespace-lane ownership contract' {
         $pattern | Should -Not -Match 'psm1' -Because 'issue #248 explicitly leaves .psm1 support out of scope'
         $pattern | Should -Not -Match '\^\[\^\.]\+\$|\^\[\^\.\]\[\^/\]\*\$' -Because 'the generic lane must not broaden to generic extensionless-file handling beyond the explicit dotfile allowlist'
     }
-}
+    It 'scopes the PowerShell lane grep pattern to .ps1 only when checked in isolation' {
+        $psLaneLine = ($script:HookContent -split "`n") | Where-Object { $_ -match 'staged_ps1=' }
+        $psLaneLine | Should -Not -BeNullOrEmpty `
+            -Because 'the PowerShell lane selector line must exist in the hook'
+        $psLaneLine | Should -Not -Match '\.psd1|\.psm1' `
+            -Because 'the PowerShell lane grep pattern must not include .psd1 or .psm1 — scoped to the staged_ps1 line only to avoid false positives from other lanes'
+    } }

@@ -32,7 +32,7 @@ else
     printf '%s\n' "$staged_md" | while IFS= read -r f; do
       # --fix applies auto-fixable rules (blank lines around headings, etc.)
       # Errors that cannot be auto-fixed are reported but do not block the commit.
-      _hash_before=$(git hash-object -- "$f")
+      _hash_before=$(git hash-object -- "$f" 2>/dev/null) || { echo "⚠ hash-object failed for $f — skipping restage."; continue; }
       markdownlint-cli2 --fix "$f" || true
       # Only re-stage if markdownlint changed the file — avoids unnecessary restaging.
       restage_if_changed "$f" "$_hash_before"
@@ -53,7 +53,7 @@ if [ -n "$staged_ps1" ]; then
   else
     echo "→ Invoke-Formatter on staged PowerShell files..."
     printf '%s\n' "$staged_ps1" | while IFS= read -r f; do
-      _hash_before=$(git hash-object -- "$f")
+      _hash_before=$(git hash-object -- "$f" 2>/dev/null) || { echo "⚠ hash-object failed for $f — skipping restage."; continue; }
       ps_error=$(PRE_COMMIT_FORMAT_PATH="$f" pwsh -NoProfile -NonInteractive -Command '
 try {
   if (-not (Get-Command Invoke-Formatter -ErrorAction SilentlyContinue)) {
@@ -123,7 +123,7 @@ if [ -n "$staged_whitespace" ]; then
   else
     echo "→ normalize-whitespace on staged config/text files..."
     printf '%s\n' "$staged_whitespace" | while IFS= read -r f; do
-      _hash_before=$(git hash-object -- "$f")
+      _hash_before=$(git hash-object -- "$f" 2>/dev/null) || { echo "⚠ hash-object failed for $f — skipping restage."; continue; }
       ws_output=$(pwsh -NoProfile -NonInteractive -File "$whitespace_helper" -Path "$f" 2>&1)
       if [ $? -ne 0 ]; then
         ws_error_first_line=$(printf '%s\n' "$ws_output" | sed -n '1p')
