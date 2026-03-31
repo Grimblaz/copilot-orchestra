@@ -1428,7 +1428,6 @@ Describe 'aggregate-review-scores.ps1 -CalibrationFile' {
             $result.Output | Should -Not -Match '(?ms)^  prosecution_depth:\r?\n(?:(?!^  \S).*\r?\n)*?    simplicity:' `
                 -Because 'prosecution_depth must not emit a legacy simplicity key after alias normalization'
         }
-
         It 'omits systemic_patterns section when all systemic_fix_type values are none' -Tag 'requires-gh' {
             # Boundary/backward-compat test: no systemic_patterns section when no findings
             # have a non-none systemic_fix_type. Passes in red state (section not yet
