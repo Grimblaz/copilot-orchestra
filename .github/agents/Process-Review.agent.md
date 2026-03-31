@@ -467,7 +467,7 @@ For each entry already marked `<!-- gotcha-status: upstream:{url} -->`: check if
 - Skipped: {reason or "none"}
 ```
 
-**Guardrail**: This section reads and writes `local-gotchas.instructions.md` to update status markers, and creates GitHub issues. It does NOT modify any other agent, skill, or system instruction file. Issue creation must follow output-capture verification (§2a), deduplication search (§2c), and the prevention-analysis advisory (§2d) from `safe-operations.instructions.md`.
+**Guardrail**: This section reads and writes `local-gotchas.instructions.md` to update status markers, and creates GitHub issues. It does NOT modify any other agent, skill, or system instruction file. Issue creation must follow output-capture verification (§2a) and deduplication search (§2c) from `safe-operations.instructions.md`. For rule-addition proposals, apply the prevention-analysis advisory (§2d) from `safe-operations.instructions.md` before the §2c dedup search.
 
 ### 4.9 Root Cause Analysis & Guardrail Proposals
 

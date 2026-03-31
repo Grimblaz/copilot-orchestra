@@ -105,6 +105,8 @@ gh issue create --title "..." --body "..."
 
 ### 2c. Deduplication Check (Mandatory)
 
+> **Rule-addition proposals**: Apply §2d (Prevention-Analysis Advisory, below) before this search — if §2d redirects to an existing issue, this dedup search is unnecessary.
+
 Before every `gh issue create`, search for existing open issues with matching titles or key terms from the title:
 
 ```powershell
