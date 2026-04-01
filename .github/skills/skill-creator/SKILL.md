@@ -220,6 +220,18 @@ Use `[CUSTOMIZE]` for sections that need project adaptation:
 
 **Rule**: If SKILL.md exceeds 300 lines, split into supporting files.
 
+## Supplement Skills
+
+A **supplement skill** layers project-specific constraints, themes, or identity guidance on top of an existing hub skill. When a project has one, load both together — the hub skill provides universal principles and the supplement narrows them for the project.
+
+**Naming convention**: `.github/skills/{project}-{hub-skill-name}/SKILL.md` — for example, `windgust-frontend-design` supplements `frontend-design`.
+
+**Supplement ≠ replacement**: A supplement adds to the hub skill; it does not replace it. Load both together. If your supplement contradicts hub skill guidance, the benefit of shared defaults is lost.
+
+**Description convention**: Supplement descriptions should explicitly reference the hub skill they extend — for example: "Supplements `frontend-design` with {project} brand identity...".
+
+See the `frontend-design` skill for a worked example and a minimal supplement SKILL.md template.
+
 ## Validation Checklist
 
 Before committing a new skill:
@@ -296,3 +308,4 @@ Systematic approach to reviewing code changes.
 | Not running a collision check before finalizing                               | New skill's trigger words shadow an existing skill                       | `grep_search` trigger phrases across `.github/skills/*/SKILL.md` before finalizing   |
 | Using camelCase or PascalCase for `name` (`MySkill`)                          | Naming convention violation; potential discovery failure                 | Use kebab-case (`my-skill`) for the `name` frontmatter field                         |
 | Creating `references/`, `examples/`, and `templates/` directories immediately | File bloat; harder to navigate and maintain                              | Start with Minimal structure; split only when core document becomes hard to navigate |
+| Creating a supplement that contradicts or overrides the hub skill's defaults  | Loses shared hub-skill defaults; teams diverge without a shared baseline | Layer on top — supplements narrow or extend hub guidance, never replace; load both together      |
