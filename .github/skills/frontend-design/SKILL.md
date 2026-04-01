@@ -149,6 +149,57 @@ Before shipping any design:
 - Design tokens
 - Approved patterns and templates
 
+## Supplement Skills
+
+A **supplement skill** is a project-specific skill that layers additional constraints, themes, or identity guidance on top of this hub skill. When a project has one, load both together — the hub skill provides the universal design principles and the supplement narrows them for the project.
+
+**Naming convention**: `{project}-{hub-skill-name}` — for example, `windgust-frontend-design` supplements `frontend-design`.
+
+**When to create one**: When your project has a unique visual identity, brand-specific design tokens, or theme customizations that go beyond what the `[CUSTOMIZE]` markers in this skill cover. If you find yourself adding the same project-specific guidance to every session, extract it into a supplement.
+
+**Supplement ≠ replacement**: A supplement adds to the hub skill; it does not replace it. Load both together. Do not contradict hub skill defaults — extend or constrain them instead.
+
+### Worked Example
+
+`windgust-frontend-design` in `Grimblaz-and-Friends/Windgust-Questbook` supplements this skill with the Windgust brand personality, color palette, and component conventions specific to that project.
+
+### Supplement SKILL.md Template
+
+> **Note**: This template is pre-filled for `frontend-design` supplements. When creating a supplement for a different hub skill, replace every occurrence of `frontend-design` with your hub-skill name.
+
+```markdown
+---
+name: {project}-frontend-design
+description: Supplements `frontend-design` with {project} brand identity, design tokens, and visual conventions. Use when designing {project} UI components or screens alongside the `frontend-design` hub skill. DO NOT USE FOR: standalone sessions without `frontend-design` loaded (this is a supplement skill; always load `frontend-design` alongside).
+---
+
+# {Project} Frontend Design Supplement
+
+Project-specific design constraints that layer on top of the `frontend-design` hub skill.
+
+## Brand Identity
+
+[CUSTOMIZE] Document brand personality, color palette, and typography rules.
+
+## Design Tokens
+
+[CUSTOMIZE] List token overrides that go beyond `frontend-design` defaults.
+
+## Component Conventions
+
+[CUSTOMIZE] List component conventions that extend `frontend-design` hub skill guidance.
+
+## When to Use
+
+- [CUSTOMIZE] List the conditions when this supplement should be loaded (alongside `frontend-design`).
+
+## Gotchas
+
+| Trigger                          | Gotcha                      | Fix                       |
+| -------------------------------- | --------------------------- | ------------------------- |
+| [CUSTOMIZE] Observable condition | [CUSTOMIZE] What goes wrong | [CUSTOMIZE] How to fix it |
+```
+
 ## Gotchas
 
 <!-- [CUSTOMIZE] Add project-specific anti-patterns below -->
