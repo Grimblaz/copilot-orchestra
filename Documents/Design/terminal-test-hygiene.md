@@ -6,7 +6,7 @@ Long Copilot agent sessions accumulate idle `pwsh` processes that each trigger W
 AMSI scanning, causing sustained CPU load and fan noise — even when the user is away from the
 computer. The issue is model-sensitive: on the same orchestration pipeline (issue #248), GPT 5.4
 reached 35+ concurrent `pwsh` processes while Sonnet 4.6 stayed at 8–10. Aggressive models issue
-more `isBackground=true` terminal calls and invoke the full Pester suite repeatedly rather than
+more `isBackground: true` terminal calls and invoke the full Pester suite repeatedly rather than
 targeting specific test files.
 
 The fix must be **model-agnostic**: explicit guardrails in the shared agent context so that any
@@ -85,7 +85,7 @@ Flagged across all three adversarial design review passes. Four disqualifying pr
 - **Breaks detector cohesion**: the existing detector is repo-scoped and deterministic; a
   process-count check introduces workstation-scoped and non-deterministic behavior
 
-### R2 — Windows Defender folder-exclusion advice in `CONTRIBUTING.MD`
+### R2 — Windows Defender folder-exclusion advice in `CONTRIBUTING.md`
 
 Rejected. Advising users to create exclusions in Windows Defender crosses from project convention
 into workstation security policy. That boundary belongs to the user and their organization.

@@ -181,7 +181,7 @@ When iterating on a specific test during red-green-refactor **within** an implem
 Invoke-Pester 'path/to/specific.Tests.ps1' -Output Minimal
 ```
 
-The full-suite command in **Quick-validate** (above) remains the standard validation gate at **step boundaries** (Tier 1). Do not run the full suite during inner-loop iteration.
+The full-suite command in **Build & Run > Commands** (above) remains the standard validation gate at **step boundaries** (Tier 1). Do not run the full suite during inner-loop iteration.
 
 ### `isBackground` Default
 
