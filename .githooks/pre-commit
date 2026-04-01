@@ -12,7 +12,7 @@ staged_files=$(git diff --cached --name-only --diff-filter=ACM)
 restage_if_changed() {
   file_path="$1"
   hash_before="$2"
-  hash_after=$(git hash-object -- "$file_path")
+  hash_after=$(git hash-object -- "$file_path" 2>/dev/null) || return 0
 
   if [ "$hash_before" != "$hash_after" ]; then
     git add -- "$file_path"

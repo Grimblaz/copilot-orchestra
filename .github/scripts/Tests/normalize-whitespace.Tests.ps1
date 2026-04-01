@@ -316,4 +316,5 @@ Describe '.githooks/pre-commit whitespace-lane ownership contract' {
             -Because 'the PowerShell lane selector line must exist in the hook'
         $psLaneLine | Should -Not -Match '\.psd1|\.psm1' `
             -Because 'the PowerShell lane grep pattern must not include .psd1 or .psm1 — scoped to the staged_ps1 line only to avoid false positives from other lanes'
-    } }
+    }
+}
