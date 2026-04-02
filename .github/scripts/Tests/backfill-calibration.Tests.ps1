@@ -26,10 +26,9 @@
       - A minimal mock `gh.ps1` is written into the temp dir; its path is
         passed to the script via -GhCliPath so the real `gh` CLI is never
         invoked.
-      - The child pwsh process runs with -WorkingDirectory set to the temp dir
-        so .copilot-tracking/calibration/review-data.json is written there.
       - Tests read the output JSON directly to inspect entries written.
-      - Invocations run in a child pwsh process to keep test process state clean.
+      - Invocations run in-process by calling Invoke-BackfillCalibration from
+        lib/backfill-calibration-core.ps1 directly (no child pwsh spawning).
 #>
 
 Describe 'backfill-calibration.ps1' {
@@ -37,6 +36,8 @@ Describe 'backfill-calibration.ps1' {
     BeforeAll {
         $script:RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '../../..')).Path
         $script:ScriptFile = Join-Path $script:RepoRoot '.github\scripts\backfill-calibration.ps1'
+        $script:LibFile = Join-Path $script:RepoRoot '.github\scripts\lib\backfill-calibration-core.ps1'
+        . $script:LibFile
 
         # ---------------------------------------------------------------------------
         # Shared pipeline-metrics content used across tests
@@ -163,7 +164,7 @@ exit 1
         }
 
         # ------------------------------------------------------------------
-        # Helper: invoke the backfill script with injected mocks.
+        # Helper: invoke Invoke-BackfillCalibration in-process.
         # Returns @{ ExitCode; Output; EntryCount; Entries[] }
         # where Entries[] is the list of entry objects written to review-data.json.
         # ------------------------------------------------------------------
@@ -175,14 +176,17 @@ exit 1
             )
             $dataFile = Join-Path -Path $WorkDir -ChildPath '.copilot-tracking' -AdditionalChildPath 'calibration', 'review-data.json'
 
-            $stdout = & pwsh -NoProfile -NonInteractive -WorkingDirectory $WorkDir -File $script:ScriptFile `
-                -GhCliPath $GhCliPath `
-                -Limit $Limit 2>&1
-
-            $exitCode = $LASTEXITCODE
-
-            $errLines = ($stdout | Where-Object { $_ -is [System.Management.Automation.ErrorRecord] }) -join "`n"
-            $outLines = ($stdout | Where-Object { $_ -isnot [System.Management.Automation.ErrorRecord] }) -join "`n"
+            Push-Location $WorkDir
+            $invokeResult = $null
+            try {
+                $invokeResult = Invoke-BackfillCalibration -GhCliPath $GhCliPath -Limit $Limit
+            }
+            catch {
+                $invokeResult = @{ ExitCode = 1; Output = ''; Error = $_.ToString() }
+            }
+            finally {
+                Pop-Location
+            }
 
             $entries = @()
             if (Test-Path $dataFile) {
@@ -191,9 +195,9 @@ exit 1
             }
 
             return @{
-                ExitCode   = $exitCode
-                Output     = $outLines
-                Error      = $errLines
+                ExitCode   = $invokeResult.ExitCode
+                Output     = $invokeResult.Output
+                Error      = $invokeResult.Error
                 EntryCount = $entries.Count
                 Entries    = $entries
             }
@@ -352,6 +356,17 @@ exit 1
             # Assert: non-zero exit propagated
             $result.ExitCode | Should -Not -Be 0 `
                 -Because 'when gh fails the backfill script must surface the error via non-zero exit'
+        }
+
+        It 'returns ExitCode 1 and error message when GhCliPath is not a valid command' {
+            # Arrange: a command name that cannot possibly exist on any machine
+            # Act
+            $result = Invoke-BackfillCalibration -Repo 'owner/repo' -GhCliPath 'gh-definitely-not-installed-xyz'
+
+            # Assert: Get-Command pre-flight guard fires early-return path
+            $result.ExitCode | Should -Be 1
+            $result.Error    | Should -Match 'not found'
+            $result.Output   | Should -BeNullOrEmpty
         }
     }
 }
