@@ -149,7 +149,7 @@ pwsh -NoProfile -NonInteractive -Command "Invoke-Pester .github/scripts/Tests/ -
 
 ### Script Library Convention
 
-Production scripts under `.github/scripts/` are split into a `lib/{name}-core.ps1` library (containing the logic as an `Invoke-*` function) and a thin CLI wrapper that dot-sources the library and calls the function. Tests dot-source `lib/` files directly and call the function in-process, avoiding per-test `pwsh` child process spawning. Private helpers inside a library use a short prefix (`NW-`, `WCE-`, `SCD-`) to avoid name collisions across dot-sourced files.
+Production scripts under `.github/scripts/` are split into a `lib/{name}-core.ps1` library (containing the logic as an `Invoke-*` function) and a thin CLI wrapper that dot-sources the library and calls the function. Tests dot-source `lib/` files directly and call the function in-process, avoiding per-test `pwsh` child process spawning. Private helpers inside a library embed a short uppercase prefix in the noun segment (`NW`, `WCE`, `SCD`) to avoid name collisions across dot-sourced files (e.g., `Test-NWAllowlistedPath`, `Test-WCEHasProperty`, `Get-SCDDefaultBranch`).
 
 ```powershell
 # Example: call aggregate-review-scores logic in-process

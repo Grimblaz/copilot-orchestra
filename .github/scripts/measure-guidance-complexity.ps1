@@ -28,6 +28,11 @@ try {
     if ($result.Output) { Write-Output $result.Output }
 }
 catch {
-    Write-Output '{"config_source":"error","agents_over_ceiling":[],"agents":[]}'
+    [ordered]@{
+        config_source       = 'error'
+        agents_over_ceiling = @('__script-error__')
+        agents              = @()
+        error               = $_.Exception.Message
+    } | ConvertTo-Json -Depth 5 | Write-Output
 }
 exit 0

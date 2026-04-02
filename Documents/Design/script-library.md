@@ -92,9 +92,9 @@ dot-source multiple libraries into the same runspace:
 
 | Library | Prefix | Example |
 |---|---|---|
-| `normalize-whitespace-core.ps1` | `NW-` | `NW-Test-AllowlistedPath` |
-| `write-calibration-entry-core.ps1` | `WCE-` | `WCE-Test-HasProperty` |
-| `session-cleanup-detector-core.ps1` | `SCD-` | `SCD-Get-DefaultBranch` |
+| `normalize-whitespace-core.ps1` | `NW` | `Test-NWAllowlistedPath` |
+| `write-calibration-entry-core.ps1` | `WCE` | `Test-WCEHasProperty` |
+| `session-cleanup-detector-core.ps1` | `SCD` | `Get-SCDDefaultBranch` |
 
 ## CLI Wrapper Conventions
 
@@ -167,8 +167,8 @@ Scripts without a `gh` dependency do not receive this parameter.
 
 ## Regression Prevention
 
-`.github/scripts/Tests/script-safety-contract.Tests.ps1` contains an AST-inspection contract test
-that scans all `.Tests.ps1` files for `& pwsh` followed by `-File` inside `It` blocks. It fails if
+`.github/scripts/Tests/script-safety-contract.Tests.ps1` contains a contract test
+that scans all `.Tests.ps1` file contents for the raw pattern `& pwsh` and fails if
 any new test introduces a process-spawn pattern outside the allowlist.
 
 Current allowlist entry: `branch-authority-gate.Tests.ps1` — this test file uses `.cmd` wrappers
