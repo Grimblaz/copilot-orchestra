@@ -442,6 +442,24 @@ The aggregation script (`.github/scripts/aggregate-review-scores.ps1`) outputs Y
 
 CE Gate planning note: when a script emits a new output block in more than one conditional path, the plan requires at least one CE Gate scenario for each path where the block appears. Each scenario's acceptance criterion must specify the expected behavior of every consuming agent in that path, not merely output format. The motivating example is the issue #213 `aggregate-review-scores.ps1` to Process-Review normal-path versus early-exit or `insufficient_data` path split. If the block appears in only one conditional path, this rule is out of scope.
 
+### Health Report Mode (Issue #259)
+
+Passing `-HealthReport` to `aggregate-review-scores.ps1` (or `Invoke-AggregateReviewScores -HealthReport`) switches output from YAML to a 5-section Markdown report:
+
+| Section | Content |
+|---------|---------|
+| **Pipeline Health** | Overall statistics: total findings, sustain rate, effective sample size |
+| **Category Hotspots** | Top categories by effective count; per-category Trend column shows `—` until Phase 2 (per-category temporal split via `OlderCategoryRates` is deferred) |
+| **Prosecution Depth** | Per-category table with `Depth` column (`full` / `light` / `skip`) for each of `$knownCategories` |
+| **D10 Alerts** | Categories with `light` or `skip` depth, sorted by effective count |
+| **Systemic Pattern Alerts** | Systemic patterns meeting threshold, sorted by sustained count |
+
+`-HealthReport` is **read-only**: all three write-back paths (calibration file write, `guidance-complexity.json`, `write-calibration-entry.ps1`) are skipped. Add `-OutputPath <file>` to write the report to a file instead of stdout; if the write fails, the script falls back to stdout.
+
+**Process-Review §4.7** passes `-HealthReport -OutputPath $healthReportTempFile` in its Step 0 and displays the file in Step 5.
+
+**Category alias normalization** (also Issue #259): `$accumulateFinding` now normalizes `simplicity → implementation-clarity` *and* `documentation → documentation-audit` before accumulation. Both aliases are accepted from older pipeline-metrics blocks and mapped to the canonical 7-category taxonomy before Hotspots and Prosecution Depth are computed.
+
 ### Process-Review Integration
 
 Process-Review §4.7 runs the aggregation script automatically. Recommendations follow defined signal thresholds:
