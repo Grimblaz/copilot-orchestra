@@ -449,10 +449,10 @@ Passing `-HealthReport` to `aggregate-review-scores.ps1` (or `Invoke-AggregateRe
 | Section | Content |
 |---------|---------|
 | **Pipeline Health** | Overall statistics: total findings, sustain rate, effective sample size |
-| **Category Hotspots** | Top categories by effective count; directional indicators (↑/↓/→) based on temporal split vs. median |
-| **Prosecution Depth** | Current depth recommendation per `$knownCategories` (`full` / `light` / `skip`) |
+| **Category Hotspots** | Top categories by effective count; per-category Trend column shows `—` until Phase 2 (per-category temporal split via `OlderCategoryRates` is deferred) |
+| **Prosecution Depth** | Per-category table with `Depth` column (`full` / `light` / `skip`) for each of `$knownCategories` |
 | **D10 Alerts** | Categories with `light` or `skip` depth, sorted by effective count |
-| **Systemic Alerts** | Systemic patterns meeting threshold, sorted by sustained count |
+| **Systemic Pattern Alerts** | Systemic patterns meeting threshold, sorted by sustained count |
 
 `-HealthReport` is **read-only**: all three write-back paths (calibration file write, `guidance-complexity.json`, `write-calibration-entry.ps1`) are skipped. Add `-OutputPath <file>` to write the report to a file instead of stdout; if the write fails, the script falls back to stdout.
 

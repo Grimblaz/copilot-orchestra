@@ -2524,7 +2524,7 @@ Describe 'Format-HealthReport core content' {
         # ---------------------------------------------------------------
         # Shared valid context used by the majority of tests.
         # Covers all 5 sections: heading, sustain rate, hotspots,
-        # prosecution depth, D10 ceiling, systemic patterns.
+        # prosecution depth, D10 alerts, systemic patterns.
         # ---------------------------------------------------------------
         $script:FHRValidContext = @{
             OverallSustainRate           = 0.52
@@ -2667,34 +2667,88 @@ Describe 'Format-HealthReport core content' {
     }
 
     # ------------------------------------------------------------------
-    # Test 6: ## D10 Ceiling Status omitted when history is empty
+    # Test 6: ## D10 Alerts omitted when no depth-reduced categories exist
     # ------------------------------------------------------------------
-    It '## D10 Ceiling Status omitted when ComplexityOverCeilingHistory is empty' -Tag 'no-gh' {
-        # ARRANGE: clone valid context but clear the ceiling history
-        $ctx = $script:FHRValidContext.Clone()
-        $ctx['ComplexityOverCeilingHistory'] = @{}
-
-        # ACT
-        $result = Format-HealthReport $ctx
-
-        # ASSERT
-        $result | Should -Not -Match '## D10 Ceiling Status' `
-            -Because '## D10 Ceiling Status must be omitted entirely when no agents are over ceiling'
-    }
-
-    # ------------------------------------------------------------------
-    # Test 7: ## D10 Ceiling Status present when over-ceiling agent exists
-    # ------------------------------------------------------------------
-    It '## D10 Ceiling Status present when over-ceiling agent exists' -Tag 'no-gh' {
-        # ARRANGE: valid context already has one over-ceiling agent
+    It '## D10 Alerts omitted when no categories are at light or skip depth' -Tag 'no-gh' {
+        # ARRANGE: valid context without DepthRecommendations — all categories default to full
         $ctx = $script:FHRValidContext
 
         # ACT
         $result = Format-HealthReport $ctx
 
         # ASSERT
-        $result | Should -Match '## D10 Ceiling Status' `
-            -Because '## D10 Ceiling Status must appear when ComplexityOverCeilingHistory contains at least one agent'
+        $result | Should -Not -Match '## D10 Alerts' `
+            -Because '## D10 Alerts must be omitted when no categories have light or skip depth recommendation'
+    }
+
+    # ------------------------------------------------------------------
+    # Test 7: ## D10 Alerts present when a category is at light or skip depth
+    # ------------------------------------------------------------------
+    It '## D10 Alerts present and sorted by effective count when depth-reduced categories exist' -Tag 'no-gh' {
+        # ARRANGE: clone valid context; add DepthRecommendations with one light category
+        $ctx = $script:FHRValidContext.Clone()
+        $ctx['DepthRecommendations'] = @{
+            'architecture'           = 'full'
+            'security'               = 'light'
+            'performance'            = 'full'
+            'pattern'                = 'skip'
+            'implementation-clarity' = 'full'
+            'script-automation'      = 'full'
+            'documentation-audit'    = 'full'
+        }
+
+        # ACT
+        $result = Format-HealthReport $ctx
+
+        # ASSERT
+        $d10Section = [regex]::Match($result, '(?s)## D10 Alerts(.*?)(?=\n## |\z)').Value
+
+        $d10Section | Should -Not -BeNullOrEmpty `
+            -Because '## D10 Alerts must appear when DepthRecommendations contains light/skip categories'
+
+        $d10Section | Should -Match 'security' `
+            -Because 'security is at light depth and must appear in D10 Alerts'
+
+        $d10Section | Should -Match 'pattern' `
+            -Because 'pattern is at skip depth and must appear in D10 Alerts'
+
+        $d10Section | Should -Not -Match 'architecture' `
+            -Because 'architecture is at full depth and must NOT appear in D10 Alerts'
+
+        # Verify security (effectiveCount=12.0) appears before pattern (effectiveCount=5.0) — sorted by effective count descending
+        $securityPos = $d10Section.IndexOf('security')
+        $patternPos = $d10Section.IndexOf('pattern')
+        $securityPos | Should -BeLessThan $patternPos `
+            -Because 'security has higher effective count (12.0) than pattern (5.0) so it must appear first'
+    }
+
+    # ------------------------------------------------------------------
+    # Test 7b: ## Prosecution Depth section includes Depth column
+    # ------------------------------------------------------------------
+    It '## Prosecution Depth section includes Depth column from DepthRecommendations' -Tag 'no-gh' {
+        # ARRANGE: clone valid context; add DepthRecommendations with light category
+        $ctx = $script:FHRValidContext.Clone()
+        $ctx['DepthRecommendations'] = @{
+            'architecture'           = 'light'
+            'security'               = 'full'
+            'performance'            = 'full'
+            'pattern'                = 'full'
+            'implementation-clarity' = 'full'
+            'script-automation'      = 'full'
+            'documentation-audit'    = 'full'
+        }
+
+        # ACT
+        $result = Format-HealthReport $ctx
+
+        # ASSERT
+        $depthSection = [regex]::Match($result, '(?s)## Prosecution Depth(.*?)(?=\n## |\z)').Value
+
+        $depthSection | Should -Match 'Depth' `
+            -Because 'Prosecution Depth section header must include a Depth column'
+
+        $depthSection | Should -Match 'architecture.*light' `
+            -Because 'architecture is at light depth per DepthRecommendations and the row must show light'
     }
 
     # ------------------------------------------------------------------

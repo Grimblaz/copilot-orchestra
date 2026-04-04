@@ -74,8 +74,7 @@ if (-not [string]::IsNullOrWhiteSpace($OutputPath) -and $result.ContainsKey('Hea
         Set-Content -Path $OutputPath -Value $result.HealthReport -Encoding UTF8
     }
     catch {
-        Write-Error "Failed to write health report to '$OutputPath': $_" -ErrorAction Continue
-        exit 1
+        Write-Warning "Failed to write health report to '$OutputPath': $_"
     }
 }
 

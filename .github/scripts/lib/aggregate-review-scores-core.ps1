@@ -118,37 +118,50 @@ function Format-HealthReport {
         foreach ($entry in $top3) {
             $eCount = $entry.Value['effectiveCount']
             $sRate = if ($eCount -gt 0) { $entry.Value['sustained'] / $eCount } else { 0.0 }
-            # TODO (Phase 2): compute per-category trend from OlderCategoryRates
-            [void]$sb.AppendLine(("| {0} | {1:F1} | {2} | → |" -f $entry.Key, $eCount, ('{0:P0}' -f $sRate)))
+            # Per-category trend deferred to Phase 2 — shows — until OlderCategoryRates is threaded per category
+            [void]$sb.AppendLine(("| {0} | {1:F1} | {2} | — |" -f $entry.Key, $eCount, ('{0:P0}' -f $sRate)))
         }
         [void]$sb.AppendLine('')
     }
 
     [void]$sb.AppendLine('## Prosecution Depth')
     [void]$sb.AppendLine('')
-    [void]$sb.AppendLine('| Category | Effective Count | Sustain Rate |')
-    [void]$sb.AppendLine('|----------|-----------------|--------------|')
+    [void]$sb.AppendLine('| Category | Effective Count | Sustain Rate | Depth |')
+    [void]$sb.AppendLine('|----------|-----------------|--------------|-------|')
     foreach ($cat in $Context.KnownCategories) {
+        $depth = if ($Context.ContainsKey('DepthRecommendations') -and $Context.DepthRecommendations.ContainsKey($cat)) {
+            $Context.DepthRecommendations[$cat]
+        }
+        else { 'full' }
         if ($Context.CategoryData.ContainsKey($cat)) {
             $data = $Context.CategoryData[$cat]
             $eCount = $data['effectiveCount']
             $sRate = if ($eCount -gt 0) { $data['sustained'] / $eCount } else { 0.0 }
-            [void]$sb.AppendLine(("| {0} | {1:F1} | {2} |" -f $cat, $eCount, ('{0:P0}' -f $sRate)))
+            [void]$sb.AppendLine(("| {0} | {1:F1} | {2} | {3} |" -f $cat, $eCount, ('{0:P0}' -f $sRate), $depth))
         }
         else {
-            [void]$sb.AppendLine(("| {0} | — | — |" -f $cat))
+            [void]$sb.AppendLine(("| {0} | — | — | {1} |" -f $cat, $depth))
         }
     }
     [void]$sb.AppendLine('')
 
-    if ($Context.ComplexityOverCeilingHistory.Count -gt 0) {
-        [void]$sb.AppendLine('## D10 Ceiling Status')
+    $d10Rows = @()
+    if ($Context.ContainsKey('DepthRecommendations')) {
+        foreach ($cat in $Context.KnownCategories) {
+            $depth = if ($Context.DepthRecommendations.ContainsKey($cat)) { $Context.DepthRecommendations[$cat] } else { $null }
+            if ($depth -eq 'light' -or $depth -eq 'skip') {
+                $eCount = if ($Context.CategoryData.ContainsKey($cat)) { $Context.CategoryData[$cat]['effectiveCount'] } else { 0.0 }
+                $d10Rows += [pscustomobject]@{ Category = $cat; Depth = $depth; EffectiveCount = $eCount }
+            }
+        }
+    }
+    if ($d10Rows.Count -gt 0) {
+        [void]$sb.AppendLine('## D10 Alerts')
         [void]$sb.AppendLine('')
-        [void]$sb.AppendLine('| Agent | Consecutive Over-Ceiling |')
-        [void]$sb.AppendLine('|-------|--------------------------|')
-        foreach ($agent in ($Context.ComplexityOverCeilingHistory.Keys | Sort-Object)) {
-            $consecutiveCount = [int]$Context.ComplexityOverCeilingHistory[$agent]['consecutive_count']
-            [void]$sb.AppendLine(("| {0} | {1} |" -f $agent, $consecutiveCount))
+        [void]$sb.AppendLine('| Category | Depth | Effective Count |')
+        [void]$sb.AppendLine('|----------|-------|-----------------|')
+        foreach ($row in ($d10Rows | Sort-Object EffectiveCount -Descending)) {
+            [void]$sb.AppendLine(("| {0} | {1} | {2:F1} |" -f $row.Category, $row.Depth, $row.EffectiveCount))
         }
         [void]$sb.AppendLine('')
     }
@@ -168,7 +181,7 @@ function Format-HealthReport {
         [void]$sb.AppendLine('')
         [void]$sb.AppendLine('| Fix Type | Category | Sustained | PRs |')
         [void]$sb.AppendLine('|----------|----------|-----------|-----|')
-        foreach ($row in $alertRows) {
+        foreach ($row in ($alertRows | Sort-Object { $_.SustainedCount } -Descending)) {
             [void]$sb.AppendLine(("| {0} | {1} | {2} | {3} |" -f $row.FixType, $row.Category, $row.SustainedCount, $row.PRs))
         }
         [void]$sb.AppendLine('')
@@ -844,6 +857,7 @@ function Invoke-AggregateReviewScores {
         $categoriesWithSufficientData = 0
         $categoriesAtSkip = 0
         $categoriesAtLight = 0
+        $depthRecommendations = @{}
 
         [void]$out.AppendLine("  prosecution_depth:")
         [void]$out.AppendLine("    override_active: $($overrideActive.ToString().ToLower())")
@@ -969,6 +983,7 @@ function Invoke-AggregateReviewScores {
             if ($sufficientData) { $categoriesWithSufficientData++ }
             if ($recommendation -eq 'skip') { $categoriesAtSkip++ }
             elseif ($recommendation -eq 'light') { $categoriesAtLight++ }
+            $depthRecommendations[$cat] = $recommendation
 
             [void]$out.AppendLine("    ${cat}:")
             [void]$out.AppendLine("      recommendation: $recommendation")
@@ -1140,6 +1155,7 @@ function Invoke-AggregateReviewScores {
         EffectiveSampleSize          = $ctx.effectiveSampleSize
         OlderWindowRate              = $olderWindowRate
         NewerWindowRate              = $newerWindowRate
+        DepthRecommendations         = if ($ctx.v2IssuesAnalyzed -gt 0) { $depthRecommendations } else { @{} }
     }
     return @{ ExitCode = 0; Output = $out.ToString(); Error = ''; HealthReport = (Format-HealthReport $healthReportContext) }
 }
