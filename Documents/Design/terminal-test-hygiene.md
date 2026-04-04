@@ -74,7 +74,7 @@ allowed; the restriction applies to terminal commands alongside subagents only.
 
 ### D7 — Final-gate full-suite Pester must use `isBackground: true`
 
-The full Pester suite (`Invoke-Pester .github/scripts/Tests/`) includes tests tagged `requires-gh`
+The full Pester suite (`Invoke-Pester .github/scripts/Tests/ -Output Minimal`) includes tests tagged `requires-gh`
 that make live GitHub API calls and may take 10–20 minutes to complete, violating D3's "under 60
 seconds" assumption.
 
@@ -85,7 +85,7 @@ terminal stalls when the full suite is run synchronously at Tier 1 step boundari
 caused by running the full suite synchronously at the Tier 1 gate).
 
 **Fix**: Run the final-gate full suite with `isBackground: true`, redirecting all output to a file
-(e.g., `*> pester-results.txt`), and poll with `get_terminal_output`. After `get_terminal_output` returns a
+(e.g., `Invoke-Pester .github/scripts/Tests/ -Output Minimal *> pester-results.txt`), and poll with `get_terminal_output`. After `get_terminal_output` returns a
 PS prompt on its final line (indicating the process has exited), read actual test results with
 `read_file('pester-results.txt')`. Do
 not use `await_terminal` for this call. Targeted single-file Pester invocations (D2) are unaffected
