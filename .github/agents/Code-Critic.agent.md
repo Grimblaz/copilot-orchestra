@@ -573,7 +573,7 @@ String constants enumerating values produced or consumed by another file must ex
 
 - DO: cross-reference by locating array literals, hash table key assignments, or `$known*` definitions in the authoritative source file
 - DON'T: assume correctness from plan descriptions or prose mentions alone — grep for the consumed constant in defining contexts, not text mentions
-- DO: when a PR adds or extends a normalization block mapping legacy string aliases to canonical values from a `$known*` array, scan the entire canonical set — verify that no other value in the same array has an un-normalized legacy form present in the authoritative input source (e.g., stored pipeline-metrics blocks, historical data files)
+- DO: when a PR adds or extends a normalization block mapping legacy aliases to canonical `$known*` values, scan the entire canonical set — verify no sibling value has un-normalized legacy forms in the authoritative input source (e.g., stored pipeline-metrics blocks, historical data files)
 
 #### Principle 3 — Verify .NET method availability and pipeline semantics
 
