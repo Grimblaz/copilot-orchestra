@@ -118,7 +118,7 @@ API calls.
 **3-way fallback** (fixture mode detection block in `BeforeAll`):
 
 1. Fixture files present + `PESTER_LIVE_GH` not `'1'` → fixture mode (fast, offline)
-2. No fixtures + `PESTER_LIVE_GH=1` + `gh` available → live mode (real API calls)
+2. No fixtures + `gh` available → live mode (`PESTER_LIVE_GH=1` also enables auto-refresh)
 3. No fixtures + no `gh` → skip mode (`requires-gh` tests skipped with a warning)
 
 **`mergedAt` normalization**: at fixture-load time, all timestamps are shifted uniformly so that the

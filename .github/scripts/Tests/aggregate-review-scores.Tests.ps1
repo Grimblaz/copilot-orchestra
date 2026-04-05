@@ -25,12 +25,12 @@
 
       Toggle:
         Default (no env var)  → fixture mode (fixtures must be present)
-        PESTER_LIVE_GH=1      → live mode  (real gh CLI calls; auto-refreshes fixtures)
+        PESTER_LIVE_GH=1      → live mode  (real gh CLI calls; auto-refreshes fixtures on write-back)
 
       3-way fallback:
         (1) Fixture files present + PESTER_LIVE_GH != '1' → fixture mode  (fast, offline)
-        (2) No fixtures + PESTER_LIVE_GH=1 + gh available → live mode     (real API calls)
-        (3) No fixtures + no gh                           → skip mode     (requires-gh tests skipped)
+        (2) No fixtures + gh available → live mode (PESTER_LIVE_GH=1 also enables auto-refresh)
+        (3) No fixtures + no gh          → skip mode     (requires-gh tests skipped)
 
       Auto-refresh:
         Running with PESTER_LIVE_GH=1 writes fresher fixture files after the bootstrap
@@ -354,34 +354,39 @@ exit 0
 
             # Write each fixture only if content changed (SHA256 hash comparison)
             $hashAlgo = [System.Security.Cryptography.SHA256]::Create()
-            $hashContent = {
-                param([string]$Content)
-                $bytes = [System.Text.Encoding]::UTF8.GetBytes($Content)
-                [System.Convert]::ToBase64String($hashAlgo.ComputeHash($bytes))
+            try {
+                $hashContent = {
+                    param([string]$Content)
+                    $bytes = [System.Text.Encoding]::UTF8.GetBytes($Content)
+                    [System.Convert]::ToBase64String($hashAlgo.ComputeHash($bytes))
+                }
+
+                New-Item -ItemType Directory -Path $script:FixtureDir -Force | Out-Null
+
+                if ($refreshDocsJson) {
+                    $newHash = & $hashContent -Content $refreshDocsJson
+                    $existingHash = if (Test-Path $script:FixtureDocsPath) {
+                        & $hashContent -Content (Get-Content -Raw $script:FixtureDocsPath)
+                    }
+                    else { '' }
+                    if ($newHash -ne $existingHash) {
+                        $refreshDocsJson | Set-Content -Path $script:FixtureDocsPath -Encoding UTF8
+                    }
+                }
+
+                if ($refreshOrchJson) {
+                    $newHash = & $hashContent -Content $refreshOrchJson
+                    $existingHash = if (Test-Path $script:FixtureOrchPath) {
+                        & $hashContent -Content (Get-Content -Raw $script:FixtureOrchPath)
+                    }
+                    else { '' }
+                    if ($newHash -ne $existingHash) {
+                        $refreshOrchJson | Set-Content -Path $script:FixtureOrchPath -Encoding UTF8
+                    }
+                }
             }
-
-            New-Item -ItemType Directory -Path $script:FixtureDir -Force | Out-Null
-
-            if ($refreshDocsJson) {
-                $newHash = & $hashContent -Content $refreshDocsJson
-                $existingHash = if (Test-Path $script:FixtureDocsPath) {
-                    & $hashContent -Content (Get-Content -Raw $script:FixtureDocsPath)
-                }
-                else { '' }
-                if ($newHash -ne $existingHash) {
-                    $refreshDocsJson | Set-Content -Path $script:FixtureDocsPath -Encoding UTF8
-                }
-            }
-
-            if ($refreshOrchJson) {
-                $newHash = & $hashContent -Content $refreshOrchJson
-                $existingHash = if (Test-Path $script:FixtureOrchPath) {
-                    & $hashContent -Content (Get-Content -Raw $script:FixtureOrchPath)
-                }
-                else { '' }
-                if ($newHash -ne $existingHash) {
-                    $refreshOrchJson | Set-Content -Path $script:FixtureOrchPath -Encoding UTF8
-                }
+            finally {
+                $hashAlgo.Dispose()
             }
         }
 
