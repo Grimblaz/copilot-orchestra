@@ -460,6 +460,8 @@ Passing `-HealthReport` to `aggregate-review-scores.ps1` (or `Invoke-AggregateRe
 
 **Category alias normalization** (also Issue #259): `$accumulateFinding` now normalizes `simplicity → implementation-clarity` *and* `documentation → documentation-audit` before accumulation. Both aliases are accepted from older pipeline-metrics blocks and mapped to the canonical 7-category taxonomy before Hotspots and Prosecution Depth are computed.
 
+**Lateral-completeness check** (Issue #266): Code-Critic §6 Principle 2 now includes a lateral-completeness sub-bullet — when a PR extends a normalization block, reviewers must scan the full `$known*` canonical set, not just the value being added.
+
 ### Process-Review Integration
 
 Process-Review §4.7 runs the aggregation script automatically. Recommendations follow defined signal thresholds:
