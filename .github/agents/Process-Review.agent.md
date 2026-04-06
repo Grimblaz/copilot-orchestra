@@ -593,7 +593,7 @@ For each proposal from Step 3 where `previously_proposed: false`:
    Parse the exit code and stdout for the result summary.
 
 4. **Handle action results** (Process-Review applies semantic judgment):
-   - `consolidation-candidate` → include in report: "Suggested merge with issue #{ConsolidationTarget}". Apply §2d semantic judgment: assess principle-level similarity between proposed and existing issue; check prevention alternative per §2d Step 2. If merge is appropriate, comment on existing issue; if not, proceed with fresh creation by re-invoking with the `consolidation-candidate` excluded from §2d search
+   - `consolidation-candidate` → include in report: "Suggested merge with issue #{ConsolidationTarget}". Apply §2d semantic judgment: assess principle-level similarity between proposed and existing issue; check prevention alternative per §2d Step 2. If merge is appropriate, comment on existing issue; if not, proceed with fresh creation by re-invoking with `-SkipConsolidation` to bypass Gate 1 (§2d consolidation check)
    - `skipped-dedup` → log "previously proposed" in report
    - `created` → include issue URL and classification level in report. Mark `previously_proposed: true` for pattern
    - `error` → log error, leave `previously_proposed: false` for retry on next calibration run

@@ -898,7 +898,7 @@ Dedicated script for creating `[Systemic Fix]` GitHub issues from Process-Review
 
 #### Parameters
 
-9 mandatory parameters (`-PatternKey`, `-EvidencePrs`, `-FirstEmittedAt`, `-FixTypeLevel`, `-TargetFile`, `-ProposedChange`, `-SystemicFixType`, `-Repo`, `-UpstreamPreflightPassed`) plus 5 optional (`-CalibrationPath`, `-ComplexityJsonPath`, `-GhCliPath` (default `'gh'`), `-FixTypeOverride`, `-Labels` (default `@('priority: medium')`)).
+9 mandatory parameters (`-PatternKey`, `-EvidencePrs`, `-FirstEmittedAt`, `-FixTypeLevel`, `-TargetFile`, `-ProposedChange`, `-SystemicFixType`, `-Repo`, `-UpstreamPreflightPassed`) plus 6 optional (`-CalibrationPath`, `-ComplexityJsonPath`, `-GhCliPath` (default `'gh'`), `-FixTypeOverride`, `-Labels` (default `@('priority: medium')`), `-SkipConsolidation` — `[switch]` Bypasses Gate 1 (§2d consolidation check); used by Process-Review when re-invoking after semantic judgment).
 
 #### Result Contract (D-263-5)
 
@@ -911,7 +911,7 @@ Returns a structured hashtable:
     Output              = '...'
     Error               = $null | '...'
     IssueNumber         = $null | 42
-    ConsolidationTarget = $null | @{ Number = 38; Title = '...' }
+    ConsolidationTarget = $null | 38              # int — issue number, or $null if no candidate found
     ClassifiedLevel     = $null | 4          # int — rule-table default for SystemicFixType
     SuggestedLevel      = $null | 1          # int — keyword-heuristic suggestion
     CeilingAdvisory     = $null | '...'
@@ -923,9 +923,9 @@ Returns a structured hashtable:
 Gates execute in order; each gate can short-circuit with a non-`created` action:
 
 1. **§2d consolidation-candidate check** — `Search-CIIConsolidationCandidate` queries open `[Systemic Fix]` issues via `gh issue list` (WITHOUT `--search`). Returns `consolidation-candidate` to caller for semantic judgment rather than auto-consolidating (D-263-3). Ordered first per safe-operations.instructions.md §2d contract (D-263-1).
-2. **Calibration dedup** — `Test-CIIPatternKeyExists` checks `proposals_emitted` for matching `pattern_key` with a non-null `fix_issue_number` (presence-only check). If both match, returns dedup-skip; if `fix_issue_number` is absent or null, proceeds to Gate 3 (backward compatibility for pre-linkage entries). Future enhancement: check whether the linked issue is closed and re-propose if so.
+2. **Calibration dedup** — `Test-CIIPatternKeyExists` checks `proposals_emitted` for matching `pattern_key` with a non-null `fix_issue_number` (presence-only check). If both match, returns skipped-dedup; if `fix_issue_number` is absent or null, proceeds to Gate 3 (backward compatibility for pre-linkage entries). Future enhancement: check whether the linked issue is closed and re-propose if so.
 3. **GitHub search dedup** — `Search-CIIGitHubDedup` queries via `gh issue list` WITH `--search` for title-based dedup.
-4. **D10 ceiling advisory** — `Get-CIICeilingAdvisory` runs `measure-guidance-complexity.ps1` and inspects `.agent.md` files at level ≥ 4. Advisory only — included in issue body but does not block creation (D-263-2).
+4. **D10 ceiling advisory** — `Get-CIICeilingAdvisory` reads pre-computed JSON from the `-ComplexityJsonPath` parameter (produced by §4.7 Step 0's `measure-guidance-complexity.ps1` invocation) and inspects `.agent.md` files at level ≥ 4. Advisory only — included in issue body but does not block creation (D-263-2).
 5. **Classification** — `Get-CIIClassifiedLevel` applies a rule table mapping `SystemicFixType` to level, then a keyword heuristic on `ProposedChange` text for agent-prompt detection (D-263-4).
 6. **Issue creation** — `gh issue create` via the injected `-GhCliPath`.
 7. **Calibration linkage** — `Update-CIICalibrationLinkage` writes `fix_issue_number` back to `proposals_emitted` using atomic `tmp + validate + rename`. Unknown fields in pre-existing entries are preserved (D-263-7).

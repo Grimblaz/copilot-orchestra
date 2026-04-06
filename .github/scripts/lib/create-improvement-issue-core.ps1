@@ -24,8 +24,6 @@ function Test-CIIPatternKeyExists {
 
 function Search-CIIConsolidationCandidate {
     param(
-        [string]$SystemicFixType,
-        [string]$TargetFile,
         [string]$Repo,
         [string]$GhCliPath
     )
@@ -69,6 +67,7 @@ function Get-CIICeilingAdvisory {
     if (-not $ComplexityJsonPath -or -not (Test-Path $ComplexityJsonPath)) { return $null }
 
     $complexity = Get-Content -Raw -Path $ComplexityJsonPath | ConvertFrom-Json
+    if ($null -eq $complexity) { return $null }
     $basename = Split-Path -Leaf $TargetFile
     $overCeiling = @($complexity.agents_over_ceiling)
 
@@ -147,7 +146,9 @@ function New-CIIIssueBody {
     )
 
     $sb = [System.Text.StringBuilder]::new()
-    [void]$sb.AppendLine("## [Systemic Fix] $SystemicFixType — $(($PatternKey -split '::')[1])")
+    $parts = $PatternKey -split '::'
+    $category = if ($parts.Count -gt 1) { $parts[1] } else { $PatternKey }
+    [void]$sb.AppendLine("## [Systemic Fix] $SystemicFixType — $category")
     [void]$sb.AppendLine('')
     [void]$sb.AppendLine("**Pattern key**: ``$PatternKey``")
     [void]$sb.AppendLine("**Target file**: ``$TargetFile``")
@@ -192,6 +193,7 @@ function Update-CIICalibrationLinkage {
     if (-not $CalibrationPath -or -not (Test-Path $CalibrationPath)) { return }
 
     $cal = Get-Content -Raw -Path $CalibrationPath | ConvertFrom-Json
+    if ($null -eq $cal) { return }
     $proposals = @(if ($cal.PSObject.Properties.Name -contains 'proposals_emitted') { $cal.proposals_emitted } else { @() })
 
     $changed = $false
@@ -281,6 +283,7 @@ function Invoke-CreateImprovementIssue {
     # ── Gate 2: Calibration dedup ────────────────────────────────
     if ($CalibrationPath -and (Test-Path $CalibrationPath)) {
         $cal = Get-Content -Raw -Path $CalibrationPath | ConvertFrom-Json
+        if ($null -eq $cal) { $cal = [PSCustomObject]@{} }
         $proposals = @(if ($cal.PSObject.Properties.Name -contains 'proposals_emitted') { $cal.proposals_emitted } else { @() })
         if (Test-CIIPatternKeyExists -Proposals $proposals -PatternKey $PatternKey) {
             return New-CIIResult -Action 'skipped-dedup' `
@@ -319,7 +322,9 @@ function Invoke-CreateImprovementIssue {
         -FixTypeOverride $FixTypeOverride `
         -UpstreamPreflightPassed $UpstreamPreflightPassed
 
-    $title = "[Systemic Fix] $SystemicFixType — $(($PatternKey -split '::')[1])"
+    $parts = $PatternKey -split '::'
+    $category = if ($parts.Count -gt 1) { $parts[1] } else { $PatternKey }
+    $title = "[Systemic Fix] $SystemicFixType — $category"
     $labelArgs = @($Labels | ForEach-Object { '--label'; $_ })
 
     $output = & $GhCliPath issue create --repo $Repo --title $title --body $body @labelArgs 2>$null
