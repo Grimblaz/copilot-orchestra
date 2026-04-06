@@ -1,5 +1,4 @@
 .copilot-tracking/
 .copilot-tracking-archive/
 plan-issue-*.md
-pester-results.txt
-pester-live-results.txt
+pester-*.txt

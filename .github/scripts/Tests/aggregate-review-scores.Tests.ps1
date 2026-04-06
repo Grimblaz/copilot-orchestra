@@ -2243,6 +2243,55 @@ exit 0
             $result.Output | Should -Match 'previously_proposed:\s*false' `
                 -Because 'expanded evidence set (superset) must not match prior proposal -- new proposal expected'
         }
+
+        It 'write-back: preserves unknown fields in pre-existing proposals_emitted entries' -Tag 'requires-gh' {
+            if (-not $script:GhAvailable) { Set-ItResult -Skipped -Because 'gh CLI not found'; return }
+
+            # ARRANGE: pre-existing entry with extra field (fix_issue_number) that the runtime does not create.
+            $workDir = & $script:NewWorkDir
+            $preExisting = @(
+                [ordered]@{
+                    pattern_key      = 'skill:architecture'
+                    evidence_prs     = @(7701, 7702)
+                    first_emitted_at = '2025-06-01T00:00:00Z'
+                    fix_issue_number = 999
+                }
+            )
+            $findings = @(
+                [ordered]@{ id = 'F1'; category = 'security'; judge_ruling = 'finding-sustained'
+                    severity = 'medium'; points = 5; review_stage = 'main'
+                    systemic_fix_type = 'instruction'
+                }
+            )
+            $calib = & $script:BuildSystemicCalibration `
+                -Findings $findings `
+                -PrNumbers @($script:SystemicPr1, $script:SystemicPr2) `
+                -ProposalsEmitted $preExisting
+            $calibPath = Join-Path $workDir 'proposals-unknown-fields.json'
+            & $script:WriteCalibrationFile -Path $calibPath -Data $calib
+
+            # ACT
+            $result = & $script:InvokeAggregate `
+                -ExtraArgs @('-CalibrationFile', $calibPath)
+
+            # ASSERT: run succeeded
+            $result.ExitCode | Should -Be 0
+
+            # ASSERT: pre-existing entry retains the unknown field through write-back
+            $readBack = Get-Content $calibPath -Raw | ConvertFrom-Json -AsHashtable
+            $readBack['proposals_emitted'] | Should -Not -BeNullOrEmpty `
+                -Because 'proposals_emitted must exist after write-back'
+            $entry = @($readBack['proposals_emitted']) | Where-Object { $_['pattern_key'] -eq 'skill:architecture' }
+            $entry | Should -Not -BeNullOrEmpty `
+                -Because 'pre-existing entry (skill:architecture) must survive write-back'
+            @($entry)[0]['fix_issue_number'] | Should -Be 999 `
+                -Because 'unknown fields (fix_issue_number) in pre-existing proposals_emitted entries must survive write-back (D-263-7)'
+
+            # ASSERT: new threshold-met entry also added alongside
+            $keys = @($readBack['proposals_emitted']) | ForEach-Object { $_['pattern_key'] }
+            $keys | Should -Contain 'instruction:security' `
+                -Because 'new threshold-met pattern must be added alongside preserved pre-existing entries'
+        }
     }
 
     # ==================================================================

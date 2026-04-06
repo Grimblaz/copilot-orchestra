@@ -787,6 +787,13 @@ Extends `aggregate-review-scores.ps1` to aggregate sustained findings by `system
 | D52 | Kaizen metric location | Script computes and emits as `kaizen_metric:` in YAML output | Deterministic, Pester-testable; script already has prosecution_depth data (`categories_at_skip` / `categories_at_light`). |
 | D53 | Upstream flow integration | §4.9 has own inline upstream mechanics (same patterns as §4.8, `[Systemic Fix]` format) | §4.8 (gotchas) runs only during full retrospective; root cause analysis runs during calibration (all modes). §4.9 must be self-contained. |
 | D54 | Approval UX | Code-Conductor orchestrates proposal application through normal change flow | Process-Review is advisory only; Code-Conductor handles all change orchestration. User reviews proposals in calibration report, then applies via normal flow. |
+| D-263-1 | §2d gate ordering | §2d consolidation check runs first (before calibration dedup and GitHub search) | safe-operations.instructions.md §2d contract mandates this order |
+| D-263-2 | D10 ceiling advisory | Advisory only (included in issue body) rather than hard rejection | Matches D2/D8 convention — ceiling exceeding alone should not block proposals |
+| D-263-3 | Consolidation-candidate action | Return `consolidation-candidate` to caller rather than auto-consolidating | Preserves §2d advisory character — semantic judgment belongs to Process-Review, not the script |
+| D-263-4 | Classification heuristic | Keyword heuristic on `ProposedChange` text for agent-prompt level classification | More accurate than `PatternKey` alone; `ProposedChange` contains the specific guardrail description |
+| D-263-5 | Result contract | Structured hashtable with 9 named fields | Enables programmatic handling of all action outcomes (created/skipped/consolidated/error) |
+| D-263-6 | No dot-source of aggregate lib | CII-prefix copies of shared helpers | Prevents scope pollution across dot-sourced files in test and production contexts |
+| D-263-7 | Field preservation | Unknown fields in `proposals_emitted` entries preserved during write-back | Forward compatibility for future schema additions |
 
 ### Script Extension: `systemic_patterns:` Output
 
@@ -884,6 +891,57 @@ Labels: enhancement, priority: medium
 - **Evidence**: {N} sustained findings across {N} PRs in downstream repo
 - **Source**: Discovered via calibration analysis in {downstream-repo}
 ```
+
+### Automated Issue Creation: `create-improvement-issue.ps1`
+
+Dedicated script for creating `[Systemic Fix]` GitHub issues from Process-Review §4.9 root cause analysis output. Follows the `write-calibration-entry.ps1` pattern: a thin CLI wrapper at `.github/scripts/create-improvement-issue.ps1` delegates to `Invoke-CreateImprovementIssue` in `.github/scripts/lib/create-improvement-issue-core.ps1`.
+
+#### Parameters
+
+9 mandatory parameters (`-PatternKey`, `-EvidencePrs`, `-FirstEmittedAt`, `-FixTypeLevel`, `-TargetFile`, `-ProposedChange`, `-SystemicFixType`, `-Repo`, `-UpstreamPreflightPassed`) plus 6 optional (`-CalibrationPath`, `-ComplexityJsonPath`, `-GhCliPath` (default `'gh'`), `-FixTypeOverride`, `-Labels` (default `@('priority: medium')`), `-SkipConsolidation` — `[switch]` Bypasses Gate 1 (§2d consolidation check); used by Process-Review when re-invoking after semantic judgment).
+
+#### Result Contract (D-263-5)
+
+Returns a structured hashtable:
+
+```powershell
+@{
+    ExitCode            = 0 | 1
+    Action              = 'created' | 'skipped-dedup' | 'consolidation-candidate' | 'error'
+    Output              = '...'
+    Error               = $null | '...'
+    IssueNumber         = $null | 42
+    ConsolidationTarget = $null | 38              # int — issue number, or $null if no candidate found
+    ClassifiedLevel     = $null | 4          # int — rule-table default for SystemicFixType
+    SuggestedLevel      = $null | 1          # int — keyword-heuristic suggestion
+    CeilingAdvisory     = $null | '...'
+}
+```
+
+#### 7-Gate Pipeline
+
+Gates execute in order; each gate can short-circuit with a non-`created` action:
+
+1. **§2d consolidation-candidate check** — `Search-CIIConsolidationCandidate` queries open `[Systemic Fix]` issues via `gh issue list` (WITHOUT `--search`). Returns `consolidation-candidate` to caller for semantic judgment rather than auto-consolidating (D-263-3). Ordered first per safe-operations.instructions.md §2d contract (D-263-1).
+2. **Calibration dedup** — `Test-CIIPatternKeyExists` checks `proposals_emitted` for matching `pattern_key` with a non-null `fix_issue_number` (presence-only check). If both match, returns skipped-dedup; if `fix_issue_number` is absent or null, proceeds to Gate 3 (backward compatibility for pre-linkage entries). Future enhancement: check whether the linked issue is closed and re-propose if so.
+3. **GitHub search dedup** — `Search-CIIGitHubDedup` queries via `gh issue list` WITH `--search` for title-based dedup.
+4. **D10 ceiling advisory** — `Get-CIICeilingAdvisory` reads pre-computed JSON from the `-ComplexityJsonPath` parameter (produced by §4.7 Step 0's `measure-guidance-complexity.ps1` invocation) and inspects `.agent.md` files at level ≥ 4. Advisory only — included in issue body but does not block creation (D-263-2).
+5. **Classification** — `Get-CIIClassifiedLevel` applies a rule table mapping `SystemicFixType` to level, then a keyword heuristic on `ProposedChange` text for agent-prompt detection (D-263-4).
+6. **Issue creation** — `gh issue create` via the injected `-GhCliPath`.
+7. **Calibration linkage** — `Update-CIICalibrationLinkage` writes `fix_issue_number` back to `proposals_emitted` using atomic `tmp + validate + rename`. Unknown fields in pre-existing entries are preserved (D-263-7).
+
+#### CII Helper Prefix Convention (D-263-6)
+
+All private helpers use the `CII` prefix (e.g., `Get-CIIFlexProperty`, `Test-CIIPatternKeyExists`, `Search-CIIConsolidationCandidate`). Shared helpers like `Get-FlexProperty` are copied as CII-prefixed versions rather than dot-sourcing `aggregate-review-scores-core.ps1`, avoiding scope pollution across dot-sourced files.
+
+#### Delegation Boundary
+
+Process-Review §4.9 Step 4 delegates to `create-improvement-issue.ps1` rather than calling `gh issue create` directly. §4.9 constructs parameters from its root cause analysis output (Steps 1–3) and handles four action results:
+
+- `consolidation-candidate` — semantic judgment (§4.9 decides whether to consolidate or create new)
+- `skipped-dedup` — log only
+- `created` — include issue URL in calibration report
+- `error` — log and leave for retry
 
 ### Approval UX
 

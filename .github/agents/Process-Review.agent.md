@@ -554,38 +554,51 @@ guardrail_proposals:
     prevention_gate_outcome: created-new  # redirected=Step1-match; reframed=Step2-structural; created-new=Step3; exempt=outside-§2d-scope — outcome of the §2d prevention-analysis advisory applied before creating this upstream proposal
 ```
 
-**Step 4 — Upstream proposals** (when `systemic_fix_type` targets copilot-orchestra shared files):
+**Step 4 — Create improvement issues** (delegated to `create-improvement-issue.ps1`):
 
-Before creating any upstream issue, apply the prevention-analysis advisory from `safe-operations.instructions.md` §2d.
+For each proposal from Step 3 where `previously_proposed: false`:
 
-1. Read `copilot-orchestra-repo` from `.github/copilot-instructions.md`
-2. If absent → mark proposal `upstream: true` in report, log "upstream repo not configured" and skip issue creation
-3. Pre-flight access check: `gh repo view {copilot-orchestra-repo} --json name 2>&1` — if non-zero exit → mark `upstream: true`, log access failure, skip issue creation
-4. Dedup search: `gh issue list --repo {copilot-orchestra-repo} --search '"[Systemic Fix] {category} [{systemic_fix_type}]" in:title' --state all --json number --jq length`
-   - If `$LASTEXITCODE -ne 0` → skip upstream issue creation, log error
-   - If result > 0 → duplicate found, skip
-   - If result = 0 → create upstream issue:
+1. **Resolve upstream pre-flight** (retained from prior Step 4):
+   - Read `copilot-orchestra-repo` from `.github/copilot-instructions.md`
+   - If absent → set `UpstreamPreflightPassed = $false`, log "upstream repo not configured"
+   - Pre-flight access check: `gh repo view {copilot-orchestra-repo} --json name 2>&1` — if non-zero exit → set `UpstreamPreflightPassed = $false`, log access failure
+   - If access check passes → set `UpstreamPreflightPassed = $true`
 
-> **Note**: Unlike §4.8, §4.9 requires no persistent error-state marker. When dedup search fails, skipping issue creation leaves `previously_proposed: false` in script output — the next calibration run will retry automatically.
+2. **Construct parameter set** from Steps 2–3 outputs:
 
-```markdown
-Title: [Systemic Fix] {category} [{systemic_fix_type}]: {brief description}
-Labels: enhancement, priority: medium
+   ```powershell
+   $params = @{
+       PatternKey              = '{systemic_fix_type}::{category}'
+       EvidencePrs             = @({pr_numbers from evidence})
+       FirstEmittedAt          = '{first_emitted_at from pattern}'
+       FixTypeLevel            = {level from classification table}
+       TargetFile              = '{target_file from proposal}'
+       ProposedChange          = '{proposed_change from proposal}'
+       SystemicFixType         = '{systemic_fix_type from pattern}'
+       Repo                    = '{copilot-orchestra-repo or current repo}'
+       UpstreamPreflightPassed = ${UpstreamPreflightPassed}
+       CalibrationPath         = '{calibration file path}'
+       ComplexityJsonPath      = '{$complexityTempFile from §4.7}'
+   }
+   # Optional: -FixTypeOverride if override applies
+   # Optional: -Labels for non-default labels
+   ```
 
-## Systemic Fix Proposal
+3. **Invoke the script** via terminal:
 
-- **Category**: {category}
-- **Systemic fix type**: {systemic_fix_type}
-- **Pattern**: {description of recurring defect pattern}
-- **Target file**: {file in copilot-orchestra}
-- **Proposed change**: {specific rule or strengthening}
-- **Evidence**: {N} sustained findings across {N} PRs in downstream repo
-- **Source**: Discovered via calibration analysis in {downstream-repo}
+   ```powershell
+   pwsh -NoProfile -NonInteractive -File .github/scripts/create-improvement-issue.ps1 @params
+   ```
 
-## Context
+   Parse the exit code and stdout for the result summary.
 
-{Additional context about why this pattern recurs and what guardrail would prevent it}
-```
+4. **Handle action results** (Process-Review applies semantic judgment):
+   - `consolidation-candidate` → include in report: "Suggested merge with issue #{ConsolidationTarget}". Apply §2d semantic judgment: assess principle-level similarity between proposed and existing issue; check prevention alternative per §2d Step 2. If merge is appropriate, comment on existing issue; if not, proceed with fresh creation by re-invoking with `-SkipConsolidation` to bypass Gate 1 (§2d consolidation check)
+   - `skipped-dedup` → log "previously proposed" in report
+   - `created` → include issue URL and classification level in report. Mark `previously_proposed: true` for pattern
+   - `error` → log error, leave `previously_proposed: false` for retry on next calibration run
+
+> **Note**: Unlike §4.8, §4.9 requires no persistent error-state marker. When the script returns `error`, skipping issue creation leaves `previously_proposed: false` — the next calibration run will retry automatically. The script handles §2d surface search, calibration dedup (pattern_key-only with fix_issue_number check), GitHub search dedup, D10 ceiling advisory, D-259-7 classification, issue creation, and `fix_issue_number` calibration linkage mechanically; Process-Review retains pattern analysis (Steps 1–2), proposal formatting (Step 3), upstream repo resolution + pre-flight access check, §2d semantic judgment for `consolidation-candidate` results, error recovery, and report emission.
 
 **Report format**:
 
