@@ -545,7 +545,7 @@ No gotchas section here.
                 -RootPath $root `
                 -GuidanceComplexityScriptPath $mockScript `
                 -ScriptsPath (Join-Path $root '.github\scripts') `
-                -InformationVariable infoOutput 6>&1
+                -InformationVariable infoOutput
 
             $summaryLine = ($infoOutput | Out-String) + ($result | Out-String)
             # The function should write exactly one summary line matching this pattern

@@ -990,7 +990,9 @@ Background terminals spawned via `run_in_terminal(isBackground: true)` persist i
 3. Output shows ongoing activity (no PS prompt at end) → **active** → preserve.
 4. Output is empty, unclear, or `get_terminal_output` fails → **unknown** → preserve.
 
-Only kill terminals with **confirmed completion**. All other states → preserve.
+> **Note**: `kill_terminal` is not currently in the VS Code deferred tools inventory. When the tool is unavailable, the protocol degrades gracefully to **preserve-all** — all terminals are preserved regardless of completion status. The completion-check logic above is retained so the protocol can be re-activated when `kill_terminal` becomes available.
+
+Only kill terminals with **confirmed completion**. All other states → preserve. When `kill_terminal` is unavailable, log the preserve-all degradation and continue.
 
 **Error tolerance**: All `kill_terminal` calls are non-fatal. If a kill fails (terminal already gone, invalid ID, API error), log the failure and continue. Cleanup must never block orchestration flow.
 
