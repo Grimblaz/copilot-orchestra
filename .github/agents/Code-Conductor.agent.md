@@ -970,6 +970,37 @@ All terminal execution must be non-interactive and automation-safe:
 - On command failure, capture stderr/stdout evidence and route via failure triage instead of re-running blindly.
 - If a command is known to be interactive-only, escalate with `#tool:vscode/askQuestions` and provide non-interactive alternatives when possible.
 
+### Terminal Lifecycle Protocol
+
+Background terminals spawned via `run_in_terminal(isBackground: true)` persist indefinitely. In long sessions, dozens of idle shells accumulate and — at scale (~30+) — enter CPU-spin states that degrade the developer's workstation. This protocol prevents accumulation.
+
+**Tracking**: Track terminal IDs returned by your own `run_in_terminal(isBackground: true)` calls in conversation context. No persistent file needed. On context compaction, tracked IDs are lost; per-step cleanup prevents dangerous buildup, and new terminals after compaction are re-tracked.
+
+**Cleanup triggers** (3-tier):
+
+1. **Post-step**: After each plan step's validation passes and before marking `✅ DONE`, sweep tracked terminal IDs.
+2. **Phase-boundary**: After all implementation steps complete, before entering the review cycle.
+3. **Post-PR**: After PR creation, before user handoff.
+
+**Completion check before kill**:
+
+1. Call `get_terminal_output` for the tracked terminal ID.
+2. Output ends with a PowerShell prompt (`PS ...>`) → **confirmed completed** → safe to `kill_terminal`.
+3. Output shows ongoing activity (no PS prompt at end) → **active** → preserve.
+4. Output is empty, unclear, or `get_terminal_output` fails → **unknown** → preserve.
+
+Only kill terminals with **confirmed completion**. All other states → preserve.
+
+**Error tolerance**: All `kill_terminal` calls are non-fatal. If a kill fails (terminal already gone, invalid ID, API error), log the failure and continue. Cleanup must never block orchestration flow.
+
+**Logging**: After each sweep, log: `"Terminal cleanup: killed N completed, preserved M active, K unknown/already-gone"`.
+
+**Scope boundaries**:
+
+- Only terminals CC created via `isBackground: true` are tracked and eligible for cleanup.
+- Cross-window safety is inherent — VS Code terminal IDs are window-scoped.
+- Subagent terminals are not tracked (subagents follow `isBackground: false` preference).
+
 ## Context Management for Long Sessions
 
 VS Code 1.110+ auto-compacts conversation context automatically when the context window fills. This can happen silently mid-orchestration — do not wait for the user to notice.
