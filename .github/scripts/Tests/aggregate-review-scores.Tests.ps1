@@ -879,6 +879,9 @@ exit 0
             # so the script falls back to calibration entries for their data.
             $script:NonMetricsPrNumbers = & $script:GetNonMetricsPrNumbers
 
+            # 10 additional PRs for fixture padding — avoids overlap with first 3 used by test fixtures
+            $script:PaddingPrNumbers = @($script:NonMetricsPrNumbers | Select-Object -Skip 3 -First 10)
+
             # Query a public repo that has no pipeline-metrics in any PR body,
             # giving pure calibration-only data for isolation tests.
             if ($script:FixtureMode) {
@@ -935,7 +938,8 @@ exit 0
                     [string]$Override = $null,
                     [object[]]$ReactivationEvents = $null,
                     [object]$DepthState = $null,
-                    [int[]]$PrNumbers = @(9901)
+                    [int[]]$PrNumbers = @(9901),
+                    [int[]]$PaddingPrNumbers = @()
                 )
                 $entries = @()
                 foreach ($prNum in $PrNumbers) {
@@ -950,6 +954,33 @@ exit 0
                             pass_3_findings      = 0
                             defense_disproved    = 0
                             judge_accepted       = $Findings.Count
+                            judge_rejected       = 0
+                            judge_deferred       = 0
+                        }
+                    }
+                }
+                # Padding entries: minimal non-systemic findings to boost effective_sample_size
+                foreach ($padPr in $PaddingPrNumbers) {
+                    $entries += [ordered]@{
+                        pr_number  = $padPr
+                        created_at = '2026-03-01T10:00:00Z'
+                        findings   = @(
+                            [ordered]@{
+                                id           = 'PAD'
+                                category     = 'documentation-audit'
+                                judge_ruling = 'finding-sustained'
+                                severity     = 'low'
+                                points       = 1
+                                review_stage = 'main'
+                            }
+                        )
+                        summary    = [ordered]@{
+                            prosecution_findings = 1
+                            pass_1_findings      = 1
+                            pass_2_findings      = 0
+                            pass_3_findings      = 0
+                            defense_disproved    = 0
+                            judge_accepted       = 1
                             judge_rejected       = 0
                             judge_deferred       = 0
                         }
@@ -997,7 +1028,7 @@ exit 0
                     severity = 'medium'; points = 5; review_stage = 'main'
                 }
             )
-            $calib = & $script:BuildDepthCalibration -Findings $findings -PrNumbers @($script:NonMetricsPrNumbers | Select-Object -First 1)
+            $calib = & $script:BuildDepthCalibration -Findings $findings -PrNumbers @($script:NonMetricsPrNumbers | Select-Object -First 1) -PaddingPrNumbers $script:PaddingPrNumbers
             $calibPath = Join-Path $workDir 'depth-calib.json'
             & $script:WriteCalibrationFile -Path $calibPath -Data $calib
 
@@ -1019,7 +1050,7 @@ exit 0
                     severity = 'medium'; points = 5; review_stage = 'main'
                 }
             )
-            $calib = & $script:BuildDepthCalibration -Findings $findings -PrNumbers @($script:NonMetricsPrNumbers | Select-Object -First 1)
+            $calib = & $script:BuildDepthCalibration -Findings $findings -PrNumbers @($script:NonMetricsPrNumbers | Select-Object -First 1) -PaddingPrNumbers $script:PaddingPrNumbers
             $calibPath = Join-Path $workDir 'depth-calib.json'
             & $script:WriteCalibrationFile -Path $calibPath -Data $calib
 
@@ -1131,7 +1162,7 @@ exit 0
 
             $categoryMatch = [regex]::Match(
                 $result.Output,
-                '(?ms)^    implementation-clarity:\r?\n(?:      .*\r?\n){0,5}'
+                '(?m)^    implementation-clarity:\r?\n(?:      .*\r?\n){0,5}'
             )
             $categoryMatch.Success | Should -BeTrue `
                 -Because 'implementation-clarity must appear in prosecution_depth output'
@@ -1186,7 +1217,7 @@ exit 0
                     severity = 'medium'; points = 5; review_stage = 'main'
                 }
             )
-            $calib = & $script:BuildDepthCalibration -Findings $findings -Override 'full'
+            $calib = & $script:BuildDepthCalibration -Findings $findings -Override 'full' -PrNumbers @($script:NonMetricsPrNumbers | Select-Object -First 1) -PaddingPrNumbers $script:PaddingPrNumbers
             $calibPath = Join-Path $workDir 'override-calib.json'
             & $script:WriteCalibrationFile -Path $calibPath -Data $calib
 
@@ -1223,7 +1254,7 @@ exit 0
                 }
             )
             $calib = & $script:BuildDepthCalibration -Findings $findings `
-                -ReactivationEvents $reactivationEvents
+                -ReactivationEvents $reactivationEvents -PrNumbers @($script:NonMetricsPrNumbers | Select-Object -First 1) -PaddingPrNumbers $script:PaddingPrNumbers
             $calibPath = Join-Path $workDir 'reactivation-calib.json'
             & $script:WriteCalibrationFile -Path $calibPath -Data $calib
 
@@ -1254,7 +1285,7 @@ exit 0
                     skip_first_observed_at = $staleDate
                 }
             }
-            $calib = & $script:BuildDepthCalibration -Findings $findings -DepthState $depthState
+            $calib = & $script:BuildDepthCalibration -Findings $findings -DepthState $depthState -PrNumbers @($script:NonMetricsPrNumbers | Select-Object -First 1) -PaddingPrNumbers $script:PaddingPrNumbers
             $calibPath = Join-Path $workDir 'timedecay-calib.json'
             & $script:WriteCalibrationFile -Path $calibPath -Data $calib
 
@@ -1296,7 +1327,7 @@ exit 0
                 }
             }
             $calib = & $script:BuildDepthCalibration -Findings $findings `
-                -Override 'full' -ReactivationEvents $reactivationEvents -DepthState $depthState
+                -Override 'full' -ReactivationEvents $reactivationEvents -DepthState $depthState -PrNumbers @($script:NonMetricsPrNumbers | Select-Object -First 1) -PaddingPrNumbers $script:PaddingPrNumbers
             $calibPath = Join-Path $workDir 'priority-calib.json'
             & $script:WriteCalibrationFile -Path $calibPath -Data $calib
 
@@ -1505,6 +1536,9 @@ exit 0
             if (-not $script:NonMetricsPrNumbers) {
                 $script:NonMetricsPrNumbers = @(9901, 9902)
             }
+            if (-not $script:PaddingPrNumbers) {
+                $script:PaddingPrNumbers = @($script:NonMetricsPrNumbers | Select-Object -Skip 3 -First 10)
+            }
             $firstTwo = @($script:NonMetricsPrNumbers | Select-Object -First 2)
             $script:SystemicPr1 = if ($firstTwo.Count -ge 1) { [int]$firstTwo[0] } else { 9901 }
             $script:SystemicPr2 = if ($firstTwo.Count -ge 2) { [int]$firstTwo[1] } else { 9902 }
@@ -1518,7 +1552,8 @@ exit 0
                 param(
                     [object[]]$Findings,
                     [int[]]$PrNumbers = @(9901),
-                    [object[]]$ProposalsEmitted = @()
+                    [object[]]$ProposalsEmitted = @(),
+                    [int[]]$PaddingPrNumbers = @()
                 )
                 $entries = @()
                 foreach ($prNum in $PrNumbers) {
@@ -1533,6 +1568,33 @@ exit 0
                             pass_3_findings      = 0
                             defense_disproved    = 0
                             judge_accepted       = $Findings.Count
+                            judge_rejected       = 0
+                            judge_deferred       = 0
+                        }
+                    }
+                }
+                # Padding entries: minimal non-systemic findings to boost effective_sample_size
+                foreach ($padPr in $PaddingPrNumbers) {
+                    $entries += [ordered]@{
+                        pr_number  = $padPr
+                        created_at = '2026-03-01T10:00:00Z'
+                        findings   = @(
+                            [ordered]@{
+                                id           = 'PAD'
+                                category     = 'documentation-audit'
+                                judge_ruling = 'finding-sustained'
+                                severity     = 'low'
+                                points       = 1
+                                review_stage = 'main'
+                            }
+                        )
+                        summary    = [ordered]@{
+                            prosecution_findings = 1
+                            pass_1_findings      = 1
+                            pass_2_findings      = 0
+                            pass_3_findings      = 0
+                            defense_disproved    = 0
+                            judge_accepted       = 1
                             judge_rejected       = 0
                             judge_deferred       = 0
                         }
@@ -1565,7 +1627,8 @@ exit 0
             }
             $calib = & $script:BuildSystemicCalibration `
                 -Findings @($finding) `
-                -PrNumbers @($script:SystemicPr1, $script:SystemicPr2)
+                -PrNumbers @($script:SystemicPr1, $script:SystemicPr2) `
+                -PaddingPrNumbers $script:PaddingPrNumbers
             $calibPath = Join-Path $workDir 'systemic-basic.json'
             & $script:WriteCalibrationFile -Path $calibPath -Data $calib
 
@@ -1604,7 +1667,8 @@ exit 0
             )
             $calib = & $script:BuildSystemicCalibration `
                 -Findings $findings `
-                -PrNumbers @($script:SystemicPr1)
+                -PrNumbers @($script:SystemicPr1) `
+                -PaddingPrNumbers $script:PaddingPrNumbers
             $calibPath = Join-Path $workDir 'systemic-threshold.json'
             & $script:WriteCalibrationFile -Path $calibPath -Data $calib
 
@@ -1636,7 +1700,8 @@ exit 0
             )
             $calib = & $script:BuildSystemicCalibration `
                 -Findings $findings `
-                -PrNumbers @($script:SystemicPr1, $script:SystemicPr2)
+                -PrNumbers @($script:SystemicPr1, $script:SystemicPr2) `
+                -PaddingPrNumbers $script:PaddingPrNumbers
             $calibPath = Join-Path $workDir 'systemic-noa.json'
             & $script:WriteCalibrationFile -Path $calibPath -Data $calib
 
@@ -1668,7 +1733,8 @@ exit 0
             )
             $calib = & $script:BuildSystemicCalibration `
                 -Findings $findings `
-                -PrNumbers @($script:SystemicPr1, $script:SystemicPr2)
+                -PrNumbers @($script:SystemicPr1, $script:SystemicPr2) `
+                -PaddingPrNumbers $script:PaddingPrNumbers
             $calibPath = Join-Path $workDir 'systemic-unknown-category.json'
             & $script:WriteCalibrationFile -Path $calibPath -Data $calib
 
@@ -1678,9 +1744,18 @@ exit 0
             $result.ExitCode | Should -Be 0
             $result.Output | Should -Match 'systemic_patterns:' `
                 -Because 'systemic_patterns section must appear when valid known-category findings exist'
-            $result.Output | Should -Match '(?ms)^  systemic_patterns:\r?\n(?:(?!^  \S).*\r?\n)*?      security:' `
+            # Extract systemic_patterns section (non-backtracking: match header,
+            # then capture indented lines until next top-level key or end of string)
+            $sysSectionMatch = [regex]::Match(
+                $result.Output,
+                '(?m)^  systemic_patterns:\r?\n(?:    [^\r\n]+\r?\n)*'
+            )
+            $sysSectionMatch.Success | Should -BeTrue `
+                -Because 'systemic_patterns section must be extractable from output'
+            $sysSection = $sysSectionMatch.Value
+            $sysSection | Should -Match 'security:' `
                 -Because 'known categories must still appear inside the systemic_patterns block for the same fixture'
-            $result.Output | Should -Not -Match '(?ms)^  systemic_patterns:\r?\n(?:(?!^  \S).*\r?\n)*?      unknown-cat:' `
+            $sysSection | Should -Not -Match 'unknown-cat:' `
                 -Because 'unknown categories must be excluded from systemic_patterns'
         }
 
@@ -1696,7 +1771,8 @@ exit 0
             )
             $calib = & $script:BuildSystemicCalibration `
                 -Findings $findings `
-                -PrNumbers @($script:SystemicPr1, $script:SystemicPr2)
+                -PrNumbers @($script:SystemicPr1, $script:SystemicPr2) `
+                -PaddingPrNumbers $script:PaddingPrNumbers
             $calibPath = Join-Path $workDir 'systemic-simplicity-alias.json'
             & $script:WriteCalibrationFile -Path $calibPath -Data $calib
 
@@ -1704,11 +1780,27 @@ exit 0
                 -ExtraArgs @('-CalibrationFile', $calibPath)
 
             $result.ExitCode | Should -Be 0
-            $result.Output | Should -Match '(?ms)^  systemic_patterns:\r?\n(?:(?!^  \S).*\r?\n)*?      implementation-clarity:' `
+            # Extract systemic_patterns section (non-backtracking)
+            $sysSectionMatch = [regex]::Match(
+                $result.Output,
+                '(?m)^  systemic_patterns:\r?\n(?:    [^\r\n]+\r?\n)*'
+            )
+            $sysSectionMatch.Success | Should -BeTrue `
+                -Because 'systemic_patterns section must be extractable from output'
+            $sysSection = $sysSectionMatch.Value
+            $sysSection | Should -Match 'implementation-clarity:' `
                 -Because 'legacy simplicity findings must contribute under implementation-clarity in systemic_patterns output'
-            $result.Output | Should -Not -Match '(?ms)^  systemic_patterns:\r?\n(?:(?!^  \S).*\r?\n)*?      simplicity:' `
+            $sysSection | Should -Not -Match 'simplicity:' `
                 -Because 'systemic_patterns must not emit a legacy simplicity key after alias normalization'
-            $result.Output | Should -Not -Match '(?ms)^  prosecution_depth:\r?\n(?:(?!^  \S).*\r?\n)*?    simplicity:' `
+            # Extract prosecution_depth section (non-backtracking)
+            $pdSectionMatch = [regex]::Match(
+                $result.Output,
+                '(?m)^  prosecution_depth:\r?\n(?:    [^\r\n]+\r?\n)*'
+            )
+            $pdSectionMatch.Success | Should -BeTrue `
+                -Because 'prosecution_depth section must be extractable from output'
+            $pdSection = $pdSectionMatch.Value
+            $pdSection | Should -Not -Match 'simplicity:' `
                 -Because 'prosecution_depth must not emit a legacy simplicity key after alias normalization'
         }
         It 'omits systemic_patterns section when all systemic_fix_type values are none' -Tag 'requires-gh' {
@@ -1729,7 +1821,8 @@ exit 0
             )
             $calib = & $script:BuildSystemicCalibration `
                 -Findings $findings `
-                -PrNumbers @($script:SystemicPr1, $script:SystemicPr2)
+                -PrNumbers @($script:SystemicPr1, $script:SystemicPr2) `
+                -PaddingPrNumbers $script:PaddingPrNumbers
             $calibPath = Join-Path $workDir 'systemic-none.json'
             & $script:WriteCalibrationFile -Path $calibPath -Data $calib
 
@@ -1760,7 +1853,8 @@ exit 0
             )
             $calib = & $script:BuildSystemicCalibration `
                 -Findings $findings `
-                -PrNumbers @($script:SystemicPr1, $script:SystemicPr2)
+                -PrNumbers @($script:SystemicPr1, $script:SystemicPr2) `
+                -PaddingPrNumbers $script:PaddingPrNumbers
             $calibPath = Join-Path $workDir 'systemic-evidence.json'
             & $script:WriteCalibrationFile -Path $calibPath -Data $calib
 
@@ -1793,7 +1887,8 @@ exit 0
             }
             $calib = & $script:BuildSystemicCalibration `
                 -Findings @($finding) `
-                -PrNumbers @($script:SystemicPr1, $script:SystemicPr2)
+                -PrNumbers @($script:SystemicPr1, $script:SystemicPr2) `
+                -PaddingPrNumbers $script:PaddingPrNumbers
             $calibPath = Join-Path $workDir 'systemic-alltypes.json'
             & $script:WriteCalibrationFile -Path $calibPath -Data $calib
 
@@ -1827,7 +1922,8 @@ exit 0
             # No proposals_emitted in calibration — pattern must be unmarked
             $calib = & $script:BuildSystemicCalibration `
                 -Findings @($finding) `
-                -PrNumbers @($script:SystemicPr1, $script:SystemicPr2)
+                -PrNumbers @($script:SystemicPr1, $script:SystemicPr2) `
+                -PaddingPrNumbers $script:PaddingPrNumbers
             $calibPath = Join-Path $workDir 'systemic-notproposed.json'
             & $script:WriteCalibrationFile -Path $calibPath -Data $calib
 
@@ -1863,7 +1959,8 @@ exit 0
             $calib = & $script:BuildSystemicCalibration `
                 -Findings @($finding) `
                 -PrNumbers @($script:SystemicPr1, $script:SystemicPr2) `
-                -ProposalsEmitted $proposals
+                -ProposalsEmitted $proposals `
+                -PaddingPrNumbers $script:PaddingPrNumbers
             $calibPath = Join-Path $workDir 'systemic-proposed.json'
             & $script:WriteCalibrationFile -Path $calibPath -Data $calib
 
@@ -1916,6 +2013,9 @@ exit 0
             # (contexts execute in document order).
             $script:KaizenSystemicPr1 = $script:SystemicPr1
             $script:KaizenSystemicPr2 = $script:SystemicPr2
+            if (-not $script:PaddingPrNumbers) {
+                $script:PaddingPrNumbers = @($script:NonMetricsPrNumbers | Select-Object -Skip 3 -First 10)
+            }
         }
 
         It 'emits kaizen_metric section after systemic_patterns' -Tag 'requires-gh' {
@@ -1960,14 +2060,13 @@ exit 0
             if (-not $script:GhAvailable) { Set-ItResult -Skipped -Because 'gh CLI not found'; return }
 
             $workDir = & $script:NewWorkDir
-            # Only 1 PR → effective_count << 20 → sufficient_data: false for all categories
-            # → denominator is 0 → kaizen_rate must be 0.00
+            # 1 primary PR (architecture) + 10 padding PRs (documentation-audit) → no category reaches effective_count ≥ 20 → sufficient_data: false for all → kaizen_rate = 0.00
             $findings = @(
                 [ordered]@{ id = 'F1'; category = 'architecture'; judge_ruling = 'finding-sustained'
                     severity = 'medium'; points = 5; review_stage = 'main'
                 }
             )
-            $calib = & $script:BuildDepthCalibration -Findings $findings -PrNumbers @(9901)
+            $calib = & $script:BuildDepthCalibration -Findings $findings -PrNumbers @($script:NonMetricsPrNumbers | Select-Object -First 1) -PaddingPrNumbers $script:PaddingPrNumbers
             $calibPath = Join-Path $workDir 'kaizen-nosuffix.json'
             & $script:WriteCalibrationFile -Path $calibPath -Data $calib
 
@@ -2024,7 +2123,8 @@ exit 0
             )
             $calib = & $script:BuildSystemicCalibration `
                 -Findings $findings `
-                -PrNumbers @($script:KaizenSystemicPr1, $script:KaizenSystemicPr2)
+                -PrNumbers @($script:KaizenSystemicPr1, $script:KaizenSystemicPr2) `
+                -PaddingPrNumbers $script:PaddingPrNumbers
             $calibPath = Join-Path $workDir 'kaizen-threshold.json'
             & $script:WriteCalibrationFile -Path $calibPath -Data $calib
 
@@ -2061,7 +2161,8 @@ exit 0
             $calib = & $script:BuildSystemicCalibration `
                 -Findings $findings `
                 -PrNumbers @($script:KaizenSystemicPr1, $script:KaizenSystemicPr2) `
-                -ProposalsEmitted $proposals
+                -ProposalsEmitted $proposals `
+                -PaddingPrNumbers $script:PaddingPrNumbers
             $calibPath = Join-Path $workDir 'kaizen-proposed.json'
             & $script:WriteCalibrationFile -Path $calibPath -Data $calib
 
@@ -2093,7 +2194,8 @@ exit 0
             $calib = & $script:BuildSystemicCalibration `
                 -Findings $findings `
                 -PrNumbers @($script:SystemicPr1, $script:SystemicPr2) `
-                -ProposalsEmitted @()
+                -ProposalsEmitted @() `
+                -PaddingPrNumbers $script:PaddingPrNumbers
             $calibPath = Join-Path $workDir 'proposals-writeback.json'
             & $script:WriteCalibrationFile -Path $calibPath -Data $calib
 
@@ -2142,7 +2244,8 @@ exit 0
             $calib = & $script:BuildSystemicCalibration `
                 -Findings $findings `
                 -PrNumbers @($script:SystemicPr1, $script:SystemicPr2) `
-                -ProposalsEmitted $preExisting
+                -ProposalsEmitted $preExisting `
+                -PaddingPrNumbers $script:PaddingPrNumbers
             $calibPath = Join-Path $workDir 'proposals-preserve.json'
             & $script:WriteCalibrationFile -Path $calibPath -Data $calib
 
@@ -2178,7 +2281,8 @@ exit 0
             $calib = & $script:BuildSystemicCalibration `
                 -Findings $findings `
                 -PrNumbers @($script:SystemicPr1) `
-                -ProposalsEmitted @()
+                -ProposalsEmitted @() `
+                -PaddingPrNumbers $script:PaddingPrNumbers
             $calibPath = Join-Path $workDir 'proposals-nothreshold.json'
             & $script:WriteCalibrationFile -Path $calibPath -Data $calib
 
@@ -2230,7 +2334,8 @@ exit 0
             $calib = & $script:BuildSystemicCalibration `
                 -Findings @($finding) `
                 -PrNumbers @($pr1, $pr2, $pr3) `
-                -ProposalsEmitted $priorProposals
+                -ProposalsEmitted $priorProposals `
+                -PaddingPrNumbers $script:PaddingPrNumbers
             $calibPath = Join-Path $workDir 'proposals-superset.json'
             & $script:WriteCalibrationFile -Path $calibPath -Data $calib
 
@@ -2266,7 +2371,8 @@ exit 0
             $calib = & $script:BuildSystemicCalibration `
                 -Findings $findings `
                 -PrNumbers @($script:SystemicPr1, $script:SystemicPr2) `
-                -ProposalsEmitted $preExisting
+                -ProposalsEmitted $preExisting `
+                -PaddingPrNumbers $script:PaddingPrNumbers
             $calibPath = Join-Path $workDir 'proposals-unknown-fields.json'
             & $script:WriteCalibrationFile -Path $calibPath -Data $calib
 
