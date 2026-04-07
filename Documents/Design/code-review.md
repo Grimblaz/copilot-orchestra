@@ -449,10 +449,11 @@ Passing `-HealthReport` to `aggregate-review-scores.ps1` (or `Invoke-AggregateRe
 | Section | Content |
 |---------|---------|
 | **Pipeline Health** | Overall statistics: total findings, sustain rate, effective sample size |
-| **Category Hotspots** | Top categories by effective count; per-category Trend column shows `—` until Phase 2 (per-category temporal split via `OlderCategoryRates` is deferred) |
+| **Category Hotspots** | Top categories by effective count; per-category Trend column shows `—` (per-category temporal split via `OlderCategoryRates` deferred per D-264-10 scope boundary; per-category `wTotal`/`wAccepted` data is now available in `$prContributions.categories` from Phase 3 enrichment) |
 | **Prosecution Depth** | Per-category table with `Depth` column (`full` / `light` / `skip`) for each of `$knownCategories` |
 | **D10 Alerts** | Categories with `light` or `skip` depth, sorted by effective count |
 | **Systemic Pattern Alerts** | Systemic patterns meeting threshold, sorted by sustained count |
+| **Fix Effectiveness** | Per-fix sustain rate comparison — before/after split windows with improved/unchanged/worsened indicators, insufficient-data and no-before-data edge cases, awaiting-merge placeholder |
 
 `-HealthReport` is **read-only**: all three write-back paths (calibration file write, `guidance-complexity.json`, `write-calibration-entry.ps1`) are skipped. Add `-OutputPath <file>` to write the report to a file instead of stdout; if the write fails, the script falls back to stdout.
 
@@ -461,6 +462,24 @@ Passing `-HealthReport` to `aggregate-review-scores.ps1` (or `Invoke-AggregateRe
 **Category alias normalization** (also Issue #259): `$accumulateFinding` now normalizes `simplicity → implementation-clarity` *and* `documentation → documentation-audit` before accumulation. Both aliases are accepted from older pipeline-metrics blocks and mapped to the canonical 7-category taxonomy before Hotspots and Prosecution Depth are computed.
 
 **Lateral-completeness check** (Issue #266): Code-Critic §6 Principle 2 now includes a lateral-completeness sub-bullet — when a PR adds or extends a normalization block, reviewers must scan the full `$known*` canonical set, not just the value being added.
+
+### Fix Effectiveness (Issue #264 — Phase 3)
+
+Per-fix sustain rate comparison using before/after split windows. Two private helpers in `aggregate-review-scores-core.ps1`:
+
+- **`Measure-WindowCategoryTotals`** — Sums per-category `wTotal`/`wAccepted` across a `$prContributions` window (subset of PRs). Used by `Measure-FixEffectiveness` for before/after accumulation.
+- **`Measure-FixEffectiveness`** — Pure function (no side effects, no `gh` calls, no file writes). Groups `proposals_emitted` by `pattern_key`, partitions `$prContributions` into before/after windows around each fix's `fix_merged_at`, and computes sustain rate delta with a 5% deadzone (D-264-9). Returns a `Results` array (per-fix entries with `indicator` values: `improved` / `unchanged` / `worsened` / `insufficient data` / `no before data`) and an `AwaitingMergeCount`. Stacked fixes for the same `pattern_key` use bounded windows — each fix's after-window is capped at the next fix's `fix_merged_at` (D-264-6).
+
+**Per-category enrichment** (D-264-10): The `$accumulateFinding` lambda enriches each `$prContributions` entry with a `categories` hashtable mapping category → `{ wTotal; wAccepted }`. This enrichment is scoped to Fix Effectiveness only — `Category Hotspots` continues using aggregate-level data.
+
+**Merge-date discovery loop** (D-264-6, D-264-11): Runs during normal (non-`-HealthReport`) execution, after PR accumulation and before Fix Effectiveness computation. For each `proposals_emitted` entry with `fix_issue_number` but no `fix_merged_at`:
+
+1. Builds a search query: `closes #N OR fixes #N OR resolves #N`
+2. Calls `gh pr list --repo $Repo --state merged --search $query --json 'number,mergedAt' --sort updated --limit 5`
+3. Picks the entry with the latest `mergedAt` and writes `fix_merged_at` back to the proposal
+4. Sets `$fixMergedAtChanged = $true` to trigger calibration file write-back
+
+On subsequent runs, entries with `fix_merged_at` already populated are cache hits — no `gh` call is made. Failures are non-fatal (logged via `Write-Warning`, entry skipped).
 
 ### Process-Review Integration
 
