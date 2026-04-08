@@ -1,6 +1,6 @@
 # First-Contact Provenance Gate
 
-> **Reference only**: The operational provenance gate trigger is inline in `.github/copilot-instructions.md` (Section: "First-Contact Provenance Gate"). This file documents the full assessment protocol, edge cases, and rationale. Agents should follow the inline trigger; use this file for the detailed assessment procedure.
+> **Operational protocol**: This document is loaded by agents at Step 5 of the First-Contact Provenance Gate (`.github/copilot-instructions.md`). It contains the full three-question assessment procedure, developer gate presentation, edge cases, and rationale. The inline trigger in `copilot-instructions.md` dispatches here; agents execute the protocol below.
 
 ## Purpose
 
@@ -10,7 +10,7 @@ When a pipeline agent picks up an existing GitHub issue without an upstream hand
 
 The gate applies when the `copilot-instructions.md` trigger detects a cold pickup — all of the following conditions are true:
 
-- No warm-handoff session memory exists for the issue (`plan-issue-{ID}`, `design-issue-{ID}`, `experience-owner-complete-{ID}`, `design-phase-complete-{ID}`)
+- No warm-handoff markers exist for the issue: no `plan-issue-{ID}` or `design-issue-{ID}` in session memory, and no `<!-- experience-owner-complete-{ID} -->` or `<!-- design-phase-complete-{ID} -->` in GitHub issue comments
 - No prior `<!-- first-contact-assessed-{ID} -->` marker is found in the issue's GitHub comments
 - The agent is user-invocable (not a subagent dispatched by Code-Conductor)
 - An issue ID is present in the user's request

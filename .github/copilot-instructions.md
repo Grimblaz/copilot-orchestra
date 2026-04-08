@@ -140,11 +140,11 @@ Parse the user's request for a GitHub issue reference (`#N`, `issue N`, etc.). I
 
 ### Step 2 — Check warm-handoff markers
 
-Check session memory for any warm-handoff markers for this issue: `plan-issue-{ID}`, `design-issue-{ID}`, `experience-owner-complete-{ID}`, `design-phase-complete-{ID}`. If any are found, the issue framing was already validated in this session — skip the gate silently.
+Check session memory for `plan-issue-{ID}` or `design-issue-{ID}` markers for this issue. Also check GitHub issue comments (via `mcp_github_issue_read` with `method: get_comments`) for `<!-- experience-owner-complete-{ID} -->` or `<!-- design-phase-complete-{ID} -->`. If any are found in either location, the issue framing was already validated — skip the gate silently.
 
 ### Step 3 — Check prior assessment marker
 
-Use `mcp_github_issue_read` with `method: get_comments` to check for `<!-- first-contact-assessed-{ID} -->` in the issue's comments. If found, skip the gate silently (previously assessed). If MCP tools are unavailable or the API call fails, fail open — skip the marker check and proceed to Step 4.
+Use `mcp_github_issue_read` with `method: get_comments` to check for `<!-- first-contact-assessed-{ID} -->` in the issue's comments. Also check session memory for a `first-contact-assessed-{ID}` marker. If found in either location, skip the gate silently (previously assessed). If MCP tools are unavailable or the API call fails, fail open — skip the marker check and proceed to Step 4.
 
 ### Step 4 — Self-filtering
 
@@ -156,7 +156,7 @@ Load `.github/instructions/provenance-gate.instructions.md` for the full three-q
 
 ### Step 6 — Record marker
 
-After the developer responds, post `<!-- first-contact-assessed-{ID} -->` as a GitHub issue comment. If posting fails, record the assessment in session memory instead and proceed. In multi-issue bundles, the gate fires per unique issue ID.
+After the developer responds (any option except 'Needs rework — stop here'), post `<!-- first-contact-assessed-{ID} -->` as a GitHub issue comment. If posting fails, record the assessment in session memory instead and proceed. In multi-issue bundles, the gate fires per unique issue ID.
 
 > **See** `.github/instructions/provenance-gate.instructions.md` for the full assessment protocol, edge cases, and known limitations.
 

@@ -145,5 +145,16 @@ Describe 'execution handoff persistence contract' {
 
         $content | Should -Match $script:ProvenanceGateMarkerPattern -Because 'copilot-instructions must reference the first-contact-assessed marker for the provenance gate trigger'
         $content | Should -Match '(?is)First-Contact Provenance Gate' -Because 'copilot-instructions must contain the provenance gate section heading'
+        $content | Should -Match '(?is)(any option except|except).{0,60}Needs rework' -Because 'copilot-instructions or its referenced instructions must describe conditional marker posting (skip on Needs rework)'
+        $content | Should -Match '(?is)(MCP tools are unavailable|API call fails).{0,80}fail open' -Because 'copilot-instructions must describe fail-open semantics when MCP tools are unavailable'
+    }
+
+    It 'requires provenance-gate instructions file to exist and use the same marker pattern' {
+        $instructionsPath = Join-Path $PSScriptRoot '../../instructions/provenance-gate.instructions.md'
+
+        Test-Path $instructionsPath | Should -BeTrue -Because 'provenance-gate.instructions.md must exist as the full assessment protocol'
+        $instructionsContent = Get-Content -Path $instructionsPath -Raw
+        $instructionsContent | Should -Not -BeNullOrEmpty -Because 'provenance-gate.instructions.md must have content'
+        $instructionsContent | Should -Match $script:ProvenanceGateMarkerPattern -Because 'provenance-gate.instructions.md must reference the same first-contact-assessed marker as copilot-instructions'
     }
 }
