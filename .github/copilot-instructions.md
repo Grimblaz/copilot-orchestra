@@ -144,7 +144,7 @@ Check session memory for `plan-issue-{ID}` or `design-issue-{ID}` markers for th
 
 ### Step 3 — Check prior assessment marker
 
-Use `mcp_github_issue_read` with `method: get_comments` to check for `<!-- first-contact-assessed-{ID} -->` in the issue's comments. Also check session memory for a `first-contact-assessed-{ID}` marker. If found in either location, skip the gate silently (previously assessed). If MCP tools are unavailable or the API call fails, fail open — skip the marker check and proceed to Step 4.
+Use `mcp_github_issue_read` with `method: get_comments` to check for `<!-- first-contact-assessed-{ID} -->` in the issue's comments. Also check session memory at `/memories/session/first-contact-assessed-{ID}.md` for a prior assessment marker. If found in either location, skip the gate silently (previously assessed). If MCP tools are unavailable or the API call fails, fail open — skip the GitHub marker check and proceed to Step 4.
 
 ### Step 4 — Self-filtering
 
@@ -156,7 +156,7 @@ Load `.github/instructions/provenance-gate.instructions.md` for the full three-q
 
 ### Step 6 — Record marker
 
-After the developer responds (any option except 'Needs rework — stop here'), post `<!-- first-contact-assessed-{ID} -->` as a GitHub issue comment. If posting fails, record the assessment in session memory instead and proceed. In multi-issue bundles, the gate fires per unique issue ID.
+After the developer responds (any option except 'Needs rework — stop here'), post `<!-- first-contact-assessed-{ID} -->` as a GitHub issue comment. If posting fails, record the assessment in session memory at `/memories/session/first-contact-assessed-{ID}.md` instead and proceed. In multi-issue bundles, the gate fires per unique issue ID.
 
 > **See** `.github/instructions/provenance-gate.instructions.md` for the full assessment protocol, edge cases, and known limitations.
 

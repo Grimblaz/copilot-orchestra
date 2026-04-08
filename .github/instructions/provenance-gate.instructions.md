@@ -76,7 +76,7 @@ After the developer responds (any option except "Needs rework — stop here"), p
 
 This prevents the gate from re-firing on subsequent invocations for the same issue. The marker is a gate-passed marker (skip-on-re-invocation dedup), distinct from phase completion markers like `<!-- experience-owner-complete-{ID} -->`.
 
-Use `mcp_github_add_issue_comment` to post the marker. If the MCP tool is unavailable or the API call fails, fail open — record the assessment result in session memory instead and proceed. The gate's value is in the assessment, not the marker persistence.
+Use `mcp_github_add_issue_comment` to post the marker. If the MCP tool is unavailable or the API call fails, fail open — record the assessment result in session memory at `/memories/session/first-contact-assessed-{ID}.md` instead and proceed. The gate's value is in the assessment, not the marker persistence.
 
 ## Edge Cases
 
