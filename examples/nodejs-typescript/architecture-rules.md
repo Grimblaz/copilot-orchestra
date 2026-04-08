@@ -360,10 +360,17 @@ Use field-level merge that preserves security values:
 const targetSnap = await getDoc(doc(db, 'users', userId));
 const targetData = targetSnap.exists() ? targetSnap.data() : {};
 
-const { parentPinHash, ...dataFields } = localProfile;
+const {
+  parentPinHash,
+  sessionToken,
+  permissionFlags,
+  ...dataFields
+} = localProfile;
 const merged = {
   ...dataFields,
   parentPinHash: targetData.parentPinHash ?? parentPinHash,
+  sessionToken: targetData.sessionToken ?? sessionToken,
+  permissionFlags: targetData.permissionFlags ?? permissionFlags,
 };
 await setDoc(doc(db, 'users', userId), merged);
 ```
