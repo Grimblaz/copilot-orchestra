@@ -50,12 +50,15 @@ function Invoke-CheckPort {
     )
     Set-StrictMode -Version Latest
     $ErrorActionPreference = 'Stop'
+    $portInUse = $false
     try {
         $bindResult = Test-CPSocketBind -Port $Port
 
         if ($bindResult) {
             return [PSCustomObject]@{ InUse = $false; Pid = $null; ProcessName = $null }
         }
+
+        $portInUse = $true
 
         $info = Get-CPWindowsPortInfo -Port $Port
         if ($info) {
@@ -64,6 +67,6 @@ function Invoke-CheckPort {
         return [PSCustomObject]@{ InUse = $true; Pid = $null; ProcessName = $null }
     }
     catch {
-        return [PSCustomObject]@{ InUse = $false; Pid = $null; ProcessName = $null }
+        return [PSCustomObject]@{ InUse = $portInUse; Pid = $null; ProcessName = $null }
     }
 }

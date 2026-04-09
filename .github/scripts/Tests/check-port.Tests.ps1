@@ -153,7 +153,7 @@ Describe 'check-port.ps1' {
             $result = Invoke-CheckPort -Port 8080
 
             # Assert
-            $result.InUse | Should -Be $false
+            $result.InUse | Should -Be $true
             $result.Pid | Should -BeNullOrEmpty
             $result.ProcessName | Should -BeNullOrEmpty
         }
