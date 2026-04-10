@@ -112,7 +112,7 @@ At each major step, decide whether to proceed autonomously or pause for user inp
 
 ### Hub/Consumer Classification Gate
 
-Before framing, classify whether the issue proposes adding content that primarily manifests in one language's type system, runtime, or framework to a hub agent (any `.agent.md` in `.github/agents/`). Hub agents are language-agnostic — language-specific review rules, prosecution perspectives, and behavioral patterns belong in consumer-repo artifacts:
+Before proceeding, classify whether the issue proposes adding content that primarily manifests in one language's type system, runtime, or framework to a hub agent (any `.agent.md` in `.github/agents/`). Hub agents are language-agnostic — language-specific review rules, prosecution perspectives, and behavioral patterns belong in consumer-repo artifacts:
 
 - **Review rules / pitfalls** → `examples/{stack}/architecture-rules.md`
 - **Stack-specific conventions** → `examples/{stack}/copilot-instructions.md`
