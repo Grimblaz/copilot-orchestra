@@ -43,6 +43,17 @@ When BDD is enabled, Experience-Owner writes scenarios **before** handing off to
 - IDs are sequential from S1; no gaps, no reuse after plan approval
 - Scenario content stays in customer language — no implementation details
 
+### Declarative-over-Imperative Guidance (Issue #319)
+
+The `bdd-scenarios` skill includes a `### Declarative-over-Imperative` subsection within its G/W/T Authoring Patterns section. It provides:
+
+- A "why" principle paragraph (maintainability, reusability, implementation decoupling)
+- A 5-row paired anti-pattern table (3 Given/When + 2 Then examples) showing imperative vs. declarative rewrites
+- An implementation-detail rule and advisory validation scan with word lists (`click`, `enter`, `navigate`, `xpath`, `css`, `selector`, `scroll`, `hover`, `timeout`)
+- Cross-reference from the existing "Customer language principle" gotcha, with explicit authority boundary (skill owns the guidance; design doc references it)
+
+Design decisions: D1 placed the subsection within existing G/W/T Authoring Patterns rather than a new top-level section; D2 chose a 5-row paired table covering Given, When, and Then; D3 made the scan word lists advisory (not blocking); D4 scoped Phase 2 cross-referencing to the validation scan only.
+
 ---
 
 ## Scenario ID Lifecycle
