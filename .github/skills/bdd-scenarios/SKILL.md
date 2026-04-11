@@ -19,7 +19,7 @@ Structured Given/When/Then scenario authoring with ID traceability and CE Gate c
 
 - Scenarios use numbered IDs: S1, S2, S3…
 - Heading convention: `### SN — {title} (Type)` where Type is Functional or Intent
-- G/W/T clauses in customer language (no technical jargon, no implementation details)
+- G/W/T clauses in customer language — see **Declarative-over-Imperative** below for details
 - Example template:
 
   ```markdown
@@ -32,6 +32,27 @@ Structured Given/When/Then scenario authoring with ID traceability and CE Gate c
 
 - Multiple Given or Then clauses allowed; And/But connectors supported for readability
 - Each scenario must be independently understandable
+
+### Declarative-over-Imperative
+
+Step text should describe *what the user intends* (outcome or state change), not *how they interact with UI* (action sequence). Declarative scenarios are more maintainable (survive UI redesigns), more reusable (same step across features), and decoupled from implementation (step definitions don't break when selectors change).
+
+| Imperative (avoid) | Declarative (preferred) |
+| --- | --- |
+| `When I click the 'Sign in with Google' button` | `When I choose to connect my Google account` |
+| `When the mock auth adapter returns a successful sign-in` | `Given a successful sign-in will occur for 'user@example.com'` |
+| `When I navigate to '/quests'` | `When I visit the quests area` |
+| `Then I should see a 'Sign in with Google' button` | `Then I see an option to connect my Google account` |
+| `Then I should see a green checkmark icon` | `Then the action is confirmed` |
+
+This rule narrows the broader "no implementation details" principle (see **Gotchas** below) to two actionable categories: imperative UI-interaction verbs and test-infrastructure leakage (adapter names, mock behavior, internal paths).
+
+**Validation scan** — when reviewing scenarios, flag any of these as signals to review (not automatic rejections — common English words like "type" or "press" may appear in legitimate customer-language scenarios; evaluate in context):
+
+- **Imperative verbs**: `click`, `navigate`, `tap`, `type`, `scroll`, `press`, `wait`
+- **Implementation nouns**: `mock`, `adapter`, `stub`, `spy`, `fixture`, path strings (e.g., `/quests`, `#submit-btn`, `.settings.json` — any string that reveals URL structure, CSS selectors, or file system paths)
+
+This scan is especially important before Phase 2 Gherkin conversion — imperative step text produces unmaintainable step definitions.
 
 ## Scenario Type Tags
 
@@ -76,7 +97,7 @@ BDD structured scenarios are only active when the consumer repo's `copilot-instr
 ## Gotchas
 
 - **S-IDs vs Specification's AC-NNN format**: This skill uses S-IDs (S1, S2, S3) for CE Gate scenarios. Specification agent uses `AC-NNN` for acceptance criteria. These are different namespaces — do not mix them or treat AC-NNN as a scenario ID.
-- **Customer language principle**: G/W/T keywords are structural framing only. The clause content must be in customer terms — no method names, no file paths, no agent names, no implementation details. "When the system calls ExperienceOwner.FrameScenarios()" is wrong; "When the team begins feature planning" is correct.
+- **Customer language principle**: G/W/T keywords are structural framing only. The clause content must be in customer terms — no method names, no file paths, no agent names, no implementation details. "When the system calls ExperienceOwner.FrameScenarios()" is wrong; "When the team begins feature planning" is correct. See also: **Declarative-over-Imperative** above for specific anti-patterns, preferred alternatives, and a validation scan. This gotcha states the broad principle (no implementation details); the subsection above provides actionable examples covering imperative UI verbs and test-infrastructure leakage.
 - **BDD detection gating**: All BDD-specific behavior (G/W/T authoring, classification, pre-flight, per-scenario prosecution) is conditional on `## BDD Framework` presence. Repos without this section keep the existing natural-language workflow unchanged — do not apply rubric, IDs, or pre-flight to natural-language scenarios.
 - **Issue-body source of truth**: The `## Scenarios` section in the GitHub issue body is the authoritative store for scenario IDs. Any abbreviated or derived authoring path (e.g., generating scenarios only in the plan's `[CE GATE]` step) **must** also write the full scenarios back into the issue body using the GitHub issue update tool — Code-Conductor's CE Gate pre-flight reads from the issue body and will treat missing issue-body scenarios as coverage gaps.
 - **Phase 2 scope boundary**: Phase 2 (Gherkin conversion + framework runner integration) is documented in the `## Phase 2: Gherkin Conversion & Framework Runner` section below. Phase 1 content (authoring, traceability, coverage detection) is unchanged.
@@ -92,9 +113,9 @@ Phase 2 is active when **both** conditions are met in the consumer repo's `copil
 1. `## BDD Framework` section heading is present (Phase 1 condition)
 2. A `bdd: {framework}` config line is present with a recognized framework name
 
-**Known migration case — `bdd: true`**: If a consumer repo was set up under Phase 1 only and still has `bdd: true` in a comment, emit a warning: _"bdd: true detected — Phase 2 requires a recognized framework name. Set `bdd: {framework}` with one of: cucumber.js, behave, jest-cucumber, cucumber. Falling back to Phase 1 behavior."_ Then fall back to Phase 1.
+**Known migration case — `bdd: true`**: If a consumer repo was set up under Phase 1 only and still has `bdd: true` in a comment, emit a warning: *"bdd: true detected — Phase 2 requires a recognized framework name. Set `bdd: {framework}` with one of: cucumber.js, behave, jest-cucumber, cucumber. Falling back to Phase 1 behavior."* Then fall back to Phase 1.
 
-**Unrecognized framework name**: If a `bdd: {framework}` line is present but the value is not in the mapping table, emit a warning: _"Unrecognized framework '{value}'. Recognized values: cucumber.js, behave, jest-cucumber, cucumber. Falling back to Phase 1 behavior."_ Then fall back to Phase 1.
+**Unrecognized framework name**: If a `bdd: {framework}` line is present but the value is not in the mapping table, emit a warning: *"Unrecognized framework '{value}'. Recognized values: cucumber.js, behave, jest-cucumber, cucumber. Falling back to Phase 1 behavior."* Then fall back to Phase 1.
 
 **Phase-1-only repos** (heading present, no `bdd:` line): Phase 2 detection requires BOTH conditions. A repo with only the `## BDD Framework` heading is Phase 1 only — behavior is unchanged.
 
