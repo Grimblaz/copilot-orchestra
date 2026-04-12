@@ -35,15 +35,15 @@ Structured Given/When/Then scenario authoring with ID traceability and CE Gate c
 
 ### Declarative-over-Imperative
 
-Step text should describe *what the user intends* (outcome or state change), not *how they interact with UI* (action sequence). Declarative scenarios are more maintainable (survive UI redesigns), more reusable (same step across features), and decoupled from implementation (step definitions don't break when selectors change).
+Step text should describe _what the user intends_ (outcome or state change), not _how they interact with UI_ (action sequence). Declarative scenarios are more maintainable (survive UI redesigns), more reusable (same step across features), and decoupled from implementation (step definitions don't break when selectors change).
 
-| Imperative (avoid) | Declarative (preferred) |
-| --- | --- |
-| `When I click the 'Sign in with Google' button` | `When I choose to connect my Google account` |
+| Imperative (avoid)                                        | Declarative (preferred)                                        |
+| --------------------------------------------------------- | -------------------------------------------------------------- |
+| `When I click the 'Sign in with Google' button`           | `When I choose to connect my Google account`                   |
 | `When the mock auth adapter returns a successful sign-in` | `Given a successful sign-in will occur for 'user@example.com'` |
-| `When I navigate to '/quests'` | `When I visit the quests area` |
-| `Then I should see a 'Sign in with Google' button` | `Then I see an option to connect my Google account` |
-| `Then I should see a green checkmark icon` | `Then the action is confirmed` |
+| `When I navigate to '/quests'`                            | `When I visit the quests area`                                 |
+| `Then I should see a 'Sign in with Google' button`        | `Then I see an option to connect my Google account`            |
+| `Then I should see a green checkmark icon`                | `Then the action is confirmed`                                 |
 
 This rule narrows the broader "no implementation details" principle (see **Gotchas** below) to two actionable categories: imperative UI-interaction verbs and test-infrastructure leakage (adapter names, mock behavior, internal paths).
 
@@ -79,6 +79,7 @@ Scenarios that require external services (auth emulators, backend APIs, database
 
 ```markdown
 ### S1 — User completes sign-in (Functional) [requires: firebase-emulator:9099]
+
 ### S4 — OAuth flow with provider (Functional) [requires: auth-service:8080] [requires: api-gateway:3000]
 ```
 
@@ -127,9 +128,9 @@ Phase 2 is active when **both** conditions are met in the consumer repo's `copil
 1. `## BDD Framework` section heading is present (Phase 1 condition)
 2. A `bdd: {framework}` config line is present with a recognized framework name
 
-**Known migration case — `bdd: true`**: If a consumer repo was set up under Phase 1 only and still has `bdd: true` in a comment, emit a warning: *"bdd: true detected — Phase 2 requires a recognized framework name. Set `bdd: {framework}` with one of: cucumber.js, behave, jest-cucumber, cucumber. Falling back to Phase 1 behavior."* Then fall back to Phase 1.
+**Known migration case — `bdd: true`**: If a consumer repo was set up under Phase 1 only and still has `bdd: true` in a comment, emit a warning: _"bdd: true detected — Phase 2 requires a recognized framework name. Set `bdd: {framework}` with one of: cucumber.js, behave, jest-cucumber, cucumber. Falling back to Phase 1 behavior."_ Then fall back to Phase 1.
 
-**Unrecognized framework name**: If a `bdd: {framework}` line is present but the value is not in the mapping table, emit a warning: *"Unrecognized framework '{value}'. Recognized values: cucumber.js, behave, jest-cucumber, cucumber. Falling back to Phase 1 behavior."* Then fall back to Phase 1.
+**Unrecognized framework name**: If a `bdd: {framework}` line is present but the value is not in the mapping table, emit a warning: _"Unrecognized framework '{value}'. Recognized values: cucumber.js, behave, jest-cucumber, cucumber. Falling back to Phase 1 behavior."_ Then fall back to Phase 1.
 
 **Phase-1-only repos** (heading present, no `bdd:` line): Phase 2 detection requires BOTH conditions. A repo with only the `## BDD Framework` heading is Phase 1 only — behavior is unchanged.
 
