@@ -149,12 +149,12 @@ Describe 'execution handoff persistence contract' {
         $content | Should -Match '(?is)(MCP tools are unavailable|API call fails).{0,80}fail open' -Because 'copilot-instructions must describe fail-open semantics when MCP tools are unavailable'
     }
 
-    It 'requires provenance-gate instructions file to exist and use the same marker pattern' {
-        $instructionsPath = Join-Path $PSScriptRoot '../../instructions/provenance-gate.instructions.md'
+    It 'requires provenance-gate skill file to exist and use the same marker pattern' {
+        $skillPath = Join-Path $PSScriptRoot '../../skills/provenance-gate/SKILL.md'
 
-        Test-Path $instructionsPath | Should -BeTrue -Because 'provenance-gate.instructions.md must exist as the full assessment protocol'
-        $instructionsContent = Get-Content -Path $instructionsPath -Raw
-        $instructionsContent | Should -Not -BeNullOrEmpty -Because 'provenance-gate.instructions.md must have content'
-        $instructionsContent | Should -Match $script:ProvenanceGateMarkerPattern -Because 'provenance-gate.instructions.md must reference the same first-contact-assessed marker as copilot-instructions'
+        Test-Path $skillPath | Should -BeTrue -Because 'provenance-gate/SKILL.md must exist as the full assessment protocol'
+        $skillContent = Get-Content -Path $skillPath -Raw
+        $skillContent | Should -Not -BeNullOrEmpty -Because 'provenance-gate/SKILL.md must have content'
+        $skillContent | Should -Match $script:ProvenanceGateMarkerPattern -Because 'provenance-gate/SKILL.md must reference the same first-contact-assessed marker as copilot-instructions'
     }
 }

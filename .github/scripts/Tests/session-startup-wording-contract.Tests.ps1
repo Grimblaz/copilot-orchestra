@@ -2,20 +2,19 @@
 #Requires -Modules @{ ModuleName = 'Pester'; ModuleVersion = '5.0.0' }
 <#
 .SYNOPSIS
-    Contract tests for startup-instruction wording consistency.
+        Contract tests for session-startup skill wording consistency.
 
 .DESCRIPTION
-    Locks the contributor-facing startup-check contract across:
-      - .github/copilot-instructions.md
-      - .github/instructions/session-startup.instructions.md
+        Locks the contributor-facing startup-check contract in:
+            - .github/skills/session-startup/SKILL.md
 
-        The files must describe the same semantics for:
+                The skill must describe the canonical semantics for:
             - one canonical session-memory marker path for the automatic startup guard
             - run-once guard order (guard check before automatic detector run, marker write after first automatic run)
             - fail-open behavior when session-memory access fails
             - manual detector runs remaining allowed after the automatic guard fires
 
-    These tests are RED coverage for issue #185 until both documents are aligned.
+        These tests are RED coverage for issue #345 until the skill exists and carries the full startup contract.
 #>
 
 Describe 'session startup wording contract' {
@@ -23,26 +22,34 @@ Describe 'session startup wording contract' {
     BeforeAll {
         $script:RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '../../..')).Path
         $script:CopilotInstructions = Join-Path $script:RepoRoot '.github\copilot-instructions.md'
-        $script:StartupInstructions = Join-Path $script:RepoRoot '.github\instructions\session-startup.instructions.md'
+        $script:SessionStartupSkill = Join-Path $script:RepoRoot '.github\skills\session-startup\SKILL.md'
         $script:CanonicalMarkerPath = '/memories/session/session-startup-check-complete.md'
         $script:DetectorCommandPattern = '(?ms)^pwsh -NoProfile -NonInteractive -File "\$copilotRoot/\.github/scripts/session-cleanup-detector\.ps1"\s*$'
         $script:ContractHeadingPattern = '(?m)^### Canonical Automatic Startup Guard Contract\s*$'
         $script:ExpectedContract = [ordered]@{
-            sessionStartupMarkerPath = $script:CanonicalMarkerPath
-            checkMarkerBeforeAutomaticDetectorRun = $true
+            sessionStartupMarkerPath                    = $script:CanonicalMarkerPath
+            checkMarkerBeforeAutomaticDetectorRun       = $true
             recordMarkerAfterFirstAutomaticStartupCheck = $true
-            recordMarkerRegardlessOfCleanupChoice = $true
-            failOpenOnSessionMemoryAccessError = $true
-            manualDetectorRunsRemainAllowed = $true
+            recordMarkerRegardlessOfCleanupChoice       = $true
+            failOpenOnSessionMemoryAccessError          = $true
+            manualDetectorRunsRemainAllowed             = $true
         }
 
         $script:GetDocumentState = {
             param([string]$Path)
 
+            Test-Path $Path | Should -BeTrue -Because 'the session-startup skill file must exist as the full startup protocol'
+            if (-not (Test-Path $Path)) {
+                return @{
+                    Path    = $Path
+                    Content = ''
+                }
+            }
+
             $content = Get-Content -Path $Path -Raw
 
             return @{
-                Path = $Path
+                Path    = $Path
                 Content = $content
             }
         }
@@ -53,12 +60,12 @@ Describe 'session startup wording contract' {
                 [string]$HeadingPattern
             )
 
-                $match = [regex]::Match($Content, $HeadingPattern)
-                if (-not $match.Success) {
-                    return $null
-                }
+            $match = [regex]::Match($Content, $HeadingPattern)
+            if (-not $match.Success) {
+                return $null
+            }
 
-                return [int]$match.Index
+            return [int]$match.Index
         }
 
         $script:GetStepSection = {
@@ -70,7 +77,7 @@ Describe 'session startup wording contract' {
             $stepPattern = '(?ms)^### Step ' + $StepNumber + ' [^\r\n]*\r?\n(?<body>.*?)(?=^### Step \d+ [^\r\n]*\r?\n|^## |\z)'
             $match = [regex]::Match($Content, $stepPattern)
             if (-not $match.Success) {
-                throw "Could not find Step $StepNumber section."
+                return ''
             }
 
             return $match.Value
@@ -82,7 +89,7 @@ Describe 'session startup wording contract' {
             $blockPattern = '(?ms)^### Canonical Automatic Startup Guard Contract\s*\r?\n\r?\n```json\r?\n(?<json>\{.*?\})\r?\n```'
             $match = [regex]::Match($Content, $blockPattern)
             if (-not $match.Success) {
-                throw 'Could not find canonical automatic startup guard contract JSON block.'
+                return @{}
             }
 
             return $match.Groups['json'].Value | ConvertFrom-Json -AsHashtable
@@ -95,72 +102,66 @@ Describe 'session startup wording contract' {
         }
     }
 
-    It 'requires both documents to use the canonical session marker path in the guard lifecycle steps' {
-        $docs = @(
-            @{ Name = 'copilot-instructions'; State = & $script:GetDocumentState -Path $script:CopilotInstructions },
-            @{ Name = 'session-startup.instructions'; State = & $script:GetDocumentState -Path $script:StartupInstructions }
-        )
+    It 'requires the session-startup skill to use the canonical session marker path in the guard lifecycle steps' {
+        $skill = & $script:GetDocumentState -Path $script:SessionStartupSkill
+        $step2 = & $script:GetStepSection -Content $skill.Content -StepNumber 2
+        $step4 = & $script:GetStepSection -Content $skill.Content -StepNumber 4
 
-        foreach ($doc in $docs) {
-            $step2 = & $script:GetStepSection -Content $doc.State.Content -StepNumber 2
-            $step4 = & $script:GetStepSection -Content $doc.State.Content -StepNumber 4
-
-            $step2 | Should -Match ([regex]::Escape($script:CanonicalMarkerPath)) -Because "$($doc.Name) Step 2 must name the canonical session-memory marker path"
-            $step4 | Should -Match ([regex]::Escape($script:CanonicalMarkerPath)) -Because "$($doc.Name) Step 4 must record the same canonical session-memory marker path"
-        }
+        $step2 | Should -Match ([regex]::Escape($script:CanonicalMarkerPath)) -Because 'the session-startup skill Step 2 must name the canonical session-memory marker path'
+        $step4 | Should -Match ([regex]::Escape($script:CanonicalMarkerPath)) -Because 'the session-startup skill Step 4 must record the same canonical session-memory marker path'
     }
 
-    It 'requires both documents to publish the same canonical automatic startup guard contract' {
-        $docs = @(
-            @{ Name = 'copilot-instructions'; State = & $script:GetDocumentState -Path $script:CopilotInstructions },
-            @{ Name = 'session-startup.instructions'; State = & $script:GetDocumentState -Path $script:StartupInstructions }
-        )
+    It 'requires copilot-instructions to retain the session-startup trigger stub' {
+        $instructions = & $script:GetDocumentState -Path $script:CopilotInstructions
+        $content = $instructions.Content
+        $sessionStartupSectionMatch = [regex]::Match($content, '(?ms)^## Session Startup Check\s*\r?\n(?<body>.*?)(?=^## |\z)')
 
+        $content | Should -Match '(?m)^## Session Startup Check\s*$' -Because 'copilot-instructions must retain the Session Startup Check trigger-stub section'
+        $sessionStartupSectionMatch.Success | Should -BeTrue -Because 'copilot-instructions must keep a bounded Session Startup Check section'
+
+        $sessionStartupSection = $sessionStartupSectionMatch.Groups['body'].Value
+
+        $sessionStartupSection | Should -Match ([regex]::Escape("before responding to the user's first message")) -Because 'copilot-instructions must retain the startup timing phrase for the trigger stub'
+        $sessionStartupSection | Should -Match ([regex]::Escape('session-startup')) -Because 'copilot-instructions must still reference the session-startup skill from the trigger stub'
+        $sessionStartupSection | Should -Match '(?is)Skip the automatic startup check silently when neither .*? is set' -Because 'copilot-instructions must retain the silent-skip summary for missing startup root environment variables'
+        $sessionStartupSection | Should -Match '(?is)`pwsh`.*?(unavailable|missing)' -Because 'copilot-instructions must retain the silent-skip summary for missing pwsh'
+        $sessionStartupSection | Should -Match '(?is)non-JSON output' -Because 'copilot-instructions must retain the silent-skip summary for non-JSON detector output'
+    }
+
+    It 'requires the session-startup skill to publish the canonical automatic startup guard contract' {
+        $skill = & $script:GetDocumentState -Path $script:SessionStartupSkill
         $expectedJson = & $script:ConvertToCanonicalJson -Value $script:ExpectedContract
 
-        foreach ($doc in $docs) {
-            $headingIndex = & $script:GetHeadingIndex -Content $doc.State.Content -HeadingPattern $script:ContractHeadingPattern
-            ($null -ne $headingIndex) | Should -BeTrue -Because "$($doc.Name) must include the canonical automatic startup guard contract heading"
+        $headingIndex = & $script:GetHeadingIndex -Content $skill.Content -HeadingPattern $script:ContractHeadingPattern
+        ($null -ne $headingIndex) | Should -BeTrue -Because 'the session-startup skill must include the canonical automatic startup guard contract heading'
 
-            $contract = & $script:GetCanonicalContract -Content $doc.State.Content
-            (& $script:ConvertToCanonicalJson -Value $contract) | Should -Be $expectedJson -Because "$($doc.Name) must publish the exact startup guard contract"
-        }
-
-        $left = & $script:GetCanonicalContract -Content $docs[0].State.Content
-        $right = & $script:GetCanonicalContract -Content $docs[1].State.Content
-        (& $script:ConvertToCanonicalJson -Value $left) | Should -Be (& $script:ConvertToCanonicalJson -Value $right) -Because 'both startup instruction documents must carry the same canonical contract block'
+        $contract = & $script:GetCanonicalContract -Content $skill.Content
+        (& $script:ConvertToCanonicalJson -Value $contract) | Should -Be $expectedJson -Because 'the session-startup skill must publish the exact startup guard contract'
     }
 
-    It 'requires both documents to describe the run-once guard in the same order' {
-        $docs = @(
-            @{ Name = 'copilot-instructions'; State = & $script:GetDocumentState -Path $script:CopilotInstructions },
-            @{ Name = 'session-startup.instructions'; State = & $script:GetDocumentState -Path $script:StartupInstructions }
-        )
+    It 'requires the session-startup skill to describe the run-once guard in the canonical order' {
+        $skill = & $script:GetDocumentState -Path $script:SessionStartupSkill
+        $guardCheck = & $script:GetHeadingIndex -Content $skill.Content -HeadingPattern '(?m)^### Step 2 — Check the automatic run-once guard\s*$'
+        $detectorInvocation = & $script:GetHeadingIndex -Content $skill.Content -HeadingPattern '(?m)^### Step 3 — Run the detector(?: script)?\s*$'
+        $markerWrite = & $script:GetHeadingIndex -Content $skill.Content -HeadingPattern '(?m)^### Step 4 — Record the run-once marker\s*$'
 
-        foreach ($doc in $docs) {
-            $guardCheck = & $script:GetHeadingIndex -Content $doc.State.Content -HeadingPattern '(?m)^### Step 2 — Check the automatic run-once guard\s*$'
-            $detectorInvocation = & $script:GetHeadingIndex -Content $doc.State.Content -HeadingPattern '(?m)^### Step 3 — Run the detector(?: script)?\s*$'
-            $markerWrite = & $script:GetHeadingIndex -Content $doc.State.Content -HeadingPattern '(?m)^### Step 4 — Record the run-once marker\s*$'
+        ($null -ne $guardCheck) | Should -BeTrue -Because 'the session-startup skill must describe checking the session-memory marker before the automatic detector run'
+        ($null -ne $detectorInvocation) | Should -BeTrue -Because 'the session-startup skill must still describe the automatic detector invocation'
+        ($null -ne $markerWrite) | Should -BeTrue -Because 'the session-startup skill must describe recording the run-once marker after the first automatic startup check'
 
-            ($null -ne $guardCheck) | Should -BeTrue -Because "$($doc.Name) must describe checking the session-memory marker before the automatic detector run"
-            ($null -ne $detectorInvocation) | Should -BeTrue -Because "$($doc.Name) must still describe the automatic detector invocation"
-            ($null -ne $markerWrite) | Should -BeTrue -Because "$($doc.Name) must describe recording the run-once marker after the first automatic startup check"
-
-            ($guardCheck -lt $detectorInvocation) | Should -BeTrue -Because "$($doc.Name) must place the run-once guard before the detector command"
-            ($detectorInvocation -lt $markerWrite) | Should -BeTrue -Because "$($doc.Name) must place marker recording after the first automatic detector run"
-        }
+        ($guardCheck -lt $detectorInvocation) | Should -BeTrue -Because 'the session-startup skill must place the run-once guard before the detector command'
+        ($detectorInvocation -lt $markerWrite) | Should -BeTrue -Because 'the session-startup skill must place marker recording after the first automatic detector run'
     }
 
-    It 'requires both documents to keep the detector command and fail-open/manual semantics aligned' {
-        foreach ($path in @($script:CopilotInstructions, $script:StartupInstructions)) {
-            $content = Get-Content -Path $path -Raw
-            $step3 = & $script:GetStepSection -Content $content -StepNumber 3
-            $step4 = & $script:GetStepSection -Content $content -StepNumber 4
-            $step8 = & $script:GetStepSection -Content $content -StepNumber 8
+    It 'requires the session-startup skill to preserve the detector command and fail-open/manual semantics' {
+        $skill = & $script:GetDocumentState -Path $script:SessionStartupSkill
+        $content = $skill.Content
+        $step3 = & $script:GetStepSection -Content $content -StepNumber 3
+        $step4 = & $script:GetStepSection -Content $content -StepNumber 4
+        $step8 = & $script:GetStepSection -Content $content -StepNumber 8
 
-            $step3 | Should -Match $script:DetectorCommandPattern -Because "$path must preserve the automatic detector command"
-            $step4 | Should -Match '(?is)(fail open).{0,200}(allow later automatic checks|still run the detector)' -Because "$path must state that session-memory write failures fail open"
-            $step8 | Should -Match '(?is)(explicit|manual).{0,80}(manual|detector).{0,160}(remain|still).{0,120}(allowed|possible|available)' -Because "$path must keep manual detector invocation available after the automatic startup check"
-        }
+        $step3 | Should -Match $script:DetectorCommandPattern -Because 'the session-startup skill must preserve the automatic detector command'
+        $step4 | Should -Match '(?is)(fail open).{0,200}(allow later automatic checks|still run the detector)' -Because 'the session-startup skill must state that session-memory write failures fail open'
+        $step8 | Should -Match '(?is)(explicit|manual).{0,80}(manual|detector).{0,160}(remain|still).{0,120}(allowed|possible|available)' -Because 'the session-startup skill must keep manual detector invocation available after the automatic startup check'
     }
 }

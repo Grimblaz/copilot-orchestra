@@ -17,16 +17,16 @@ The gate applies to all user-invocable agents (`user-invocable: true`) when they
 | D1 | Persistence mechanism | Session memory + HTML marker fallback | Zero new infrastructure. Primary marker `<!-- first-contact-assessed-{ID} -->` is posted as a GitHub issue comment via `mcp_github_add_issue_comment`. If the API call fails, session memory records the assessment instead. Warm-handoff detection checks both session memory (`plan-issue-{ID}`, `design-issue-{ID}`) and GitHub comments (`<!-- experience-owner-complete-{ID} -->`, `<!-- design-phase-complete-{ID} -->`) |
 | D2 | Assessment protocol | Three-question structured evaluation | (1) Root cause vs. symptom — does the issue identify an actual mechanism failure or describe a behavioral observation? (2) Mechanism fitness — does the proposed solution align with project conventions per `copilot-instructions.md` and `architecture-rules.md`? (3) Scope accuracy — do the listed files, systems, and acceptance criteria match the identified root cause? All three are project-aware, not just issue-text analysis |
 | D3 | Developer interaction | Inline conversation + `askQuestions` gate | Three options: "I wrote this / I'm fully briefed" (fast-path dismiss), "Assessment looks right — proceed with caution" (acknowledged proceed), "Needs rework — stop here" (abort). The marker is posted for all responses except "Needs rework". This keeps the gate zero-friction for warm pickups that escaped marker detection |
-| D4 | Delivery pattern | `copilot-instructions.md` compact trigger + `provenance-gate.instructions.md` detailed protocol | Follows the session-startup delivery pattern. VS Code `applyTo` targets files being edited, not agent invocations — so the trigger must live in the always-loaded `copilot-instructions.md`. The compact trigger handles Steps 1–4 (extract ID, check markers, check dedup, self-filter) inline; Step 5 loads the full protocol from the instructions file |
+| D4 | Delivery pattern | `copilot-instructions.md` compact trigger + `provenance-gate` skill detailed protocol | The trigger still lives in the always-loaded `copilot-instructions.md`, but the detailed protocol now ships as a plugin-distributable skill instead of a shared instruction file. The compact trigger handles Steps 1–4 (extract ID, check markers, check dedup, self-filter) inline; Step 5 loads the full protocol from the skill |
 
 ---
 
 ## Delivery Pattern
 
-The gate reuses the same two-tier delivery pattern as session-startup:
+The gate reuses the same two-tier delivery pattern as session-startup, with a later shift from instruction-file delivery to skill delivery:
 
 1. **Compact trigger** — embedded in `.github/copilot-instructions.md` under "First-Contact Provenance Gate". Contains the 6-step decision tree (extract issue ID → check warm-handoff → check prior assessment → self-filter → run assessment → record marker). This file is always loaded by VS Code regardless of which agent is active.
-2. **Detailed protocol** — `.github/instructions/provenance-gate.instructions.md`. Contains the full three-question assessment procedure, developer gate presentation format, edge cases, and rationale. Loaded on demand at Step 5.
+2. **Detailed protocol** — originally `.github/instructions/provenance-gate.instructions.md`, now `.github/skills/provenance-gate/SKILL.md`. Contains the full three-question assessment procedure, developer gate presentation format, edge cases, and rationale. Loaded on demand at Step 5.
 
 This pattern exists because of a VS Code platform constraint: instruction files use `applyTo` glob patterns that match files being edited, not agent invocations. The only file guaranteed to be in context for every agent interaction is `copilot-instructions.md`.
 
@@ -53,11 +53,11 @@ Existing markers that the gate **reads** (but does not write):
 
 ## Known Limitations
 
-1. **Plugin distribution gap** — Consumer repos using Copilot Orchestra as a plugin (copied agent files without `.github/instructions/`) will not have `provenance-gate.instructions.md`. The compact trigger includes inline minimal fallback guidance, but the full three-question protocol requires the instructions file. This is a shared limitation with other instruction files (e.g., `session-startup.instructions.md`). **Mitigation (issue #350)**: The gate trigger is now distributed in all 3 example templates (`examples/*/copilot-instructions.md`) for template-based adoption, and `CUSTOMIZATION.md` documents the trigger-section prerequisite so plugin users are aware of the requirement and degradation behavior.
+1. **No behavioral enforcement** — The gate is prose-enforced by LLM agents, not programmatically enforced. An agent may skip or abbreviate the assessment. The contract test in `handoff-persistence-contract.Tests.ps1` validates structural presence of the trigger wording in `copilot-instructions.md`, but cannot enforce runtime behavior. Consistent with all other pipeline gates.
 
-2. **No behavioral enforcement** — The gate is prose-enforced by LLM agents, not programmatically enforced. An agent may skip or abbreviate the assessment. The contract test in `handoff-persistence-contract.Tests.ps1` validates structural presence of the trigger wording in `copilot-instructions.md`, but cannot enforce runtime behavior. Consistent with all other pipeline gates.
+2. **Model-dependent assessment quality** — The three-question assessment relies on LLM judgment. Different models and context states produce varying depth. The gate mitigates this by surfacing findings to the developer via `askQuestions` rather than auto-gating — developer judgment is the ultimate authority.
 
-3. **Model-dependent assessment quality** — The three-question assessment relies on LLM judgment. Different models and context states produce varying depth. The gate mitigates this by surfacing findings to the developer via `askQuestions` rather than auto-gating — developer judgment is the ultimate authority.
+3. **Template trigger still required in consumer repos** — Skill distribution solves the old instruction-file/plugin gap for the full protocol, but consumer repos still need the `## First-Contact Provenance Gate` trigger section in their local `.github/copilot-instructions.md` for the gate to fire. The example templates retain that inline trigger deliberately.
 
 ---
 
@@ -66,7 +66,8 @@ Existing markers that the gate **reads** (but does not write):
 | File | Role |
 |------|------|
 | `.github/copilot-instructions.md` | Compact trigger (Steps 1–6 decision tree) |
-| `.github/instructions/provenance-gate.instructions.md` | Full three-question assessment protocol and edge cases |
+| `.github/instructions/provenance-gate.instructions.md` | Historical intermediate delivery vehicle before skill extraction |
+| `.github/skills/provenance-gate/SKILL.md` | Current full three-question assessment protocol and edge cases |
 | `.github/scripts/Tests/handoff-persistence-contract.Tests.ps1` | Contract tests: marker format consistency, trigger wording presence, behavioral assertions |
 | `examples/*/copilot-instructions.md` | Consumer template distribution — verbatim copy of the compact trigger for template-based adoption |
 | `CUSTOMIZATION.md` | Plugin-user awareness — documents gate requirements and degradation behavior |
