@@ -161,13 +161,13 @@ Skip the gate silently for agents with `user-invocable: false` in their frontmat
 
 ### Step 5 — Run assessment
 
-Load `.github/instructions/provenance-gate.instructions.md` for the full three-question assessment protocol (root cause vs. symptom, mechanism fitness, scope accuracy). If the instructions file is absent (plugin distribution), apply a minimal inline assessment: read the issue body, verify the stated root cause is specific and traceable, and present the developer gate via `#tool:vscode/askQuestions`.
+Load the `provenance-gate` skill from `.github/skills/provenance-gate/SKILL.md` for the full three-question assessment protocol (root cause vs. symptom, mechanism fitness, scope accuracy). If the skill file is absent, apply a minimal inline assessment: read the issue body, verify the stated root cause is specific and traceable, and present the developer gate via `#tool:vscode/askQuestions`.
 
 ### Step 6 — Record marker
 
 After the developer responds (any option except 'Needs rework — stop here'), post `<!-- first-contact-assessed-{ID} -->` as a GitHub issue comment. If posting fails, record the assessment in session memory at `/memories/session/first-contact-assessed-{ID}.md` instead and proceed. In multi-issue bundles, the gate fires per unique issue ID.
 
-> **See** `.github/instructions/provenance-gate.instructions.md` for the full assessment protocol, edge cases, and known limitations.
+> **See** `.github/skills/provenance-gate/SKILL.md` for the full assessment protocol, edge cases, and known limitations.
 
 ## Related Documentation
 

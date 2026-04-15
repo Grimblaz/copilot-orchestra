@@ -20,10 +20,11 @@ Each skill should use this flow:
 
 This keeps prompts concise while preserving depth when needed.
 
-## Available Skills (15)
+## Available Skills (19)
 
 | Skill | Purpose | Status |
 | ----- | ------- | ------ |
+| `bdd-scenarios` | Structured Given/When/Then scenario authoring with ID traceability and CE Gate coverage gap detection | ✅ Included |
 | `brainstorming` | Structured Socratic questioning for exploring ideas and solutions | ✅ Included |
 | `frontend-design` | Guide for creating distinctive UI designs that avoid generic templates | ✅ Included |
 | `skill-creator` | Guide for creating new skills with proper frontmatter format | ✅ Included |
@@ -39,6 +40,9 @@ This keeps prompts concise while preserving depth when needed.
 | `code-review-intake` | Deterministic GitHub review intake workflow with ledger-based judgment | ✅ Included |
 | `post-pr-review` | Post-merge checklist for archiving, documentation, versioning, and release tagging | ✅ Included |
 | `process-troubleshooting` | Five-scenario guide for diagnosing common orchestration failure patterns | ✅ Included |
+| `provenance-gate` | First-contact issue-framing assessment for cold pickups | ✅ Included |
+| `session-startup` | Automatic startup cleanup guard for new conversations | ✅ Included |
+| `terminal-hygiene` | Terminal and test execution guardrails for Copilot Orchestra workflows | ✅ Included |
 
 ## How to Use a Skill
 

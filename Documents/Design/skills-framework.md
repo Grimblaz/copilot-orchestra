@@ -2,7 +2,7 @@
 
 ## Summary
 
-The skills framework provides domain-specific knowledge modules loaded on demand by agents from `.github/skills/`. Skills use a `SKILL.md` format with YAML frontmatter and supply procedural guidance, quality standards, and example patterns — but no orchestration logic. The current inventory contains 16 skills. Hub skills may be extended by project-specific supplement skills (named `{project}-{hub-skill-name}`) that layer additional constraints on top of their defaults.
+The skills framework provides domain-specific knowledge modules loaded on demand by agents from `.github/skills/`. Skills use a `SKILL.md` format with YAML frontmatter and supply procedural guidance, quality standards, and example patterns — but no orchestration logic. The current inventory contains 19 skills. Hub skills may be extended by project-specific supplement skills (named `{project}-{hub-skill-name}`) that layer additional constraints on top of their defaults.
 
 ---
 
@@ -19,7 +19,7 @@ The skills framework provides domain-specific knowledge modules loaded on demand
 
 ---
 
-## Skill Inventory (16 Skills)
+## Skill Inventory (19 Skills)
 
 | Skill | Directory | Purpose |
 |-------|-----------|---------|
@@ -39,6 +39,9 @@ The skills framework provides domain-specific knowledge modules loaded on demand
 | `code-review-intake` | `.github/skills/code-review-intake/` | Deterministic GitHub review intake workflow with ledger-based judgment |
 | `post-pr-review` | `.github/skills/post-pr-review/` | Post-merge checklist for archiving, documentation, versioning, and release tagging |
 | `process-troubleshooting` | `.github/skills/process-troubleshooting/` | Five-scenario workflow troubleshooting guide for diagnosing and fixing common orchestration failure patterns |
+| `provenance-gate` | `.github/skills/provenance-gate/` | First-contact issue-framing assessment for cold pickups |
+| `session-startup` | `.github/skills/session-startup/` | Automatic startup cleanup guard for new conversations |
+| `terminal-hygiene` | `.github/skills/terminal-hygiene/` | Terminal and test execution guardrails for Copilot Orchestra workflows |
 
 ---
 
@@ -93,4 +96,4 @@ Supporting files (e.g., `patterns.md`, `playwright-setup.md`) may live alongside
 - Each `SKILL.md` has valid frontmatter with `name` and `description`
 - `validate-architecture.ps1` checks `.github/skills` path
 - VS Code skill discovery works with `chat.useAgentSkills` enabled
-- 14 skills present and correctly named
+- 19 skills present and correctly named

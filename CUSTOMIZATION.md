@@ -8,8 +8,8 @@ This template supports two distribution models:
 
 | Model | How to Install | What You Get |
 |-------|---------------|--------------|
-| **Plugin** (VS Code 1.110+) | Add marketplace to settings + install from Extensions view | 14 agents, 16 skills, 9 slash commands (`/setup`, `/start-issue`, `/design`, `/plan`, `/implement`, `/review`, `/polish`, `/experience`, `/orchestrate`) — instantly available |
-| **Clone/Fork** | `git clone` or use as template | Everything above PLUS instruction files (auto-loaded by VS Code, incl. session-startup), project templates, and examples |
+| **Plugin** (VS Code 1.110+) | Add marketplace to settings + install from Extensions view | 14 agents, 19 skills, 9 slash commands (`/setup`, `/start-issue`, `/design`, `/plan`, `/implement`, `/review`, `/polish`, `/experience`, `/orchestrate`) — instantly available |
+| **Clone/Fork** | `git clone` or use as template | Everything above PLUS 6 shared instruction files (auto-loaded by VS Code), project templates, and examples |
 
 ### Plugin Installation
 
@@ -24,7 +24,7 @@ This template supports two distribution models:
 
 2. Open Extensions view (`Ctrl+Shift+X`), search `@agentPlugins copilot-orchestra`, install.
 
-> **Note**: If you use the plugin, you will not receive **automatic** loading of `.github/instructions/` files (the plugin does not distribute these). The session-startup check requires `COPILOT_ORCHESTRA_ROOT` (or the fallback `WORKFLOW_TEMPLATE_ROOT`) — it silently skips for users who haven't set either variable. Similarly, the First-Contact Provenance Gate requires the `## First-Contact Provenance Gate` section in your project's `copilot-instructions.md` (included in the example templates); without it the gate does not fire. When the trigger section is present but `provenance-gate.instructions.md` is absent (plugin distribution without `chat.instructionsFilesLocations`), agents fall back to a minimal inline assessment. For full instruction support, use the clone/fork model and enable `chat.instructionsFilesLocations` — or combine the plugin with `chat.instructionsFilesLocations` pointing to a local clone (see the Warning callout below and the wizard's Option 1).
+> **Note**: If you use the plugin, you will not receive **automatic** loading of `.github/instructions/` files (the plugin does not distribute these). The session-startup and provenance-gate behaviors still ship through plugin-distributed skills, but any remaining shared instruction files require a clone/fork plus `chat.instructionsFilesLocations`. The session-startup check also requires `COPILOT_ORCHESTRA_ROOT` (or the fallback `WORKFLOW_TEMPLATE_ROOT`) and silently skips when neither variable is set. The First-Contact Provenance Gate still requires the `## First-Contact Provenance Gate` section in your project's `copilot-instructions.md` (included in the example templates); without that trigger section, the gate does not fire. For full instruction support, use the clone/fork model and enable `chat.instructionsFilesLocations` — or combine the plugin with `chat.instructionsFilesLocations` pointing to a local clone (see the Warning callout below and the wizard's Option 1).
 
 <!-- blockquote separator: prevents Note and Warning from merging in GitHub Markdown -->
 
@@ -109,13 +109,13 @@ To share agents across all repositories in your org:
 - Place agent files in an `agents/` folder at the root of your org's `.github` or `.github-private` repository
 - Repository-level agents in `.github/agents/` override org defaults
 
-### 6. Session Startup Instruction (Optional)
+### 6. Session Startup Check (Optional)
 
 > **Tip**: If you're using the setup wizard (`/setup`), Phase 1 handles `COPILOT_ORCHESTRA_ROOT` and all VS Code settings automatically.
 >
 > The steps below are the manual equivalent — follow them if you prefer to configure without the wizard, or if you need to adjust an existing configuration.
 
-The Copilot Orchestra includes a session startup check (inline in `.github/copilot-instructions.md`) that applies a session-memory run-once guard before any automatic detector invocation. The guard uses the marker `/memories/session/session-startup-check-complete.md`. The first automatic check in a conversation looks for stale feature branches and leftover issue-scoped tracking files, records that marker after the automatic startup check runs, and prevents repeated prompts from later agent hops even if cleanup is declined. Persistent calibration data under `.copilot-tracking/calibration/` is not cleanup work. The full edge-case details are in `.github/instructions/session-startup.instructions.md` (detailed reference only — the check itself runs from `.github/copilot-instructions.md`).
+The Copilot Orchestra includes a session startup check triggered from `.github/copilot-instructions.md` and delivered by the `session-startup` skill. It applies a session-memory run-once guard before any automatic detector invocation. The guard uses the marker `/memories/session/session-startup-check-complete.md`. The first automatic check in a conversation looks for stale feature branches and leftover issue-scoped tracking files, records that marker after the automatic startup check runs, and prevents repeated prompts from later agent hops even if cleanup is declined. Persistent calibration data under `.copilot-tracking/calibration/` is not cleanup work.
 
 **Setup — two steps:**
 
@@ -138,7 +138,7 @@ The Copilot Orchestra includes a session startup check (inline in `.github/copil
 |---|---|
 | `chat.agentFilesLocations` | All workflow agents available in every repository |
 | `chat.agentSkillsLocations` | All workflow skills available in every repository |
-| `chat.instructionsFilesLocations` | Shared instruction files apply across all your repositories (includes all `.instructions.md` files such as session-startup and provenance-gate) |
+| `chat.instructionsFilesLocations` | Shared instruction files apply across all your repositories (the remaining 6 `.instructions.md` files) |
 | `chat.promptFilesLocations` | Shared prompt files (e.g. `/setup`) available in every repository |
 
 > **Windows path**: Use forward slashes or escaped backslashes in the JSON value, e.g. `"C:/Users/you/copilot-orchestra/.github/instructions"`. Apply the same format to all four settings above.
@@ -173,7 +173,7 @@ $env:COPILOT_ORCHESTRA_ROOT = "C:\path\to\copilot-orchestra"
 export COPILOT_ORCHESTRA_ROOT="/path/to/copilot-orchestra"
 ```
 
-**What it does**: At the start of each conversation, the first automatic startup check uses the session-memory marker `/memories/session/session-startup-check-complete.md` to ensure the detector runs only once automatically per conversation. That automatic check looks for a deleted upstream branch (indicating a merged PR) or stale issue-scoped `.copilot-tracking/` files for merged issues. Persistent calibration data is excluded from cleanup detection. If cleanup is needed, it prompts you to confirm before running `post-merge-cleanup.ps1`. If neither root environment variable is set, `pwsh` is unavailable, the detector script is missing, or the detector returns non-JSON output, the automatic check skips silently. If session-memory access fails, the detector still runs; explicit manual detector runs remain available after the automatic guard fires.
+**What it does**: At the start of each conversation, the first automatic startup check uses the session-memory marker `/memories/session/session-startup-check-complete.md` to ensure the detector runs only once automatically per conversation. That automatic check looks for a deleted upstream branch (indicating a merged PR) or stale issue-scoped `.copilot-tracking/` files for merged issues. Persistent calibration data is excluded from cleanup detection. If cleanup is needed, it prompts you to confirm before running `post-merge-cleanup.ps1`. If neither root environment variable is set, `pwsh` is unavailable, the detector script is missing, or the detector returns non-JSON output, the automatic check skips silently. If session-memory access fails, the detector still runs; explicit manual detector runs remain available after the automatic guard fires. For the full protocol, load the `session-startup` skill from `.github/skills/session-startup/SKILL.md`.
 
 **Requires**: PowerShell 7+ (`pwsh`) installed on PATH and `COPILOT_ORCHESTRA_ROOT` (or `WORKFLOW_TEMPLATE_ROOT`) set.
 
