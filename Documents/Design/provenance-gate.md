@@ -53,7 +53,7 @@ Existing markers that the gate **reads** (but does not write):
 
 ## Known Limitations
 
-1. **Plugin distribution gap** — Consumer repos using Copilot Orchestra as a plugin (copied agent files without `.github/instructions/`) will not have `provenance-gate.instructions.md`. The compact trigger includes inline minimal fallback guidance, but the full three-question protocol requires the instructions file. This is a shared limitation with other instruction files (e.g., `session-startup.instructions.md`).
+1. **Plugin distribution gap** — Consumer repos using Copilot Orchestra as a plugin (copied agent files without `.github/instructions/`) will not have `provenance-gate.instructions.md`. The compact trigger includes inline minimal fallback guidance, but the full three-question protocol requires the instructions file. This is a shared limitation with other instruction files (e.g., `session-startup.instructions.md`). **Mitigation (issue #350)**: The gate trigger is now distributed in all 3 example templates (`examples/*/copilot-instructions.md`) for template-based adoption, and `CUSTOMIZATION.md` documents the trigger-section prerequisite so plugin users are aware of the requirement and degradation behavior.
 
 2. **No behavioral enforcement** — The gate is prose-enforced by LLM agents, not programmatically enforced. An agent may skip or abbreviate the assessment. The contract test in `handoff-persistence-contract.Tests.ps1` validates structural presence of the trigger wording in `copilot-instructions.md`, but cannot enforce runtime behavior. Consistent with all other pipeline gates.
 
@@ -68,3 +68,5 @@ Existing markers that the gate **reads** (but does not write):
 | `.github/copilot-instructions.md` | Compact trigger (Steps 1–6 decision tree) |
 | `.github/instructions/provenance-gate.instructions.md` | Full three-question assessment protocol and edge cases |
 | `.github/scripts/Tests/handoff-persistence-contract.Tests.ps1` | Contract tests: marker format consistency, trigger wording presence, behavioral assertions |
+| `examples/*/copilot-instructions.md` | Consumer template distribution — verbatim copy of the compact trigger for template-based adoption |
+| `CUSTOMIZATION.md` | Plugin-user awareness — documents gate requirements and degradation behavior |
