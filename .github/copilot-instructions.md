@@ -31,7 +31,7 @@ Pipeline-based agent orchestration:
 
 - **User-facing agents** (7): Experience-Owner, Solution-Designer, Issue-Planner, Code-Conductor, Code-Critic, Code-Review-Response, UI-Iterator
 - **Internal agents** (7): Called automatically by Code-Conductor as subagents (`user-invocable: false`)
-- **Skills** (19): Loaded on demand by agents from `.github/skills/`
+- **Skills** (32): Loaded on demand by agents from `.github/skills/`
 - **Instructions** (6): Shared rules loaded by agents from `.github/instructions/`
 
 ## Key Conventions

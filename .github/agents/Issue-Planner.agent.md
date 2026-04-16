@@ -128,6 +128,8 @@ Override rule: when in doubt, classify as `[manual]`.
 
 _(Classification rubric is duplicated from `bdd-scenarios/SKILL.md` for quick reference. If you update one, update the other.)_
 
+If you derive or reconstruct BDD scenarios because the issue body does not already contain an authoritative `## Scenarios` section, write the full `## Scenarios` section back into the GitHub issue body with `### SN — {title} (Type)` headings before plan approval. Code-Conductor's CE Gate pre-flight reads scenario IDs from the issue body, not from the plan.
+
 When BDD is enabled, list each scenario in the `[CE GATE]` step by ID with its classification: `SN: {description} [auto/manual]`. For example:
 
 ```text
@@ -138,29 +140,10 @@ When BDD is enabled, list each scenario in the `[CE GATE]` step by ID with its c
 
 When `## BDD Framework` is absent, use the current natural-language scenario format (no IDs, no classification tags).
 
-Before presenting the plan for approval, call Code-Critic as a subagent **three times** to stress-test it. Run all 3 passes independently — do not share findings between passes before merging.
+Before presenting the plan for approval, run the three-pass adversarial stress test defined in `plan-authoring`: call Code-Critic three times independently, preserve the distinct review perspectives and pass numbering, merge the findings into a deduplicated ledger, then run the defense pass and the Code-Review-Response judge pass before presenting approval.
 
-**Pass 1 prompt**:
+For each challenge, decide to incorporate it (revise the plan), dismiss it with rationale, or escalate it for user decision. **If escalated**, use #tool:vscode/askQuestions to present the flagged item(s) and obtain a response before presenting the plan draft.
 
-> "Stress-test this implementation plan for feasibility risks, scope gaps, and integration conflicts. Use design review perspectives. This is adversarial review pass 1 of 3. Tag each finding with 'pass: 1'. Here is the plan: {paste the full plan content}"
-
-**Pass 2 prompt**:
-
-> "Stress-test this implementation plan for feasibility risks, scope gaps, and integration conflicts. Use design review perspectives. This is adversarial review pass 2 of 3. Tag each finding with 'pass: 2'. Here is the plan: {paste the full plan content}"
-
-**Pass 3 prompt** (product-alignment):
-
-> "Stress-test this implementation plan for product direction fit, customer experience coherence, and planned-work alignment. Use product-alignment perspectives. This is adversarial review pass 3 of 3. Tag each finding with 'pass: 3'. Here is the plan: {paste the full plan content}. Evidence sources: (1) the plan content above (always available), (2) issue body if present, (3) Documents/Design/ and Documents/Decisions/, (4) project guidance files (README.md, CUSTOMIZATION.md, copilot-instructions.md), (5) planned-work artifacts (ROADMAP.md, NEXT-STEPS.md) if present. Note absence of planned-work artifacts if not found."
-
-**Merge and deduplicate findings**:
-
-After all 3 calls complete, merge findings from all 3 reports into a single deduplicated ledger. Deduplication rule: same perspective target (the specific design decision, AC, or scope element being questioned) + same failure mode = duplicate. Keep the earliest pass's finding and annotate with `also_flagged_by: [pass N]`. Cross-perspective duplicates (e.g., §D2 and §P2 flagging the same concern) are also merged.
-
-**What to do with the findings**:
-
-- Code-Critic returns 3 challenge reports (2 with standard design perspectives, 1 with product-alignment perspectives). Merge into a single deduplicated findings ledger.
-- For each challenge: decide to incorporate it (revise the plan), dismiss it with rationale, or escalate it for user decision. **If escalated**, use #tool:vscode/askQuestions to present the flagged item(s) and obtain a response before presenting the plan draft.
-- Revise the plan steps as needed to address accepted challenges.
 - After incorporating or dismissing all findings, append a **`Plan Stress-Test`** summary block at the end of the plan draft showing: challenges found, how each was addressed (incorporated / dismissed / escalated), and overall confidence assessment.
 - When any plan step characterizes another agent's capabilities, permissions, or scope, verify the claim against that agent's own specification (read the agent's `.agent.md` file) before finalizing the requirement contract.
 

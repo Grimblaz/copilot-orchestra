@@ -89,11 +89,11 @@ Include the fixed adversarial review pipeline: three prosecution passes, merged 
 
 Before approval, prepare the draft plan for adversarial review:
 
-1. Run three independent Code-Critic prosecution passes
-2. Merge and deduplicate the findings
-3. Decide which findings to incorporate, dismiss, or escalate
-4. Run defense and judge passes
-5. Reconcile the draft against the judge outcome before presenting approval
+1. Run three independent Code-Critic prosecution passes. Passes 1 and 2 use design review perspectives and must tag each finding with the current pass number. Pass 3 uses product-alignment perspectives, must tag each finding with the current pass number, and should include the plan plus any available issue-body, design-doc, decision-doc, guidance-file, and planned-work context needed to judge alignment. Each pass must receive the full plan content rather than a partial excerpt.
+1. Merge and deduplicate the findings. Treat the same perspective target plus the same failure mode as a duplicate, keep the earliest pass's finding as the primary entry, and annotate cross-pass or cross-perspective repeats on that entry instead of counting them twice.
+1. Decide which findings to incorporate, dismiss, or escalate.
+1. Run defense and judge passes.
+1. Reconcile the draft against the judge outcome before presenting approval.
 
 The agent remains responsible for the approval prompt contract and for persisting the approved plan.
 
