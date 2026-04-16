@@ -2,7 +2,7 @@
 
 ## Summary
 
-The skills framework provides domain-specific knowledge modules loaded on demand by agents from `.github/skills/`. Skills use a `SKILL.md` format with YAML frontmatter and supply procedural guidance, quality standards, and example patterns — but no orchestration logic. The current inventory contains 19 skills. Hub skills may be extended by project-specific supplement skills (named `{project}-{hub-skill-name}`) that layer additional constraints on top of their defaults.
+The skills framework provides domain-specific knowledge modules loaded on demand by agents from `.github/skills/`. Under the thin-agents/fat-skills direction for issue #344, skills hold reusable methodology and protocol content, while agents retain orchestration boundaries such as routing, identity, trigger points, and commit authority. The repository currently ships 19 skills; issue #344 expands that inventory to 32 by moving methodology out of agents without changing agent interfaces. Hub skills may be extended by project-specific supplement skills (named `{project}-{hub-skill-name}`) that layer additional constraints on top of their defaults.
 
 ---
 
@@ -19,7 +19,21 @@ The skills framework provides domain-specific knowledge modules loaded on demand
 
 ---
 
-## Skill Inventory (19 Skills)
+## Boundary Rules For Issue #344
+
+Issue #344 changes the skills boundary from "skills are reference material" to "skills are the home for reusable methodology." The split is:
+
+- Agents keep orchestration: user-turn routing, handoffs, trigger placement, step ordering, commit decisions, issue-state transitions, and any identity-level stance that defines the agent's role.
+- Skills keep methodology: reusable protocols, checklists, questioning patterns, validation ladders, evidence contracts, and decision heuristics that can be loaded by multiple agents.
+- Concrete examples: the Code-Conductor step loop, CE Gate orchestration, and defect routing remain agent-owned; the validation ladder and review-reconciliation method move to skills. Test-Writer keeps delegation flow in the agent while shared testing method consolidates into `test-driven-development`.
+- Portable trigger skills such as `session-startup`, `provenance-gate`, and `terminal-hygiene` remain skills; the logic for when an agent invokes them stays in the owning agent.
+- `guidance-complexity` stays agent-only in this issue. It remains an architecture check enforced from agent/instruction surfaces rather than becoming a skill.
+
+---
+
+## Skill Inventory Direction
+
+### Currently Shipped Inventory (19 Skills)
 
 | Skill | Directory | Purpose |
 |-------|-----------|---------|
@@ -42,6 +56,26 @@ The skills framework provides domain-specific knowledge modules loaded on demand
 | `provenance-gate` | `.github/skills/provenance-gate/` | First-contact issue-framing assessment for cold pickups |
 | `session-startup` | `.github/skills/session-startup/` | Automatic startup cleanup guard for new conversations |
 | `terminal-hygiene` | `.github/skills/terminal-hygiene/` | Terminal and test execution guardrails for Copilot Orchestra workflows |
+
+### Issue #344 Target Inventory (32 Skills)
+
+Issue #344 adds 13 methodology-focused skills while keeping the existing 19-skill baseline and preserving agent interfaces.
+
+| Planned skill | Source boundary |
+|---------------|-----------------|
+| `documentation-finalization` | Extract reusable documentation-finalization methodology from `Doc-Keeper.agent.md` |
+| `specification-authoring` | Extract reusable specification authoring method from `Specification.agent.md` |
+| `refactoring-methodology` | Extract reusable refactoring workflow from `Refactor-Specialist.agent.md` |
+| `implementation-discipline` | Extract reusable implementation workflow from `Code-Smith.agent.md` |
+| `research-methodology` | Extract reusable research workflow from `Research-Agent.agent.md` |
+| `process-analysis` | Extract reusable process-analysis method from `Process-Review.agent.md` |
+| `customer-experience` | Extract reusable customer-experience method from `Experience-Owner.agent.md` |
+| `design-exploration` | Extract reusable design exploration method from `Solution-Designer.agent.md` |
+| `plan-authoring` | Extract reusable planning method from `Issue-Planner.agent.md` |
+| `adversarial-review` | Extract reusable prosecution methodology from `Code-Critic.agent.md` |
+| `review-judgment` | Extract reusable review judgment method from `Code-Review-Response.agent.md` |
+| `ui-iteration` | Extract reusable UI iteration method from `UI-Iterator.agent.md` |
+| `validation-methodology` | Extract reusable validation methodology from `Code-Conductor.agent.md` |
 
 ---
 
@@ -71,6 +105,8 @@ description: What skill does. Use when {trigger conditions}. DO NOT USE FOR: {ne
 
 Supporting files (e.g., `patterns.md`, `playwright-setup.md`) may live alongside `SKILL.md` in the same directory. Skills provide knowledge and procedural guidance — they must NOT contain agent orchestration logic.
 
+For issue #344, "must NOT contain agent orchestration logic" means skills do not decide which agent speaks next, when a trigger fires, whether a commit occurs, or how Code-Conductor advances between plan steps. Skills may contain the reusable protocol an agent follows once the agent has decided to invoke that skill.
+
 ---
 
 ## Files Changed
@@ -96,4 +132,4 @@ Supporting files (e.g., `patterns.md`, `playwright-setup.md`) may live alongside
 - Each `SKILL.md` has valid frontmatter with `name` and `description`
 - `validate-architecture.ps1` checks `.github/skills` path
 - VS Code skill discovery works with `chat.useAgentSkills` enabled
-- 19 skills present and correctly named
+- Current baseline is 19 skills, with issue #344 expanding the target inventory to 32 skills
