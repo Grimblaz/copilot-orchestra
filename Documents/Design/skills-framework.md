@@ -2,7 +2,7 @@
 
 ## Summary
 
-The skills framework provides domain-specific knowledge modules loaded on demand by agents from `.github/skills/`. Under the thin-agents/fat-skills direction for issue #344, skills hold reusable methodology and protocol content, while agents retain orchestration boundaries such as routing, identity, trigger points, and commit authority. The repository currently ships 19 skills; issue #344 expands that inventory to 32 by moving methodology out of agents without changing agent interfaces. Hub skills may be extended by project-specific supplement skills (named `{project}-{hub-skill-name}`) that layer additional constraints on top of their defaults.
+The skills framework provides domain-specific knowledge modules loaded on demand by agents from `.github/skills/`. Under the thin-agents/fat-skills direction for issue #344, skills hold reusable methodology and protocol content, while agents retain orchestration boundaries such as routing, identity, trigger points, and commit authority. The repository now ships 32 skills after moving reusable methodology out of agents without changing agent interfaces. Hub skills may be extended by project-specific supplement skills (named `{project}-{hub-skill-name}`) that layer additional constraints on top of their defaults.
 
 ---
 
@@ -33,49 +33,42 @@ Issue #344 changes the skills boundary from "skills are reference material" to "
 
 ## Skill Inventory Direction
 
-### Currently Shipped Inventory (19 Skills)
+### Currently Shipped Inventory (32 Skills)
 
 | Skill | Directory | Purpose |
 |-------|-----------|---------|
+| `adversarial-review` | `.github/skills/adversarial-review/` | Reusable adversarial review methodology for prosecution, defense, design challenge, product-alignment, and proxy review passes |
 | `bdd-scenarios` | `.github/skills/bdd-scenarios/` | Structured Given/When/Then scenario authoring with ID traceability and CE Gate coverage gap detection |
 | `brainstorming` | `.github/skills/brainstorming/` | Structured Socratic questioning for exploring ideas and solutions |
-| `frontend-design` | `.github/skills/frontend-design/` | Guide for creating distinctive UI designs that avoid generic templates |
-| `parallel-execution` | `.github/skills/parallel-execution/` | Build-test orchestration protocol for choosing and running parallel or serial implementation lanes |
-| `property-based-testing` | `.github/skills/property-based-testing/` | Incremental rollout policy for property-based testing that preserves readable example-based tests |
-| `skill-creator` | `.github/skills/skill-creator/` | Guide for creating new skills in this system with proper frontmatter format |
-| `software-architecture` | `.github/skills/software-architecture/` | Clean Architecture, SOLID principles, and architectural decision guidance |
-| `systematic-debugging` | `.github/skills/systematic-debugging/` | 4-phase debugging process (Observe, Hypothesize, Test, Fix) for complex issues |
-| `test-driven-development` | `.github/skills/test-driven-development/` | Test-Driven Development workflow guidance, quality standards, and practical patterns |
-| `ui-testing` | `.github/skills/ui-testing/` | Resilient React component testing strategies focusing on user behavior |
-| `verification-before-completion` | `.github/skills/verification-before-completion/` | Evidence-based verification checklist before marking work complete |
-| `webapp-testing` | `.github/skills/webapp-testing/` | Playwright end-to-end testing guidance for web apps, with practical patterns and setup steps |
 | `browser-canvas-testing` | `.github/skills/browser-canvas-testing/` | VS Code native browser tool behavior for canvas-based games (Phaser 3, etc.) |
 | `code-review-intake` | `.github/skills/code-review-intake/` | Deterministic GitHub review intake workflow with ledger-based judgment |
+| `customer-experience` | `.github/skills/customer-experience/` | Reusable customer framing and CE evidence methodology |
+| `design-exploration` | `.github/skills/design-exploration/` | Reusable technical design exploration methodology |
+| `documentation-finalization` | `.github/skills/documentation-finalization/` | Documentation finalization workflow for accuracy, cleanup, and design-doc maintenance |
+| `frontend-design` | `.github/skills/frontend-design/` | Guide for creating distinctive UI designs that avoid generic templates |
+| `implementation-discipline` | `.github/skills/implementation-discipline/` | Minimal implementation workflow for plan-driven coding |
+| `parallel-execution` | `.github/skills/parallel-execution/` | Build-test orchestration protocol for choosing and running parallel or serial implementation lanes |
+| `plan-authoring` | `.github/skills/plan-authoring/` | Reusable implementation-plan authoring methodology |
 | `post-pr-review` | `.github/skills/post-pr-review/` | Post-merge checklist for archiving, documentation, versioning, and release tagging |
-| `process-troubleshooting` | `.github/skills/process-troubleshooting/` | Five-scenario workflow troubleshooting guide for diagnosing and fixing common orchestration failure patterns |
+| `process-analysis` | `.github/skills/process-analysis/` | Reusable retrospective and process-analysis methodology for workflow reviews |
+| `process-troubleshooting` | `.github/skills/process-troubleshooting/` | Five-scenario workflow troubleshooting guide for diagnosing common orchestration failure patterns |
+| `property-based-testing` | `.github/skills/property-based-testing/` | Incremental rollout policy for property-based testing that preserves readable example-based tests |
 | `provenance-gate` | `.github/skills/provenance-gate/` | First-contact issue-framing assessment for cold pickups |
+| `refactoring-methodology` | `.github/skills/refactoring-methodology/` | Proactive refactoring workflow for touched files and nearby debt |
+| `research-methodology` | `.github/skills/research-methodology/` | Evidence-driven research methodology for technical analysis and recommendation building |
+| `review-judgment` | `.github/skills/review-judgment/` | Reusable single-shot review judgment methodology for scoring prosecution and defense ledgers |
 | `session-startup` | `.github/skills/session-startup/` | Automatic startup cleanup guard for new conversations |
+| `skill-creator` | `.github/skills/skill-creator/` | Guide for creating new skills in this system with proper frontmatter format |
+| `software-architecture` | `.github/skills/software-architecture/` | Clean Architecture, SOLID principles, and architectural decision guidance |
+| `specification-authoring` | `.github/skills/specification-authoring/` | Structured authoring guidance for formal specification documents |
+| `systematic-debugging` | `.github/skills/systematic-debugging/` | 4-phase debugging process (Observe, Hypothesize, Test, Fix) for complex issues |
 | `terminal-hygiene` | `.github/skills/terminal-hygiene/` | Terminal and test execution guardrails for Copilot Orchestra workflows |
-
-### Issue #344 Target Inventory (32 Skills)
-
-Issue #344 adds 13 methodology-focused skills while keeping the existing 19-skill baseline and preserving agent interfaces.
-
-| Planned skill | Source boundary |
-|---------------|-----------------|
-| `documentation-finalization` | Extract reusable documentation-finalization methodology from `Doc-Keeper.agent.md` |
-| `specification-authoring` | Extract reusable specification authoring method from `Specification.agent.md` |
-| `refactoring-methodology` | Extract reusable refactoring workflow from `Refactor-Specialist.agent.md` |
-| `implementation-discipline` | Extract reusable implementation workflow from `Code-Smith.agent.md` |
-| `research-methodology` | Extract reusable research workflow from `Research-Agent.agent.md` |
-| `process-analysis` | Extract reusable process-analysis method from `Process-Review.agent.md` |
-| `customer-experience` | Extract reusable customer-experience method from `Experience-Owner.agent.md` |
-| `design-exploration` | Extract reusable design exploration method from `Solution-Designer.agent.md` |
-| `plan-authoring` | Extract reusable planning method from `Issue-Planner.agent.md` |
-| `adversarial-review` | Extract reusable prosecution methodology from `Code-Critic.agent.md` |
-| `review-judgment` | Extract reusable review judgment method from `Code-Review-Response.agent.md` |
-| `ui-iteration` | Extract reusable UI iteration method from `UI-Iterator.agent.md` |
-| `validation-methodology` | Extract reusable validation methodology from `Code-Conductor.agent.md` |
+| `test-driven-development` | `.github/skills/test-driven-development/` | Test-Driven Development workflow guidance, quality standards, and practical patterns |
+| `ui-iteration` | `.github/skills/ui-iteration/` | Reusable screenshot-driven UI polish workflow for iterative visual refinement |
+| `ui-testing` | `.github/skills/ui-testing/` | Resilient React component testing strategies focusing on user behavior |
+| `validation-methodology` | `.github/skills/validation-methodology/` | Reusable validation and review methodology for staged validation, failure triage, and prosecution-depth setup |
+| `verification-before-completion` | `.github/skills/verification-before-completion/` | Evidence-based verification checklist before marking work complete |
+| `webapp-testing` | `.github/skills/webapp-testing/` | Playwright end-to-end testing guidance for web apps, with practical patterns and setup steps |
 
 ---
 
@@ -132,4 +125,4 @@ For issue #344, "must NOT contain agent orchestration logic" means skills do not
 - Each `SKILL.md` has valid frontmatter with `name` and `description`
 - `validate-architecture.ps1` checks `.github/skills` path
 - VS Code skill discovery works with `chat.useAgentSkills` enabled
-- Current baseline is 19 skills, with issue #344 expanding the target inventory to 32 skills
+- Current shipped inventory is 32 skills, and all plugin plus documentation surfaces should describe that same count consistently
