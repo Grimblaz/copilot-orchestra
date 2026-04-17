@@ -169,7 +169,6 @@ Every finding must also include these automation-routing fields:
 - Load `.github/skills/routing-tables/SKILL.md` when assigning canonical automation-routing values. The authoritative enum values and points mapping live in `.github/skills/routing-tables/assets/routing-config.json` under `enums`.
 - `severity`: use the canonical `enums.severity` values
 - `points`: use the canonical `enums.points_mapping` values — assigned by prosecutor; judge may override
-- `confidence`: high | medium | low
 - `id`: F1 | F2 | F3 | … — sequential label within this review cycle; used by defense and judge to cross-reference findings by ID. Assign in order of appearance.
 - `pass`: 1 | 2 | 3 — prosecution pass number that originated this finding. Code prosecution and design/plan prosecution; omit in CE review, proxy prosecution, and defense mode.
 - `confidence`: use the canonical `enums.confidence` values

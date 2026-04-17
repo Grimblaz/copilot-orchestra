@@ -1,8 +1,5 @@
 #Requires -Version 7.0
 
-Set-StrictMode -Version Latest
-$ErrorActionPreference = 'Stop'
-
 function Get-RTConfigPath {
     return Join-Path $PSScriptRoot '..\assets\routing-config.json'
 }
@@ -225,11 +222,15 @@ function Invoke-RoutingLookup {
         [string]$Table,
 
         [Parameter(Mandatory)]
+        [ValidateNotNullOrEmpty()]
         [string]$Key,
 
         [Parameter(Mandatory)]
         [string]$Value
     )
+
+    Set-StrictMode -Version Latest
+    $ErrorActionPreference = 'Stop'
 
     try {
         $config = Read-RTJsonFile -Path (Get-RTConfigPath)
@@ -265,6 +266,9 @@ function Test-GateCriteria {
         [Parameter(Mandatory)]
         [hashtable]$Criteria
     )
+
+    Set-StrictMode -Version Latest
+    $ErrorActionPreference = 'Stop'
 
     try {
         $gateConfig = Read-RTJsonFile -Path (Get-RTGateCriteriaPath)

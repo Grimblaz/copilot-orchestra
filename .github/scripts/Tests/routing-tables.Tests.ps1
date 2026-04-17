@@ -15,8 +15,6 @@
       - config re-read behavior for single-source-of-truth edits
       - taxonomy category parity with script-safety-contract.Tests.ps1
 
-    This file is intentionally red before Step 5 because
-    .github/skills/routing-tables/scripts/routing-tables-core.ps1 does not exist yet.
 #>
 
 Describe 'routing tables deterministic contract' {
