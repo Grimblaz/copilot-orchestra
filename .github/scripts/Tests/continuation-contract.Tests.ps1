@@ -30,16 +30,16 @@ Describe 'continuation contract' {
             return Get-Content -Path $Path -Raw
         }
 
-        # Extract the <critical_rules> block for scoped assertions
-        $fullContent = & $script:ReadContent -Path $script:CodeConductor
-        $script:CriticalRulesBlock = if ($fullContent -match '(?si)<critical_rules>(.*?)</critical_rules>') {
+        # Read full content once; extract scoped blocks for precise assertions
+        $script:FullContent = & $script:ReadContent -Path $script:CodeConductor
+        $script:CriticalRulesBlock = if ($script:FullContent -match '(?si)<critical_rules>(.*?)</critical_rules>') {
             $Matches[1]
         } else {
             ''
         }
 
         # Extract the <stopping_rules> block for scoped assertions
-        $script:StoppingRulesBlock = if ($fullContent -match '(?si)<stopping_rules>(.*?)</stopping_rules>') {
+        $script:StoppingRulesBlock = if ($script:FullContent -match '(?si)<stopping_rules>(.*?)</stopping_rules>') {
             $Matches[1]
         } else {
             ''
@@ -67,9 +67,7 @@ Describe 'continuation contract' {
     }
 
     It 'requires key continuation points to be listed (validation, review, CE Gate, PR creation)' {
-        $content = & $script:ReadContent -Path $script:CodeConductor
-
-        $content | Should -Match $script:ContinuationPointsPattern -Because 'issue #354 requires key continuation points where models commonly stall: validation, review, CE Gate, and PR creation'
+        $script:CriticalRulesBlock | Should -Match $script:ContinuationPointsPattern -Because 'issue #354 requires key continuation points inside <critical_rules> where models commonly stall: validation, review, CE Gate, and PR creation'
     }
 
     It 'requires stopping rules to cover silent abandonment' {
@@ -78,14 +76,10 @@ Describe 'continuation contract' {
     }
 
     It 'requires a "when uncertain, ask" fallback using askQuestions' {
-        $content = & $script:ReadContent -Path $script:CodeConductor
-
-        $content | Should -Match $script:UncertainAskPattern -Because 'issue #354 requires the uncertainty-as-stop-reason anti-pattern to be addressed with an askQuestions fallback'
+        $script:FullContent | Should -Match $script:UncertainAskPattern -Because 'issue #354 requires the uncertainty-as-stop-reason anti-pattern to be addressed with an askQuestions fallback'
     }
 
     It 'requires the anti-pattern "premature silent stop" to be named as a protocol violation' {
-        $content = & $script:ReadContent -Path $script:CodeConductor
-
-        $content | Should -Match $script:PrematureSilentStopPattern -Because 'issue #354 requires the premature silent stop anti-pattern to be explicitly named and defined as a protocol violation'
+        $script:CriticalRulesBlock | Should -Match $script:PrematureSilentStopPattern -Because 'issue #354 requires the premature silent stop anti-pattern to be explicitly named inside <critical_rules> as a protocol violation'
     }
 }

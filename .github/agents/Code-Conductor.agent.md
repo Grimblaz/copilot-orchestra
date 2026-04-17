@@ -83,6 +83,7 @@ When Code-Conductor orchestrates **hub mode** (any pipeline tier — full or abb
 3. **Never silently stop.** Every session must end with either a PR URL or an `#tool:vscode/askQuestions` call.
 
 Key continuation points where models commonly stall (proceed autonomously through all of these):
+
 - After implementation steps complete → proceed to validation
 - After validation passes → proceed to code review
 - After code review completes → proceed to CE Gate
@@ -300,6 +301,7 @@ When the user invokes hub mode for multiple issues at once (e.g., `@code-conduct
 <stopping_rules>
 
 **Hard stop rules**:
+
 1. Never report implementation complete if no PR URL is available.
 2. Never end a session without either (a) a PR URL or (b) an `#tool:vscode/askQuestions` call explaining why the pipeline cannot continue.
 3. "I'm not sure if I should continue" is never a valid reason to stop silently — use `#tool:vscode/askQuestions`.
