@@ -299,7 +299,10 @@ When the user invokes hub mode for multiple issues at once (e.g., `@code-conduct
 
 <stopping_rules>
 
-**Hard stop rule**: Never report implementation complete if no PR URL is available.
+**Hard stop rules**:
+1. Never report implementation complete if no PR URL is available.
+2. Never end a session without either (a) a PR URL or (b) an `#tool:vscode/askQuestions` call explaining why the pipeline cannot continue.
+3. "I'm not sure if I should continue" is never a valid reason to stop silently — use `#tool:vscode/askQuestions`.
 
 </stopping_rules>
 
