@@ -4,6 +4,20 @@
     Library for plugin preflight validation logic. Dot-source and call Invoke-PluginPreflight.
 #>
 
+function Resolve-PluginContentPath {
+    # Issue #367: resolve agents/ or skills/ at either the new repo-root location
+    # or the legacy .github/ location, so validators run green mid-migration.
+    param(
+        [Parameter(Mandatory)][string]$RootPath,
+        [Parameter(Mandatory)][ValidateSet('agents', 'skills')][string]$ContentName
+    )
+    $preferred = Join-Path -Path $RootPath -ChildPath $ContentName
+    if (Test-Path -LiteralPath $preferred) { return $preferred }
+    $fallback = Join-Path -Path $RootPath -ChildPath '.github' -AdditionalChildPath $ContentName
+    if (Test-Path -LiteralPath $fallback) { return $fallback }
+    return $preferred
+}
+
 function Invoke-PluginPreflight {
     [CmdletBinding()]
     param(
@@ -75,7 +89,7 @@ function Invoke-PluginPreflight {
 
         # --- 4. Agent directory contains expected .agent.md files ---
         try {
-            $agentDir = Join-Path -Path $RootPath -ChildPath '.github' -AdditionalChildPath 'agents'
+            $agentDir = Resolve-PluginContentPath -RootPath $RootPath -ContentName 'agents'
             $agentFiles = @(Get-ChildItem -Path $agentDir -Filter '*.agent.md' -File -ErrorAction SilentlyContinue)
             $expectedAgentCount = 14
             if ($agentFiles.Count -eq $expectedAgentCount) {
@@ -106,7 +120,7 @@ function Invoke-PluginPreflight {
         # --- 6. Skill count in plugin.json matches filesystem ---
         try {
             $declaredSkillCount = @($manifest.skills).Count
-            $fsSkillCount = @(Get-ChildItem -Path (Join-Path -Path $RootPath -ChildPath '.github' -AdditionalChildPath 'skills') -Directory -ErrorAction SilentlyContinue).Count
+            $fsSkillCount = @(Get-ChildItem -Path (Resolve-PluginContentPath -RootPath $RootPath -ContentName 'skills') -Directory -ErrorAction SilentlyContinue).Count
             if ($declaredSkillCount -eq $fsSkillCount) {
                 $results.Add([PSCustomObject]@{ Name = 'SkillCountMatch'; Passed = $true; Detail = "$declaredSkillCount skills declared and on disk" })
             }

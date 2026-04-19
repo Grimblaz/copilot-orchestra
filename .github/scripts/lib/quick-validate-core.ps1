@@ -4,6 +4,20 @@
     Library for quick-validate logic. Dot-source this file and call Invoke-QuickValidate.
 #>
 
+function Resolve-QVContentPath {
+    # Issue #367: resolve agents/ or skills/ at either the new repo-root location
+    # or the legacy .github/ location, so validators run green mid-migration.
+    param(
+        [Parameter(Mandatory)][string]$RootPath,
+        [Parameter(Mandatory)][ValidateSet('agents', 'skills')][string]$ContentName
+    )
+    $preferred = Join-Path -Path $RootPath -ChildPath $ContentName
+    if (Test-Path -LiteralPath $preferred) { return $preferred }
+    $fallback = Join-Path -Path $RootPath -ChildPath '.github' -AdditionalChildPath $ContentName
+    if (Test-Path -LiteralPath $fallback) { return $fallback }
+    return $preferred
+}
+
 function Test-QVLegacyReference {
     param(
         [Parameter(Mandatory)]
@@ -47,7 +61,7 @@ function Test-QVSkillFrontmatter {
         [string]$Pattern
     )
 
-    $skillsPath = Join-Path -Path $RootPath -ChildPath '.github' -AdditionalChildPath 'skills'
+    $skillsPath = Resolve-QVContentPath -RootPath $RootPath -ContentName 'skills'
     if (-not (Test-Path $skillsPath)) {
         return [PSCustomObject]@{ Name = $CheckName; Passed = $true; Detail = '' }
     }
@@ -87,7 +101,7 @@ function Test-QVSkillNameMatch {
         [string]$RootPath
     )
 
-    $skillsPath = Join-Path -Path $RootPath -ChildPath '.github' -AdditionalChildPath 'skills'
+    $skillsPath = Resolve-QVContentPath -RootPath $RootPath -ContentName 'skills'
     if (-not (Test-Path $skillsPath)) {
         return [PSCustomObject]@{ Name = 'SkillNameMatch'; Passed = $true; Detail = '' }
     }
@@ -178,7 +192,7 @@ function Get-QVExistingPSScriptAnalyzerPaths {
         $paths.Add((Resolve-Path $ScriptsPath).Path)
     }
 
-    $skillScriptsPath = Join-Path -Path $RootPath -ChildPath '.github' -AdditionalChildPath 'skills'
+    $skillScriptsPath = Resolve-QVContentPath -RootPath $RootPath -ContentName 'skills'
     if (Test-Path $skillScriptsPath) {
         $skillScriptFiles = @(Get-ChildItem -Path $skillScriptsPath -Filter '*.ps1' -File -Recurse |
                 Where-Object { $_.DirectoryName -match '[\\/]scripts$' })
@@ -244,7 +258,7 @@ function Test-QVSkillAssetJsonParse {
         [string]$RootPath
     )
 
-    $skillsPath = Join-Path -Path $RootPath -ChildPath '.github' -AdditionalChildPath 'skills'
+    $skillsPath = Resolve-QVContentPath -RootPath $RootPath -ContentName 'skills'
     if (-not (Test-Path $skillsPath)) {
         return [PSCustomObject]@{ Name = 'SkillAssetJsonParse'; Passed = $true; Detail = '' }
     }
@@ -297,7 +311,8 @@ function Invoke-QuickValidate {
             $RootPath = (Resolve-Path (Join-Path $PSScriptRoot '../../..')).Path
         }
         if (-not $GuidanceComplexityScriptPath) {
-            $GuidanceComplexityScriptPath = Join-Path -Path $RootPath -ChildPath '.github' -AdditionalChildPath 'skills', 'guidance-measurement', 'scripts', 'measure-guidance-complexity.ps1'
+            $skillsRoot = Resolve-QVContentPath -RootPath $RootPath -ContentName 'skills'
+            $GuidanceComplexityScriptPath = Join-Path -Path $skillsRoot -ChildPath 'guidance-measurement' -AdditionalChildPath 'scripts', 'measure-guidance-complexity.ps1'
         }
         if (-not $PSScriptAnalyzerSettingsPath) {
             $PSScriptAnalyzerSettingsPath = Join-Path -Path $RootPath -ChildPath '.github' -AdditionalChildPath 'config', 'PSScriptAnalyzerSettings.psd1'
