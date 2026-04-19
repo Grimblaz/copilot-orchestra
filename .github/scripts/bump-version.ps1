@@ -34,10 +34,10 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-$Red    = "`e[31m"
-$Green  = "`e[32m"
+$Red = "`e[31m"
+$Green = "`e[32m"
 $Yellow = "`e[33m"
-$Reset  = "`e[0m"
+$Reset = "`e[0m"
 
 function Fail([string]$Message, [string]$Hint = '') {
     Write-Host "${Red}✗${Reset} $Message"
@@ -51,32 +51,32 @@ if ($Version -notmatch '^\d+\.\d+\.\d+$') {
 }
 
 # --- Resolve file paths ---
-$repoRoot        = Resolve-Path (Join-Path $PSScriptRoot '../..')
-$pluginJson      = Join-Path $repoRoot '.github/plugin/plugin.json'
+$repoRoot = Resolve-Path (Join-Path $PSScriptRoot '../..')
+$pluginJson = Join-Path $repoRoot '.github/plugin.json'
 $marketplaceJson = Join-Path $repoRoot '.github/plugin/marketplace.json'
-$readme          = Join-Path $repoRoot 'README.md'
+$readme = Join-Path $repoRoot 'README.md'
 
 # --- Read files into memory (written back as UTF-8 without BOM) ---
-$pluginContent      = [System.IO.File]::ReadAllText($pluginJson)
+$pluginContent = [System.IO.File]::ReadAllText($pluginJson)
 $marketplaceContent = [System.IO.File]::ReadAllText($marketplaceJson)
-$readmeContent      = [System.IO.File]::ReadAllText($readme)
+$readmeContent = [System.IO.File]::ReadAllText($readme)
 
 # --- Extract current versions ---
-$pluginVersion      = [regex]::Match($pluginContent,      '"version":\s*"([\d.]+)"').Groups[1].Value
+$pluginVersion = [regex]::Match($pluginContent, '"version":\s*"([\d.]+)"').Groups[1].Value
 $marketplaceMatches = [regex]::Matches($marketplaceContent, '"version":\s*"([\d.]+)"')
 if ($marketplaceMatches.Count -ne 2) {
     Fail "Expected exactly 2 'version' fields in marketplace.json, found $($marketplaceMatches.Count)"
 }
 $marketplaceVersion1 = $marketplaceMatches[0].Groups[1].Value
 $marketplaceVersion2 = $marketplaceMatches[1].Groups[1].Value
-$readmeVersion      = [regex]::Match($readmeContent, 'version-v([\d.]+)-blue').Groups[1].Value
+$readmeVersion = [regex]::Match($readmeContent, 'version-v([\d.]+)-blue').Groups[1].Value
 
 # --- Pre-bump consistency check ---
 $allVersions = [ordered]@{
-    'plugin.json'                      = $pluginVersion
-    'marketplace.json (metadata)'      = $marketplaceVersion1
+    'plugin.json'                       = $pluginVersion
+    'marketplace.json (metadata)'       = $marketplaceVersion1
     'marketplace.json (plugin version)' = $marketplaceVersion2
-    'README.md'                        = $readmeVersion
+    'README.md'                         = $readmeVersion
 }
 
 $distinctVersions = @($allVersions.Values | Sort-Object -Unique)
@@ -97,7 +97,7 @@ Write-Host "Current version: ${Yellow}$currentVersion${Reset}"
 # --- Dry run ---
 if ($DryRun) {
     Write-Host "${Yellow}Dry run — no files will be modified${Reset}"
-    Write-Host "  Would update .github/plugin/plugin.json: $currentVersion → $Version"
+    Write-Host "  Would update .github/plugin.json: $currentVersion → $Version"
     Write-Host "  Would update .github/plugin/marketplace.json: $currentVersion → $Version (2 occurrences)"
     Write-Host "  Would update README.md: $currentVersion → $Version"
     Write-Host "${Green}✓${Reset} Dry run complete — 4 occurrences across 3 files"
@@ -111,7 +111,7 @@ $utf8NoBom = [System.Text.UTF8Encoding]::new($false)
 
 $updatedPlugin = $pluginContent -replace '"version":\s*"[\d.]+"', "`"version`": `"$Version`""
 [System.IO.File]::WriteAllText($pluginJson, $updatedPlugin, $utf8NoBom)
-Write-Host "  ${Green}✓${Reset} Updated .github/plugin/plugin.json"
+Write-Host "  ${Green}✓${Reset} Updated .github/plugin.json"
 
 $updatedMarketplace = $marketplaceContent -replace '"version":\s*"[\d.]+"', "`"version`": `"$Version`""
 [System.IO.File]::WriteAllText($marketplaceJson, $updatedMarketplace, $utf8NoBom)

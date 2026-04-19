@@ -1,7 +1,14 @@
 # Agent Plugin Distribution
 
-**Status**: Implemented (PR #56)  
+**Status**: Implemented (PR #56), corrected in #371 (path resolution) and #364 follow-up (manifest location + dropped `commands` field)
 **Context**: VS Code 1.110 experimental plugin feature
+
+> **Update (2026-04-19):** End-to-end plugin install validation in #364 surfaced two additional bugs that this design originally got wrong:
+>
+> 1. The `plugin.json` manifest must live at `.github/plugin.json` (the plugin root's `.github/` directory), **not** at `.github/plugin/plugin.json`. With the original location, VS Code never found the manifest at all and silently loaded zero agents/skills.
+> 2. The VS Code 1.110 plugin schema has **no `commands` field**. Slash commands have to be authored as skills (a directory with `SKILL.md`); `.prompt.md` files declared in a `commands` array are silently ignored. The 9 prompt files under `.github/prompts/` remain in the repo as documentation but no longer route through the plugin.
+>
+> The decision section below is preserved as historical context. The "Decision" reflects what was originally implemented; the source of truth for current state is `.github/plugin.json` and `CONTRIBUTING.md`.
 
 ---
 

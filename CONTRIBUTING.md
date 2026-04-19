@@ -148,9 +148,9 @@ When adding skills:
 
 ### Plugin Distribution
 
-This repo is distributed as a VS Code agent plugin (VS Code 1.110+). When you add or change **agents**, those changes are automatically distributed to plugin users when they update (agents use a directory glob in `plugin.json`). **Skills and prompt file commands require a manual `plugin.json` update** — see the arrays below. Instruction files and repository templates are **not** distributed via the plugin.
+This repo is distributed as a VS Code agent plugin (VS Code 1.110+). When you add or change **agents**, those changes are automatically distributed to plugin users when they update (agents use a directory glob in `plugin.json`). **Skills require a manual `plugin.json` update** — see the array below. Slash commands, instruction files, and repository templates are **not** distributed via the plugin (the VS Code plugin manifest schema has no `commands` field).
 
-When contributing new skills, update `.github/plugin/plugin.json` to add the new skill path to the `"skills"` array. When adding new slash-command prompt files, add the file path to the `"commands"` array. To bump the version across all files consistently when publishing a new release, run: `pwsh .github/scripts/bump-version.ps1 -Version X.Y.Z` (replacing `X.Y.Z` with the new version).
+When contributing new skills, update `.github/plugin.json` to add the new skill path to the `"skills"` array. To surface a new chat command, author it as a skill (directory with `SKILL.md`) rather than as a prompt file — `.prompt.md` files are not a first-class plugin manifest entry. To bump the version across all files consistently when publishing a new release, run: `pwsh .github/scripts/bump-version.ps1 -Version X.Y.Z` (replacing `X.Y.Z` with the new version).
 
 ### Documentation
 
