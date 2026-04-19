@@ -24,8 +24,8 @@ These rules define the structural constraints for Copilot Orchestra. All agents 
 |-------|---------|---------------------|
 | **Top (fat)** | Skills — judgment, methodology, process, documentation, and supporting data loaded on demand | `.github/skills/` |
 | **Middle (thin)** | Harness — routing, context management, safety, and decision authority | Agent files (`.github/agents/`) |
-| **Bottom** | Application — deterministic same-input/same-output evaluation, concrete tools, consumer codebase | `.github/scripts/`, skill `scripts/`, VS Code tools, GitHub API |
-| **Resolvers** | Structured routing/context lookup data that helps load the right skill or content | Skill `assets/` (JSON/YAML), `.github/instructions/` |
+| **Bottom** | Application — deterministic same-input/same-output evaluation, concrete tools, consumer codebase | `.github/scripts/`, `.github/skills/{name}/scripts/`, VS Code tools, GitHub API |
+| **Resolvers** | Structured routing/context lookup data that helps load the right skill or content | `.github/skills/{name}/assets/` (JSON/YAML), `.github/instructions/` |
 
 ## Dependency Rules
 
