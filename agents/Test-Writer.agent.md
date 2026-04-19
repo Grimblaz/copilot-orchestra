@@ -76,19 +76,19 @@ A specialized mode for writing high-quality, behavior-focused tests that follow 
 
 Writes behavior-focused tests before implementation (TDD). Tests should specify what the system should do, not how it does it.
 
-Load `.github/skills/test-driven-development/SKILL.md` for the reusable red-green-refactor workflow, behavior-quality rules, integration-test methodology, and quality-gate guidance.
+Load `skills/test-driven-development/SKILL.md` for the reusable red-green-refactor workflow, behavior-quality rules, integration-test methodology, and quality-gate guidance.
 
-For parallel/serial Build-Test protocol and defect taxonomy, follow `.github/skills/parallel-execution/SKILL.md`.
+For parallel/serial Build-Test protocol and defect taxonomy, follow `skills/parallel-execution/SKILL.md`.
 
-For PBT rollout policy and guardrails, follow `.github/skills/property-based-testing/SKILL.md`.
+For PBT rollout policy and guardrails, follow `skills/property-based-testing/SKILL.md`.
 
-For terminal and validation execution guardrails, load `.github/skills/terminal-hygiene/SKILL.md`.
+For terminal and validation execution guardrails, load `skills/terminal-hygiene/SKILL.md`.
 
 **Core Mandate**: Write tests that describe WHAT the system should do, not HOW it does it. Tests are specifications expressed in code and should read like documentation of expected behavior.
 
 **UI Component Tests (`*.test.tsx`)**:
 
-- **ALWAYS load `.github/skills/ui-testing/SKILL.md` before writing UI tests**
+- **ALWAYS load `skills/ui-testing/SKILL.md` before writing UI tests**
 - Query by `aria-label` (semantic intent), NOT by DOM structure (`role="list"`)
 - Test behavior ("target communicated"), NOT implementation ("uses `<ul>` element")
 - Avoid emoji matching, position-based assertions, specific CSS classes
@@ -127,7 +127,7 @@ When the consumer repo has **both** `## BDD Framework` heading AND a `bdd: {fram
 
 ### Activation
 
-- Load `.github/skills/bdd-scenarios/SKILL.md` for framework mapping table, Gherkin conversion rules, and step definition stub patterns.
+- Load `skills/bdd-scenarios/SKILL.md` for framework mapping table, Gherkin conversion rules, and step definition stub patterns.
 - Phase 2 is active only when BOTH conditions are met: `## BDD Framework` heading present AND `bdd: {framework}` line present with a recognized framework name.
 
 ### Generation Scope
@@ -157,20 +157,20 @@ Generated stubs are pending by default (e.g., `return 'pending'` in cucumber.js)
 
 **When writing tests (TDD workflow):**
 
-- Load `.github/skills/test-driven-development/SKILL.md` for red-green-refactor process
+- Load `skills/test-driven-development/SKILL.md` for red-green-refactor process
 
 **When writing UI component tests:**
 
-- Load `.github/skills/ui-testing/SKILL.md` for Testing Library patterns and query strategies
+- Load `skills/ui-testing/SKILL.md` for Testing Library patterns and query strategies
 
 **When tests fail unexpectedly:**
 
-- Load `.github/skills/systematic-debugging/SKILL.md` before attempting fixes
+- Load `skills/systematic-debugging/SKILL.md` before attempting fixes
 - Use the 4-phase process: Root Cause → Pattern Analysis → Hypothesis → Implementation
 
 **When verifying test coverage:**
 
-- Reference `.github/skills/verification-before-completion/SKILL.md`
+- Reference `skills/verification-before-completion/SKILL.md`
 - Evidence before claims: run the repository's configured coverage command from `.github/copilot-instructions.md` before claiming coverage is sufficient
 
 **When checking architecture compliance:**

@@ -46,9 +46,9 @@ Keep all documentation accurate, up-to-date, and free of obsolete content. Value
 
 **Core Mandate**: Documentation is a source of truth. Design docs must use the same names, method signatures, and entity references as the actual implementation.
 
-Use the `documentation-finalization` skill (`.github/skills/documentation-finalization/SKILL.md`) for the reusable documentation workflow, quality checks, conciseness guidance, and design-doc finalization process.
+Use the `documentation-finalization` skill (`skills/documentation-finalization/SKILL.md`) for the reusable documentation workflow, quality checks, conciseness guidance, and design-doc finalization process.
 
-For terminal and validation execution guardrails, load `.github/skills/terminal-hygiene/SKILL.md`.
+For terminal and validation execution guardrails, load `skills/terminal-hygiene/SKILL.md`.
 
 **Quality Gates** (must pass):
 

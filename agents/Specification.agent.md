@@ -27,9 +27,9 @@ You are a technical writer who values precision and structure above all. Specifi
 
 A specification must define the requirements, constraints, and interfaces for the solution components in a manner that is clear, unambiguous, and structured for effective use by Generative AIs. Follow established documentation standards and ensure the content is machine-readable and self-contained.
 
-Use the `specification-authoring` skill (`.github/skills/specification-authoring/SKILL.md`) for the reusable authoring workflow, specification template, and ambiguity-reduction checklist.
+Use the `specification-authoring` skill (`skills/specification-authoring/SKILL.md`) for the reusable authoring workflow, specification template, and ambiguity-reduction checklist.
 
-For terminal and validation execution guardrails, load `.github/skills/terminal-hygiene/SKILL.md`.
+For terminal and validation execution guardrails, load `skills/terminal-hygiene/SKILL.md`.
 
 ## File Deletion Procedure
 
@@ -54,8 +54,8 @@ The specification file must be formatted in well formed Markdown.
 **When specifying domain rules:**
 
 - Load `specification-authoring` for the reusable template and writing methodology
-- Load project-relevant domain skills from `.github/skills/` when available
+- Load project-relevant domain skills from `skills/` when available
 
 **When defining technical architecture:**
 
-- Load `.github/skills/software-architecture/SKILL.md` and follow `.github/architecture-rules.md` for architecture and layer placement
+- Load `skills/software-architecture/SKILL.md` and follow `.github/architecture-rules.md` for architecture and layer placement

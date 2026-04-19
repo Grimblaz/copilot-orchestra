@@ -131,7 +131,7 @@ Skip the gate silently when no issue ID can be determined, existing warm handoff
 After the developer responds with any option except `Needs rework - stop here`, record the assessment marker using the skill's protocol.
 If MCP tools are unavailable or the API call fails, fail open and use the skill's fallback recording path.
 
-For terminal and validation execution guardrails, load `.github/skills/terminal-hygiene/SKILL.md`.
+For terminal and validation execution guardrails, load `skills/terminal-hygiene/SKILL.md`.
 
 ## Core Workflow
 
@@ -160,7 +160,7 @@ Skip hub mode entirely when the user invokes a specific slash command (e.g., `/i
 
 Before calling any upstream agent, classify the issue scope to determine the appropriate pipeline tier. Use `#tool:vscode/askQuestions` with your analysis and recommendation.
 
-Load `.github/skills/routing-tables/SKILL.md` and evaluate the canonical abbreviated-tier rubric with `Test-GateCriteria -Gate scope_classification -Criteria @{ ... }`. The five abbreviated-tier criteria, the default-to-`full` rule when any criterion is absent, and the authoritative full-vs-abbreviated phase matrix all live in `.github/skills/routing-tables/assets/gate-criteria.json`.
+Load `skills/routing-tables/SKILL.md` and evaluate the canonical abbreviated-tier rubric with `Test-GateCriteria -Gate scope_classification -Criteria @{ ... }`. The five abbreviated-tier criteria, the default-to-`full` rule when any criterion is absent, and the authoritative full-vs-abbreviated phase matrix all live in `skills/routing-tables/assets/gate-criteria.json`.
 
 **User override**: Always present both tiers as options and recommend one — the user may choose either regardless of your analysis. This is how scope override (D5) is implemented.
 
@@ -257,7 +257,7 @@ When the user invokes hub mode for multiple issues at once (e.g., `@code-conduct
    - Find plan using this lookup chain: (1) session memory — use `vscode/memory view /memories/session/` to list files; if any file matches the `plan-bundle-*.md` pattern, load it as the bundle plan; otherwise check `plan-issue-{ID}.md` via the `vscode/memory` tool; (2) GitHub issue comments — use `mcp_github_issue_read` with `method: get_comments` to find a comment containing `<!-- plan-issue-{ID} -->`; if multiple matching comments exist, use the most recently posted one (a bundle plan comment posted after an individual plan comment supersedes it); (3) escalate via `#tool:vscode/askQuestions` if neither found
    - Find design context using this lookup chain: (1) session memory — `view /memories/session/design-issue-{ID}.md` via the `vscode/memory` tool; (2) GitHub issue comments — use `mcp_github_issue_read` with `method: get_comments` to find a comment containing `<!-- design-issue-{ID} -->`; (3) fall back to reading the issue body directly and create the design cache: use `mcp_github_issue_read` with `method: get` to read the issue body, then use `vscode/memory` `create` to write the full issue body content to `/memories/session/design-issue-{ID}.md`, wrapped with header `<!-- design-issue-{ID} -->` and footer `---\n**Source**: Snapshot of issue #{ID} body at plan creation. Design changes require a new plan.` (fallback creator role — Issue-Planner is the primary creator; Code-Conductor recreates only on session reset recovery)
    - Look for supporting docs in `Documents/Design/`, `Documents/Decisions/`, `.copilot-tracking/research/` — read whatever exists for additional context
-   - Check `.github/skills/` for relevant domain expertise
+   - Check `skills/` for relevant domain expertise
    - **If no plan exists**: Escalate via `#tool:vscode/askQuestions` to request plan path/options (with a recommended option). Do not proceed without a plan.
    - **Commit policy detection (D12)**: Read the consumer's `copilot-instructions.md` once at plan load time. Detect a `## Commit Policy` heading via regex `^## Commit Policy`. Under that heading, look for an `auto-commit:` line. Value `disabled` (case-insensitive) → set `auto_commit_enabled: false`. Any other value, missing line, or malformed section → set `auto_commit_enabled: true`; log a warning if the section heading exists but the `auto-commit:` line is absent or malformed. This flag persists for the entire session.
 
@@ -266,7 +266,7 @@ When the user invokes hub mode for multiple issues at once (e.g., `@code-conduct
    - **Step commit reconciliation (D13)**: When `auto_commit_enabled` is `true`, after the primary resume scan, check `git log --oneline --grep='^step(' --grep='Plan: issue-{ID},' --all-match HEAD` for step commit messages (the `--all-match` + `Plan` trailer filter scopes to the current issue, avoiding stale commits from abandoned plans on the same branch). Handle two cases: (1) If `step(N)` exists in git log but session memory doesn't show `— ✅ DONE` for that step — mark the step done in session memory and advance past it. (2) If session memory shows `— ✅ DONE (uncommitted)` for a step — the step's work was completed but the commit failed; attempt the step commit now (changed files may still be in the working tree or captured by a subsequent commit). On successful commit: use `vscode/memory str_replace` to remove the `(uncommitted)` suffix (updating `— ✅ DONE (uncommitted)` to `— ✅ DONE`) and advance past the step. If no changed files remain to commit (files already captured by a subsequent step's commit): mark the step done by removing the `(uncommitted)` suffix and advance past it — the work is preserved in a later commit. This bridges session-memory / git-state gaps after compaction or session recovery.
    - **Reality check**: Before resuming, verify the plan still matches the codebase. If interfaces moved, files were renamed, or assumptions no longer hold, adapt the plan rather than executing steps that won't land correctly.
    - **Migration-type plan check**: If the issue is migration-type (pattern replacement, rename/move, API migration), verify that Step 1 of the plan is an exhaustive repo scan. If the scan step is absent, insert it before any implementation step and re-validate scope.
-   - **Capacity check (D10)**: When the plan adds rules or directives to an agent file (`systemic_fix_type: agent-prompt`), check whether the target agent currently exceeds its soft ceiling: run `pwsh -NoProfile -NonInteractive -File .github/skills/guidance-measurement/scripts/measure-guidance-complexity.ps1 | ConvertFrom-Json` and inspect `agents_over_ceiling`. If the target agent appears in `agents_over_ceiling`, use `#tool:vscode/askQuestions` to notify the user: options are (a) "Wait — compression prerequisite for {agent} is needed" (recommended) and (b) "Override and proceed now". Do not proceed silently. If waiting: autonomously create a compression prerequisite issue (label: `priority: medium`) and block implementation until that issue is closed **and** the script confirms the agent is ≤ ceiling; if the compression issue closes but the script still shows the agent over ceiling, create another compression prerequisite issue and continue blocking (the cycle repeats). **Exemption**: issues that reduce directive count (compression, extraction, consolidation) are exempt — do not apply this check to them. If the plan targets multiple agent files, check each agent independently — block if any target agent is over ceiling. **Completion signal**: compression issue closed + script output shows target agent absent from `agents_over_ceiling`. **Override**: if the user directs the implementation to proceed despite the capacity block, respect the override and note it in the PR body. This is an autonomous decision rule — same pattern as improvement-first (§2a).
+   - **Capacity check (D10)**: When the plan adds rules or directives to an agent file (`systemic_fix_type: agent-prompt`), check whether the target agent currently exceeds its soft ceiling: run `pwsh -NoProfile -NonInteractive -File skills/guidance-measurement/scripts/measure-guidance-complexity.ps1 | ConvertFrom-Json` and inspect `agents_over_ceiling`. If the target agent appears in `agents_over_ceiling`, use `#tool:vscode/askQuestions` to notify the user: options are (a) "Wait — compression prerequisite for {agent} is needed" (recommended) and (b) "Override and proceed now". Do not proceed silently. If waiting: autonomously create a compression prerequisite issue (label: `priority: medium`) and block implementation until that issue is closed **and** the script confirms the agent is ≤ ceiling; if the compression issue closes but the script still shows the agent over ceiling, create another compression prerequisite issue and continue blocking (the cycle repeats). **Exemption**: issues that reduce directive count (compression, extraction, consolidation) are exempt — do not apply this check to them. If the plan targets multiple agent files, check each agent independently — block if any target agent is over ceiling. **Completion signal**: compression issue closed + script output shows target agent absent from `agents_over_ceiling`. **Override**: if the user directs the implementation to proceed despite the capacity block, respect the override and note it in the PR body. This is an autonomous decision rule — same pattern as improvement-first (§2a).
 
 3. **Execute Each Step**:
    - Identify appropriate specialist agent (see Agent Selection below)
@@ -280,7 +280,7 @@ When the user invokes hub mode for multiple issues at once (e.g., `@code-conduct
    - **Incremental validation**: Run project validation commands (see `.github/copilot-instructions.md`), then the project test command (for example `npm test` when applicable)
    - If specialist does a task outside their responsibility, retry with clearer instructions (max 2 retries)
    - **RC conformance gate** (fires after convergence gate passes per parallel-execution SKILL, before step advance): CC reads the step's Requirement Contract AC items, inspects changed files via `get_changed_files`, filtering results to the step's target files, and evaluates each AC item against current file state. **Output**: pass → `RC conformance: ✅ all {N} AC items satisfied`; fail → `RC conformance: ❌ {N} of {M} AC items divergent` followed by a bullet list of divergent items described in customer-outcome terms (RC expectation vs. actual). **Skip**: when the step's RC has no AC items (detection: absence of "Acceptance Criteria" / "AC" section in the RC block). **On fail**: classify as `rc-divergence` and dispatch Code-Smith with the divergent AC items; after Code-Smith returns, re-run incremental validation (Tier 1), then CC re-evaluates all AC items in the step's RC (not just the previously-divergent ones); if all satisfied → advance; if divergence persists → dispatch Test-Writer with explicit instruction: "Re-derive test assertions from the Requirement Contract, not from the corrected implementation." After Test-Writer returns, CC re-runs incremental validation and re-evaluates all AC items to determine resolution. **Budget**: 1 dedicated correction cycle (the Code-Smith + conditional Test-Writer pair = 1 cycle), outside the main 3-cycle convergence budget. If the single cycle does not resolve the divergence, escalate via `#tool:vscode/askQuestions` with unresolved AC items and recommended options. **Fidelity scope**: targets obvious divergences (missing UI elements, wrong copy text, omitted affordances); subtle logic bugs remain the domain of Tier 4 adversarial review and CE Gate.
-   - **Step commit gate**: If `auto_commit_enabled` is `true`, load `.github/skills/step-commit/SKILL.md` and execute the step commit protocol. If the protocol reports commit failure, annotate the progress checkpoint as `— ✅ DONE (uncommitted)` instead of plain `— ✅ DONE`.
+   - **Step commit gate**: If `auto_commit_enabled` is `true`, load `skills/step-commit/SKILL.md` and execute the step commit protocol. If the protocol reports commit failure, annotate the progress checkpoint as `— ✅ DONE (uncommitted)` instead of plain `— ✅ DONE`.
    - **Progress checkpoint**: After all quality checks pass (validation + scope check), update the plan in session memory — use `vscode/memory str_replace` to append the step status to the step's title line in the plan file loaded in Step 1 (either `plan-bundle-{primary}-{secondary1}-{secondaryN}.md` for bundles or `plan-issue-{ID}.md` for single-issue plans): append `— ✅ DONE` when the step commit succeeded or was not attempted, or `— ✅ DONE (uncommitted)` when the step commit gate reported failure. If the session memory plan file doesn't exist (plan was loaded from a GitHub issue comment), first use `vscode/memory create` to write the full plan content, then apply the annotation.
 
 4. **Create PR (MANDATORY, review-ready gate)**: After all steps complete (including documentation):
@@ -288,7 +288,7 @@ When the user invokes hub mode for multiple issues at once (e.g., `@code-conduct
    - **Scope check**: `git diff --name-status main..HEAD` (cross-branch diff — no built-in tool equivalent) must match planned scope (no unrelated files)
    - **Migration completeness check** (migration-type issues only — pattern replacement, rename/move, API migration; see Issue-Planner `<plan_style_guide>` for full definition): Run a final scan for remaining old-form references using `grep_search` with the old-pattern as `query` and an `includePattern` glob matching target files (e.g., `**/*.md`). Confirm result count is 0. Also use `file_search` with the same glob to confirm at least 1 file matches — a 0-match result with 0 files found indicates a misconfigured glob, not a clean repo. If `grep_search` cannot express the required filter (e.g., paths needing PowerShell `Where-Object -notmatch` exclusions), fall back to terminal `Get-ChildItem | Select-String` with documented rationale in an inline comment or annotation. If count is non-zero, fix remaining occurrences before proceeding. Include scan output as validation evidence in the PR body.
    - **Design doc (before pushing)**: Add or update a domain-based design document in `Documents/Design/`. Logic: (1) List existing files in `Documents/Design/`, excluding any `issue-{N}-*.md`-named files from domain-match candidates, (2) read their headings to find domain overlap with the current feature, (3) if exactly one match, delegate an **update** to Doc-Keeper targeting that file, (4) if two or more matches, prompt via `#tool:vscode/askQuestions`: "Multiple design docs match this feature — which should be updated?" and wait for selection before delegating, (5) if no match, delegate **creation** of a new `{domain-slug}.md` file to Doc-Keeper. **Legacy detection (idempotent)**: if `Documents/Design/` contains any `issue-{N}-*.md` pattern files, first run `gh issue list --search "Migrate Documents/Design/ to domain-based files" --state open --json number --jq length` — if the result is `0`, prompt the user via `#tool:vscode/askQuestions`: "Legacy per-issue design docs detected — create a cleanup issue to migrate them to domain-based files?" If confirmed, run `gh issue create --title "Migrate Documents/Design/ to domain-based files" --body "Legacy issue-{N}-*.md design files in Documents/Design/ should be consolidated into domain-based design files per the architecture-rules.md naming convention." --label "priority: medium"`, then continue with the current task. If result is `> 0`, skip creation silently.
-   - **Formatting gate**: Load `.github/skills/pre-commit-formatting/SKILL.md` and execute the protocol on branch-changed files. If the protocol stages and commits formatting fixes, note the formatting commit in the PR description.
+   - **Formatting gate**: Load `skills/pre-commit-formatting/SKILL.md` and execute the protocol on branch-changed files. If the protocol stages and commits formatting fixes, note the formatting commit in the PR description.
    - **Validation evidence**: run required validation commands from plan/repo instructions and capture pass results for PR body
    - `git push -u origin {branch-name}`
    - Create PR via `github-pull-request/*` tools or `gh pr create`
@@ -308,15 +308,15 @@ When the user invokes hub mode for multiple issues at once (e.g., `@code-conduct
 
 ## Build-Test Orchestration
 
-For the full protocol (mode declaration, Requirement Contract, convergence gates, triage routing, loop budgets, anti-test-chasing, and post-issue checkpoint), follow `.github/skills/parallel-execution/SKILL.md`.
+For the full protocol (mode declaration, Requirement Contract, convergence gates, triage routing, loop budgets, anti-test-chasing, and post-issue checkpoint), follow `skills/parallel-execution/SKILL.md`.
 
 ## Property-Based Testing (PBT) Rollout Policy
 
-For PBT rollout guidance, use `.github/skills/property-based-testing/SKILL.md`.
+For PBT rollout guidance, use `skills/property-based-testing/SKILL.md`.
 
 ## Agent Selection
 
-Load `.github/skills/routing-tables/SKILL.md` for the canonical specialist-dispatch mapping. When a step or finding maps cleanly to a listed file or task pattern, use `Invoke-RoutingLookup -Table specialist_dispatch -Key FilePattern -Value "{pattern}"`. When dispatch depends on task intent or keyword matching rather than a literal file-pattern lookup, consult the `specialist_dispatch` entries in `.github/skills/routing-tables/assets/routing-config.json` and apply the surrounding routing rules in this agent.
+Load `skills/routing-tables/SKILL.md` for the canonical specialist-dispatch mapping. When a step or finding maps cleanly to a listed file or task pattern, use `Invoke-RoutingLookup -Table specialist_dispatch -Key FilePattern -Value "{pattern}"`. When dispatch depends on task intent or keyword matching rather than a literal file-pattern lookup, consult the `specialist_dispatch` entries in `skills/routing-tables/assets/routing-config.json` and apply the surrounding routing rules in this agent.
 
 > **native Explore vs Research-Agent**: Use the native Explore subagent for lightweight read-only fact-finding (runs on a fast model in a short-lived context — the returned summary is typically smaller than running equivalent tool calls inline). Use Research-Agent when analysis is deep/multi-file and the result needs to be persisted to a research document for future reference. When in doubt: Explore for discovery, Research-Agent for output that must survive compaction.
 >
@@ -324,7 +324,7 @@ Load `.github/skills/routing-tables/SKILL.md` for the canonical specialist-dispa
 
 ## Review Reconciliation Loop (Mandatory)
 
-Use the `validation-methodology` skill (`.github/skills/validation-methodology/SKILL.md`) for the reusable review-reconciliation method: pre-review gate, prosecution-depth setup, change-type classification, fixed 3-pass critic mechanics, defense and judgment sequencing, prosecution-depth exclusions, and merged-ledger deduplication rules.
+Use the `validation-methodology` skill (`skills/validation-methodology/SKILL.md`) for the reusable review-reconciliation method: pre-review gate, prosecution-depth setup, change-type classification, fixed 3-pass critic mechanics, defense and judgment sequencing, prosecution-depth exclusions, and merged-ledger deduplication rules.
 
 Code-Conductor retains the orchestration around that method: review-mode entry, express-lane routing, post-judgment routing, post-fix prosecution decisions, CE Gate sequencing, and any side-effecting write-back such as calibration re-activation entries.
 
@@ -332,7 +332,7 @@ Code-Conductor retains the orchestration around that method: review-mode entry, 
 
 After merging and deduplicating the prosecution ledger, partition findings before the defense pass:
 
-Load `.github/skills/routing-tables/SKILL.md` and evaluate the canonical six-condition express-lane gate with `Test-GateCriteria -Gate express_lane -Criteria @{ ... }`. The authoritative criteria and default non-qualifying outcome live in `.github/skills/routing-tables/assets/gate-criteria.json`.
+Load `skills/routing-tables/SKILL.md` and evaluate the canonical six-condition express-lane gate with `Test-GateCriteria -Gate express_lane -Criteria @{ ... }`. The authoritative criteria and default non-qualifying outcome live in `skills/routing-tables/assets/gate-criteria.json`.
 
 Route express-eligible findings directly to the specialist dispatch queue with an `express_lane: true` marker. All remaining findings continue to the defense → judge pipeline as normal.
 
@@ -350,7 +350,7 @@ After the judge emits rulings, check sustained findings against the prosecution 
 2. If a sustained finding was in a lightened/skipped category, write a re-activation event:
 
    ```powershell
-   pwsh -NoProfile -NonInteractive -File .github/skills/calibration-pipeline/scripts/write-calibration-entry.ps1 -ReactivationEventJson '{"category": "{cat}", "triggered_at_pr": {pr_number}, "expires_at_pr": {pr_number + 5}, "trigger_source": "code_prosecution"}'
+   pwsh -NoProfile -NonInteractive -File skills/calibration-pipeline/scripts/write-calibration-entry.ps1 -ReactivationEventJson '{"category": "{cat}", "triggered_at_pr": {pr_number}, "expires_at_pr": {pr_number + 5}, "trigger_source": "code_prosecution"}'
    ```
 
 3. Log: `"Re-activation triggered for {category} — sustained finding at {depth} depth (persists for 5 PRs)"`
@@ -359,7 +359,7 @@ After the judge emits rulings, check sustained findings against the prosecution 
 
 ### GitHub Review Intake & Judgment
 
-For `github review` / `review github` / `cr review`, follow `.github/skills/code-review-intake/SKILL.md`. GitHub intake uses proxy prosecution: Code-Critic validates and scores each GitHub comment, then defense → judge pipeline runs as normal.
+For `github review` / `review github` / `cr review`, follow `skills/code-review-intake/SKILL.md`. GitHub intake uses proxy prosecution: Code-Critic validates and scores each GitHub comment, then defense → judge pipeline runs as normal.
 
 ### Non-GitHub Review Mode
 
@@ -394,7 +394,7 @@ Default to <1 day. Only defer if ALL of these apply: 5+ files, new subsystem des
 
 For DEFERRED-SIGNIFICANT items, create a GitHub tracking issue automatically — no user approval required. Include PR link, review comment reference, and acceptance target in the issue body.
 
-Before creating the tracking issue, apply the prevention-analysis advisory from `.github/skills/safe-operations/SKILL.md` §2d.
+Before creating the tracking issue, apply the prevention-analysis advisory from `skills/safe-operations/SKILL.md` §2d.
 
 #### Batch Specialist Dispatch (R4)
 
@@ -417,7 +417,7 @@ When the review originated from GitHub (proxy prosecution pipeline), Code-Conduc
 
 **When to run** — Mandatory when any of the following apply after all specialists apply all accepted main-review findings:
 
-Load `.github/skills/routing-tables/SKILL.md` and use `Test-GateCriteria -Gate post_fix_trigger -Criteria @{ ... }` against the canonical trigger conditions in `.github/skills/routing-tables/assets/gate-criteria.json`. Preserve the same OR semantics: accepted `critical` or `high` findings can trigger immediately from the main-review judge output, while control-flow-trigger evaluation still happens only after Tier 1 re-validation and diff scoping.
+Load `skills/routing-tables/SKILL.md` and use `Test-GateCriteria -Gate post_fix_trigger -Criteria @{ ... }` against the canonical trigger conditions in `skills/routing-tables/assets/gate-criteria.json`. Preserve the same OR semantics: accepted `critical` or `high` findings can trigger immediately from the main-review judge output, while control-flow-trigger evaluation still happens only after Tier 1 re-validation and diff scoping.
 
 Skip if no findings were accepted and applied (post-judgment: all REJECT or DEFERRED-SIGNIFICANT, no fixes applied).
 
@@ -455,11 +455,11 @@ Skip if no findings were accepted and applied (post-judgment: all REJECT or DEFE
 
 When delegating to subagents, instruct them to use the relevant skill(s):
 
-Load `.github/skills/routing-tables/SKILL.md` and consult the `skill_mapping` reference entries in `.github/skills/routing-tables/assets/routing-config.json` when deciding which reusable skills to name in a delegation prompt. Treat that mapping as a canonical reference list for when each skill is relevant; decision authority for the actual delegation remains here.
+Load `skills/routing-tables/SKILL.md` and consult the `skill_mapping` reference entries in `skills/routing-tables/assets/routing-config.json` when deciding which reusable skills to name in a delegation prompt. Treat that mapping as a canonical reference list for when each skill is relevant; decision authority for the actual delegation remains here.
 
-<!-- Keep in sync: when adding or removing a delegation skill in .github/skills/, update this table (delegation-scoped: only skills Code-Conductor instructs subagents to use). Always also update Process-Review's Skill Mapping Reference table (all-skills scope). -->
+<!-- Keep in sync: when adding or removing a delegation skill in skills/, update this table (delegation-scoped: only skills Code-Conductor instructs subagents to use). Always also update Process-Review's Skill Mapping Reference table (all-skills scope). -->
 
-Include in prompt: _"Use the `{skill-name}` skill (`.github/skills/{skill-name}/SKILL.md`) to guide your work."_
+Include in prompt: _"Use the `{skill-name}` skill (`skills/{skill-name}/SKILL.md`) to guide your work."_
 
 **Skill-specific instructions**:
 
@@ -475,7 +475,7 @@ Include in prompt: _"Use the `{skill-name}` skill (`.github/skills/{skill-name}/
 
 ## Validation Ladder (Mandatory)
 
-Use the `validation-methodology` skill (`.github/skills/validation-methodology/SKILL.md`) for the graduated 4-tier validation ladder and the Failure Triage Rule.
+Use the `validation-methodology` skill (`skills/validation-methodology/SKILL.md`) for the graduated 4-tier validation ladder and the Failure Triage Rule.
 
 - Code-Conductor keeps the orchestration around that ladder: incremental validation timing during step execution, post-fix review entry, CE Gate sequencing, and PR-gate ownership.
 - Tier 4 in this agent continues through the review, post-fix, and CE Gate sections below.
@@ -489,13 +489,13 @@ Run this gate as the final step before PR creation (Tier 4, after the post-fix t
 
 Read the plan's `[CE GATE]` step to identify the customer surface. Pass this surface type information to Experience-Owner when delegating evidence capture (step 3 of the Scenario Exercise Protocol). If no `[CE GATE]` step exists, infer from the change type and include the inferred surface type in the Experience-Owner delegation:
 
-Load `.github/skills/routing-tables/SKILL.md` and use `Invoke-RoutingLookup -Table surface_identification -Key Surface -Value "{surface}"` for the canonical surface-to-tool mapping in `.github/skills/routing-tables/assets/routing-config.json`. Preserve the same behavior: native browser tools remain the primary Web UI path with Playwright MCP fallback, terminal invocations remain the default for REST/GraphQL, CLI, SDK, and batch surfaces, and `No customer surface` still emits `⏭️ CE Gate not applicable — {reason}`.
+Load `skills/routing-tables/SKILL.md` and use `Invoke-RoutingLookup -Table surface_identification -Key Surface -Value "{surface}"` for the canonical surface-to-tool mapping in `skills/routing-tables/assets/routing-config.json`. Preserve the same behavior: native browser tools remain the primary Web UI path with Playwright MCP fallback, terminal invocations remain the default for REST/GraphQL, CLI, SDK, and batch surfaces, and `No customer surface` still emits `⏭️ CE Gate not applicable — {reason}`.
 
 ### Scenario Exercise Protocol
 
 1. Read the `[CE GATE]` scenarios from the plan step (natural language descriptions)
    1. **Service dependency extraction**: Parse `[requires: service-name:port]` annotations from the issue body `## Scenarios` heading text using regex `\[requires:\s*([^:\]]+):(\d+)\]` (see bdd-scenarios skill § Service Dependency Annotations). Build a scenario-ID → required-services map. Multiple `[requires:]` on one heading use AND semantics.
-   2. **Service pre-check**: For each unique port in the map, run `pwsh -NoProfile -NonInteractive -File .github/skills/terminal-hygiene/scripts/check-port.ps1 -Port {port}` and read `InUse` from the JSON output. Unavailable ports → mark affected scenarios `INCONCLUSIVE (required service unavailable: service-name:port)` in the evidence record and exclude them from runner dispatch (step 3) and EO delegation (step 4). Report: `"Service pre-check: {N} of {M} required services available. INCONCLUSIVE: {list}."` Fail-open: if `check-port.ps1` is absent or fails, proceed with all scenarios. All-unavailable → `#tool:vscode/askQuestions` with options: "Start services and retry" (recommended), "Proceed without service-dependent scenarios", "Abort CE Gate".
+   2. **Service pre-check**: For each unique port in the map, run `pwsh -NoProfile -NonInteractive -File skills/terminal-hygiene/scripts/check-port.ps1 -Port {port}` and read `InUse` from the JSON output. Unavailable ports → mark affected scenarios `INCONCLUSIVE (required service unavailable: service-name:port)` in the evidence record and exclude them from runner dispatch (step 3) and EO delegation (step 4). Report: `"Service pre-check: {N} of {M} required services available. INCONCLUSIVE: {list}."` Fail-open: if `check-port.ps1` is absent or fails, proceed with all scenarios. All-unavailable → `#tool:vscode/askQuestions` with options: "Start services and retry" (recommended), "Proceed without service-dependent scenarios", "Abort CE Gate".
 2. Establish the **design intent reference**: read the `Design Intent` field from the plan's `[CE GATE]` step (if present); otherwise read `/memories/session/design-issue-{ID}.md` via `vscode/memory` (falling back to the issue body if the cache is absent). Understand what the change was supposed to accomplish for the user — not just what it does technically
 3. **BDD Phase 2 Runner Dispatch** (conditional — skip entirely when Phase 2 is not active; Phase 2 requires `## BDD Framework` heading AND `bdd: {framework}` line with recognized framework in consumer repo's `copilot-instructions.md`):
    1. **Phase 2 detection**: read `bdd: {framework}` from consumer `copilot-instructions.md`. Missing heading or heading-only without `bdd:` line → skip this step entirely, proceed to step 4 with all scenarios (Phase 1 behavior unchanged). `bdd: true` detected → emit warning _“bdd: true detected — Phase 2 requires a recognized framework name. Set `bdd: {framework}` with one of: `cucumber.js`, `behave`, `jest-cucumber`, `cucumber`. Falling back to Phase 1 behavior.”_ then skip. Unrecognized framework → emit warning per bdd-scenarios skill Phase 2 Detection rules, then skip.
@@ -557,7 +557,7 @@ When a functional defect or intent deficiency is found:
 
 - Call Process-Review subagent with: the defect description, what scenario revealed it, and which agent/file/instruction likely caused the gap
 - Process-Review will emit a structured CE Gate Defect Analysis (gap description, affected agent/file, recommended fix, ready-to-use issue title + body) — if a systemic gap is confirmed, **Code-Conductor creates the issue** using Process-Review's ready-to-use title and body; Process-Review does not create GitHub issues itself
-- If a systemic gap is confirmed: before creating the follow-up GitHub issue, apply the prevention-analysis advisory from `.github/skills/safe-operations/SKILL.md` §2d. Then create the follow-up issue in the copilot-orchestra repository (or fallback to current repo with label `process-gap-upstream`)
+- If a systemic gap is confirmed: before creating the follow-up GitHub issue, apply the prevention-analysis advisory from `skills/safe-operations/SKILL.md` §2d. Then create the follow-up issue in the copilot-orchestra repository (or fallback to current repo with label `process-gap-upstream`)
 - "No systemic gap found" is a valid Process-Review outcome — log it in the PR body
 - Track 2 is non-blocking: do not hold up Track 1 fix or PR creation
 
@@ -740,7 +740,7 @@ After creating the PR body with the `<!-- pipeline-metrics -->` block, invoke th
 
 ```powershell
 # Test-Path guard — template portability for downstream repos without the write script
-if (Test-Path .github/skills/calibration-pipeline/scripts/write-calibration-entry.ps1) {
+if (Test-Path skills/calibration-pipeline/scripts/write-calibration-entry.ps1) {
     $entryJson = @{
         pr_number  = <PR number as integer>
         created_at = ([System.DateTime]::UtcNow.ToString('yyyy-MM-ddTHH:mm:ssZ'))
@@ -775,7 +775,7 @@ if (Test-Path .github/skills/calibration-pipeline/scripts/write-calibration-entr
         }
     } | ConvertTo-Json -Depth 10 -Compress
     # -NoProfile prevents user profile scripts from interfering with unattended execution
-   pwsh -NoProfile -NonInteractive -File .github/skills/calibration-pipeline/scripts/write-calibration-entry.ps1 -EntryJson $entryJson
+   pwsh -NoProfile -NonInteractive -File skills/calibration-pipeline/scripts/write-calibration-entry.ps1 -EntryJson $entryJson
     if ($LASTEXITCODE -ne 0) { Write-Warning "Calibration write failed (non-fatal) — exit code $LASTEXITCODE" }
 }
 ```

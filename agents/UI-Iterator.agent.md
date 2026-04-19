@@ -64,9 +64,9 @@ A systematic UI refinement mode using screenshot-based iteration. Evaluates curr
 
 **Applicability**: This agent is for projects with UI surfaces. For backend-only or CLI-only projects, this agent is not applicable; use Code-Smith/Refactor-Specialist for non-UI improvements, then follow standard validation and review workflow.
 
-Load `.github/skills/ui-iteration/SKILL.md` for the reusable polish loop, screenshot requirements, evaluation criteria, iteration defaults, output formats, and Tailwind/UI polish heuristics.
+Load `skills/ui-iteration/SKILL.md` for the reusable polish loop, screenshot requirements, evaluation criteria, iteration defaults, output formats, and Tailwind/UI polish heuristics.
 
-For terminal and validation execution guardrails, load `.github/skills/terminal-hygiene/SKILL.md`.
+For terminal and validation execution guardrails, load `skills/terminal-hygiene/SKILL.md`.
 
 ## Browser Tools Reference
 
@@ -107,7 +107,7 @@ When invoked, this agent should:
 
 ## Related Guidance
 
-- Load `.github/skills/frontend-design/SKILL.md` for stronger visual direction when the polish requires more than tidy consistency
+- Load `skills/frontend-design/SKILL.md` for stronger visual direction when the polish requires more than tidy consistency
 - Consult `.github/copilot-instructions.md`, `.github/architecture-rules.md`, and the project's theme config before changing presentation tokens
 
 ---

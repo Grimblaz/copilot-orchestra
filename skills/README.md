@@ -59,7 +59,7 @@ This keeps prompts concise while preserving depth when needed.
 
 ## How to Use a Skill
 
-1. Read `.github/skills/{skill-name}/SKILL.md`
+1. Read `skills/{skill-name}/SKILL.md`
 2. Answer the intake prompt in that router
 3. Load the routed reference/workflow file(s)
 4. Execute the selected guidance
@@ -68,9 +68,9 @@ This keeps prompts concise while preserving depth when needed.
 
 ```text
 Agent: I need to write tests for a new feature
-1. Read .github/skills/test-driven-development/SKILL.md
+1. Read skills/test-driven-development/SKILL.md
 2. Choose "write" in intake
-3. Read .github/skills/test-driven-development/workflows/write-tests-first.md
+3. Read skills/test-driven-development/workflows/write-tests-first.md
 4. Follow RED-phase workflow
 ```
 
@@ -102,7 +102,7 @@ Use `skill-creator` for guided creation.
 
 Quick reference:
 
-1. Create `.github/skills/{your-skill-name}/`
+1. Create `skills/{your-skill-name}/`
 2. Add `SKILL.md` with `name` + `description`
 3. Add references/workflows/templates as needed
 4. Update this README

@@ -1,6 +1,6 @@
 {
   "scope_classification": {
-    "source": ".github/agents/Code-Conductor.agent.md",
+    "source": "agents/Code-Conductor.agent.md",
     "all_must_hold": true,
     "outcome_if_all_true": "abbreviated",
     "default_outcome": "full",
@@ -64,7 +64,7 @@
     ]
   },
   "express_lane": {
-    "source": ".github/agents/Code-Conductor.agent.md",
+    "source": "agents/Code-Conductor.agent.md",
     "all_must_hold": true,
     "outcome_if_all_true": "express_lane",
     "default_outcome": "defense_and_judge_pipeline",
@@ -99,7 +99,7 @@
     "revalidation_required": "Tier 1 re-validation required after the specialist applies an express-lane fix."
   },
   "post_fix_trigger": {
-    "source": ".github/agents/Code-Conductor.agent.md",
+    "source": "agents/Code-Conductor.agent.md",
     "recursion_guard": "This step is never triggered by another post-fix prosecution - only by a main review cycle (code review or GitHub intake proxy prosecution).",
     "trigger_logic": "any",
     "trigger_conditions": [

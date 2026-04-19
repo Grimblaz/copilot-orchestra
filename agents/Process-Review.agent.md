@@ -91,9 +91,9 @@ Action: Use "Update Instructions" handoff → doc-keeper to update coding standa
 
 Performs retrospective analysis of development process to improve future execution.
 
-For reusable retrospective workflow, evidence gathering, root-cause framing, report construction, scenario routing, and skill-usage audit methodology, load `.github/skills/process-analysis/SKILL.md`.
+For reusable retrospective workflow, evidence gathering, root-cause framing, report construction, scenario routing, and skill-usage audit methodology, load `skills/process-analysis/SKILL.md`.
 
-For terminal and validation execution guardrails, load `.github/skills/terminal-hygiene/SKILL.md`.
+For terminal and validation execution guardrails, load `skills/terminal-hygiene/SKILL.md`.
 
 **Deviation Detection**:
 
@@ -154,13 +154,13 @@ For terminal and validation execution guardrails, load `.github/skills/terminal-
 
 Use this agent after workflow execution, when process confusion needs a retrospective, or when Code-Conductor invokes Track 2 CE Gate systemic analysis.
 
-For the broader reusable trigger list, red-flag heuristics, and retrospective timing guidance, load `.github/skills/process-analysis/SKILL.md`.
+For the broader reusable trigger list, red-flag heuristics, and retrospective timing guidance, load `skills/process-analysis/SKILL.md`.
 
 ---
 
 ## Analysis Framework
 
-Load `.github/skills/process-analysis/SKILL.md` for the standard retrospective workflow covering execution timeline review, plan adherence, documentation consistency, workflow efficiency, terminal stall analysis, report construction, scenario routing, and skill-usage audits.
+Load `skills/process-analysis/SKILL.md` for the standard retrospective workflow covering execution timeline review, plan adherence, documentation consistency, workflow efficiency, terminal stall analysis, report construction, scenario routing, and skill-usage audits.
 
 ### 4.6 CE Gate Defect Analysis (Track 2)
 
@@ -206,7 +206,7 @@ Emit exactly this structure when returning results to Code-Conductor:
 $healthReportTempFile = Join-Path ([System.IO.Path]::GetTempPath()) "health-report-${PID}.md"
 $complexityTempFile = Join-Path ([System.IO.Path]::GetTempPath()) "complexity-output-${PID}.json"
 try {
-    $complexityOutput = pwsh -NoProfile -NonInteractive -File .github/skills/guidance-measurement/scripts/measure-guidance-complexity.ps1 | ConvertFrom-Json
+    $complexityOutput = pwsh -NoProfile -NonInteractive -File skills/guidance-measurement/scripts/measure-guidance-complexity.ps1 | ConvertFrom-Json
     if ($null -ne $complexityOutput -and $null -eq $complexityOutput.error) {
         $complexityOutput | ConvertTo-Json -Depth 5 | Set-Content -Path $complexityTempFile -Encoding UTF8
     } else {
@@ -226,9 +226,9 @@ If the script cannot be executed (script file not found, pwsh unavailable) or ou
 
 ```powershell
 if ($null -ne $complexityTempFile -and (Test-Path $complexityTempFile)) {
-  pwsh -NoProfile -NonInteractive -File .github/skills/calibration-pipeline/scripts/aggregate-review-scores.ps1 -ComplexityJsonPath $complexityTempFile -OutputPath $healthReportTempFile
+  pwsh -NoProfile -NonInteractive -File skills/calibration-pipeline/scripts/aggregate-review-scores.ps1 -ComplexityJsonPath $complexityTempFile -OutputPath $healthReportTempFile
 } else {
-  pwsh -NoProfile -NonInteractive -File .github/skills/calibration-pipeline/scripts/aggregate-review-scores.ps1 -OutputPath $healthReportTempFile
+  pwsh -NoProfile -NonInteractive -File skills/calibration-pipeline/scripts/aggregate-review-scores.ps1 -OutputPath $healthReportTempFile
 }
 ```
 
@@ -368,7 +368,7 @@ For each entry already marked `<!-- gotcha-status: upstream:{url} -->`: check if
 - Skipped: {reason or "none"}
 ```
 
-**Guardrail**: This section reads and writes `local-gotchas.instructions.md` to update status markers, and creates GitHub issues. It does NOT modify any other agent, skill, or system instruction file. Issue creation must follow output-capture verification (§2a) and deduplication search (§2c) from `.github/skills/safe-operations/SKILL.md`. For rule-addition proposals, apply the prevention-analysis advisory (§2d) from `.github/skills/safe-operations/SKILL.md` before the §2c dedup search.
+**Guardrail**: This section reads and writes `local-gotchas.instructions.md` to update status markers, and creates GitHub issues. It does NOT modify any other agent, skill, or system instruction file. Issue creation must follow output-capture verification (§2a) and deduplication search (§2c) from `skills/safe-operations/SKILL.md`. For rule-addition proposals, apply the prevention-analysis advisory (§2d) from `skills/safe-operations/SKILL.md` before the §2c dedup search.
 
 ### 4.9 Root Cause Analysis & Guardrail Proposals
 
@@ -388,7 +388,7 @@ Read `$complexityOutput` from §4.7. If `$complexityOutput` is `$null`, skip thi
 
 For each pattern being considered for a guardrail proposal with `systemic_fix_type: agent-prompt`:
 
-1. Extract the target agent basename from `target_file` (the filename portion of `.github/agents/{Name}.agent.md`)
+1. Extract the target agent basename from `target_file` (the filename portion of `agents/{Name}.agent.md`)
 2. Check whether that basename appears in `$complexityOutput.agents_over_ceiling`
 3. If **over ceiling**, check whether the agent also appears in the `extraction_agents:` block from the §4.7 aggregate output:
 
@@ -397,7 +397,7 @@ For each pattern being considered for a guardrail proposal with `systemic_fix_ty
    → Tag proposal `extraction_recommended: true`, `compression_required: true`
    → Emit D8 extraction advisory (REPLACES D2 compression advisory — do NOT emit both for the same agent):
 
-   > **Extraction advisory (D8)**: Target agent `{agent-basename}` has exceeded its guidance-complexity ceiling for `{consecutive_over_ceiling}` consecutive tracked periods (persistent_threshold: `{persistent_threshold}`). Compression alone is unlikely to resolve persistent over-ceiling exceedance. Recommended action: extract a skill using the `skill-creator` skill (`.github/skills/skill-creator/SKILL.md`) based on the D6 extraction criteria in `Documents/Design/guidance-complexity.md`. See the D8 section for extraction advisory format and the archive convention for retiring replaced rules. The proposal is still emitted — this advisory is non-blocking.
+   > **Extraction advisory (D8)**: Target agent `{agent-basename}` has exceeded its guidance-complexity ceiling for `{consecutive_over_ceiling}` consecutive tracked periods (persistent_threshold: `{persistent_threshold}`). Compression alone is unlikely to resolve persistent over-ceiling exceedance. Recommended action: extract a skill using the `skill-creator` skill (`skills/skill-creator/SKILL.md`) based on the D6 extraction criteria in `Documents/Design/guidance-complexity.md`. See the D8 section for extraction advisory format and the archive convention for retiring replaced rules. The proposal is still emitted — this advisory is non-blocking.
 
    **Sub-case B — over ceiling but extraction threshold NOT yet met** (agent in `agents_over_ceiling` but NOT in `extraction_agents:`):
    Retrieve `{total_directives}` via: `($complexityOutput.agents | Where-Object { $_.file -eq $agentBasename }).total_directives`.
@@ -415,9 +415,9 @@ For each pattern being considered for a guardrail proposal with `systemic_fix_ty
 1. **Read finding content**: Examine the evidence citations (PR numbers + finding IDs) from the script output. Access the finding details from calibration data or PR bodies to understand the specific defect pattern.
 2. **Search target by type**: Based on `systemic_fix_type`, search the relevant files:
 
-- `instruction` → consumer instruction files that remain in `.github/instructions/*.instructions.md` (for example `local-gotchas.instructions.md`, `browser-tools.instructions.md`, `browser-mcp.instructions.md`); for hub-migrated shared workflow guidance, search the owning skill file under `.github/skills/*/SKILL.md` instead
-- `skill` → `.github/skills/*/SKILL.md`
-- `agent-prompt` → `.github/agents/*.agent.md`
+- `instruction` → consumer instruction files that remain in `.github/instructions/*.instructions.md` (for example `local-gotchas.instructions.md`, `browser-tools.instructions.md`, `browser-mcp.instructions.md`); for hub-migrated shared workflow guidance, search the owning skill file under `skills/*/SKILL.md` instead
+- `skill` → `skills/*/SKILL.md`
+- `agent-prompt` → `agents/*.agent.md`
 - `plan-template` → Issue-Planner plan style guide section
 
 3. **Draft guardrail rule**: Identify the specific missing rule or strengthening needed. Write a concrete proposed change (what to add, which file, which section).
@@ -431,7 +431,7 @@ guardrail_proposals:
   - pattern: "Missing input validation rule"
     systemic_fix_type: skill
     category: security
-    target_file: .github/skills/safe-operations/SKILL.md
+    target_file: skills/safe-operations/SKILL.md
     target_section: "Section 1: File Operation Rules"
     compression_advisory: "none — ceiling not exceeded"  # advisory text if compression_required is true, otherwise "none — ceiling not exceeded"
     proposed_change: "Add rule: all user-facing endpoints must validate input against schema before processing"
@@ -477,7 +477,7 @@ For each proposal from Step 3 where `previously_proposed: false`:
 3. **Invoke the script** via terminal:
 
    ```powershell
-   pwsh -NoProfile -NonInteractive -File .github/skills/calibration-pipeline/scripts/create-improvement-issue.ps1 @params
+   pwsh -NoProfile -NonInteractive -File skills/calibration-pipeline/scripts/create-improvement-issue.ps1 @params
    ```
 
    Parse the exit code and stdout for the result summary.
@@ -527,7 +527,7 @@ For each proposal from Step 3 where `previously_proposed: false`:
 
 ### 5. Standard Retrospective Analysis
 
-For the reusable root-cause questions, common root-cause taxonomy, report structure, best practices, scenario routing, workflow integration guidance, and skill-usage audit methodology, load `.github/skills/process-analysis/SKILL.md`.
+For the reusable root-cause questions, common root-cause taxonomy, report structure, best practices, scenario routing, workflow integration guidance, and skill-usage audit methodology, load `skills/process-analysis/SKILL.md`.
 
 ---
 
@@ -541,5 +541,5 @@ For the reusable root-cause questions, common root-cause taxonomy, report struct
 
 **Reusable retrospective methodology:**
 
-- Load `.github/skills/process-analysis/SKILL.md` for standard retrospective workflow, report structure, scenario routing, and skill-usage audits
-- Reference `.github/skills/verification-before-completion/SKILL.md` when the review needs evidence-based completion checks
+- Load `skills/process-analysis/SKILL.md` for standard retrospective workflow, report structure, scenario routing, and skill-usage audits
+- Reference `skills/verification-before-completion/SKILL.md` when the review needs evidence-based completion checks

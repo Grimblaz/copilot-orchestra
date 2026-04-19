@@ -55,9 +55,9 @@ You are a forensic investigator. Your job is to find what everyone else missed �
 
 A professional self-review agent that performs comprehensive analysis of code quality, architecture compliance, security vulnerabilities, and test coverage. Provides actionable, evidence-based feedback to improve code before release.
 
-Load `.github/skills/adversarial-review/SKILL.md` for the reusable prosecution methodology, six-perspective review checklist, design/product challenge procedures, defense workflow, proxy-review scoring process, browser-review method, and standard report formats.
+Load `skills/adversarial-review/SKILL.md` for the reusable prosecution methodology, six-perspective review checklist, design/product challenge procedures, defense workflow, proxy-review scoring process, browser-review method, and standard report formats.
 
-For terminal and validation execution guardrails while running review checks, load `.github/skills/terminal-hygiene/SKILL.md`.
+For terminal and validation execution guardrails while running review checks, load `skills/terminal-hygiene/SKILL.md`.
 
 ## 🚨 CRITICAL: Read-Only Mode
 
@@ -97,7 +97,7 @@ If after genuine adversarial effort you find no issues, state what you checked a
 
 When the prompt contains one of the following markers, switch modes before reviewing:
 
-Load `.github/skills/routing-tables/SKILL.md` and use `Invoke-RoutingLookup -Table review_mode_routing -Key Marker -Value "{marker}"` for the canonical marker-to-mode mapping in `.github/skills/routing-tables/assets/routing-config.json`. When no marker is present, default to `code_prosecution` with the standard 3-pass parallel structure.
+Load `skills/routing-tables/SKILL.md` and use `Invoke-RoutingLookup -Table review_mode_routing -Key Marker -Value "{marker}"` for the canonical marker-to-mode mapping in `skills/routing-tables/assets/routing-config.json`. When no marker is present, default to `code_prosecution` with the standard 3-pass parallel structure.
 
 **Conflict rule**: Priority order (most specific wins): defense > CE > proxy > product-alignment > design > code. Exception: `"Use code review perspectives"` always overrides `"Use design review perspectives"` and forces Code Review Mode.
 
@@ -127,7 +127,7 @@ When the prompt includes `"Use CE review perspectives"`, activate CE Prosecution
 
 CE prosecution is **one pass only**. Experience-Owner exercises the CE scenarios first and captures evidence — Code-Conductor delegates CE Gate evidence capture to Experience-Owner, which returns a structured evidence summary. You then review that evidence adversarially and may run additional active tests.
 
-Load `.github/skills/adversarial-review/SKILL.md` for the reusable CE evidence-handling method and output discipline. The mode-specific CE contract below stays in this agent because downstream tests and callers anchor on this wording.
+Load `skills/adversarial-review/SKILL.md` for the reusable CE evidence-handling method and output discipline. The mode-specific CE contract below stays in this agent because downstream tests and callers anchor on this wording.
 
 **Three lenses** (apply all):
 
@@ -166,7 +166,7 @@ Every finding must be categorized with the appropriate evidence:
 
 Every finding must also include these automation-routing fields:
 
-- Load `.github/skills/routing-tables/SKILL.md` when assigning canonical automation-routing values. The authoritative enum values and points mapping live in `.github/skills/routing-tables/assets/routing-config.json` under `enums`.
+- Load `skills/routing-tables/SKILL.md` when assigning canonical automation-routing values. The authoritative enum values and points mapping live in `skills/routing-tables/assets/routing-config.json` under `enums`.
 - `severity`: use the canonical `enums.severity` values
 - `points`: use the canonical `enums.points_mapping` values — assigned by prosecutor; judge may override
 - `id`: F1 | F2 | F3 | … — sequential label within this review cycle; used by defense and judge to cross-reference findings by ID. Assign in order of appearance.
@@ -213,8 +213,8 @@ The calling agent or judge still decides how to act on the findings; Code-Critic
 
 ## Related Guidance
 
-- Load `.github/skills/software-architecture/SKILL.md` when a finding depends on architectural boundaries or dependency direction
-- Load `.github/skills/verification-before-completion/SKILL.md` when validating whether the reviewed change is truly done
+- Load `skills/software-architecture/SKILL.md` when a finding depends on architectural boundaries or dependency direction
+- Load `skills/verification-before-completion/SKILL.md` when validating whether the reviewed change is truly done
 
 ---
 

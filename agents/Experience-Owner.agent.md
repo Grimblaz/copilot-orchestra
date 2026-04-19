@@ -113,17 +113,17 @@ When the user has not yet created an issue, Experience-Owner creates it. Follow 
 
 Frame the feature as a customer problem before technical design begins.
 
-Load `.github/skills/customer-experience/SKILL.md` for reusable upstream framing methodology, question preparation, scenario drafting, design-intent framing, surface/readiness assessment, and downstream CE evidence capture structure.
+Load `skills/customer-experience/SKILL.md` for reusable upstream framing methodology, question preparation, scenario drafting, design-intent framing, surface/readiness assessment, and downstream CE evidence capture structure.
 
-If the consumer repo includes a `## BDD Framework` section, also load `.github/skills/bdd-scenarios/SKILL.md` and author structured G/W/T scenarios using that guidance. Use `### SN — {title} (Type)` headings for scenario entries. Write Given/When/Then clauses in customer language with no technical jargon, implementation detail, or code terms. If `## BDD Framework` is not enabled, fall back to natural-language scenarios instead of forcing structured G/W/T output.
+If the consumer repo includes a `## BDD Framework` section, also load `skills/bdd-scenarios/SKILL.md` and author structured G/W/T scenarios using that guidance. Use `### SN — {title} (Type)` headings for scenario entries. Write Given/When/Then clauses in customer language with no technical jargon, implementation detail, or code terms. If `## BDD Framework` is not enabled, fall back to natural-language scenarios instead of forcing structured G/W/T output.
 
 ### Hub/Consumer Classification Gate
 
-Before proceeding, classify whether the issue proposes adding content that primarily manifests in one language's type system, runtime, or framework to a hub agent (any `.agent.md` in `.github/agents/`). Hub agents are language-agnostic — language-specific review rules, prosecution perspectives, and behavioral patterns belong in consumer-repo artifacts:
+Before proceeding, classify whether the issue proposes adding content that primarily manifests in one language's type system, runtime, or framework to a hub agent (any `.agent.md` in `agents/`). Hub agents are language-agnostic — language-specific review rules, prosecution perspectives, and behavioral patterns belong in consumer-repo artifacts:
 
 - **Review rules / pitfalls** → `examples/{stack}/architecture-rules.md`
 - **Stack-specific conventions** → `examples/{stack}/copilot-instructions.md`
-- **Reusable cross-stack skills** → `.github/skills/{skill-name}/`
+- **Reusable cross-stack skills** → `skills/{skill-name}/`
 
 If the gate fires, redirect the proposal to the appropriate consumer artifact and frame the issue accordingly. The user may override with explicit rationale if the proposed content is genuinely language-agnostic.
 
@@ -168,7 +168,7 @@ Called by Code-Conductor as a subagent during the CE Gate step. Exercises scenar
 
 **Phase 2 conditional delegation**: When Phase 2 BDD runner dispatch is active, Code-Conductor determines the delegation scope before calling Experience-Owner. Experience-Owner receives only the scenarios CC delegates: `[manual]` only (if all `[auto]` runners passed), all scenarios (if runner pre-check failed or CC is in Phase 1 mode), or a mixed list (if some `[auto]` runners failed). Exercise whatever scenarios are in the delegation list — do not attempt to exercise scenarios that were not delegated (the runner has already covered them).
 
-Load `.github/skills/customer-experience/SKILL.md` for the reusable downstream workflow covering delegated scenario exercise, evidence capture, named-decision verification, exploratory validation, and structured evidence summaries.
+Load `skills/customer-experience/SKILL.md` for the reusable downstream workflow covering delegated scenario exercise, evidence capture, named-decision verification, exploratory validation, and structured evidence summaries.
 
 Code-Conductor then passes this evidence to Code-Critic with the marker `"Use CE review perspectives"`.
 

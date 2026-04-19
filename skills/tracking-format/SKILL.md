@@ -28,7 +28,7 @@ This document defines the standard YAML frontmatter format for tracking files st
 
 ## YAML Frontmatter Format
 
-> **Scope**: The following format applies to `.copilot-tracking/` research and tracking files only — not to session memory plan files. For session memory plan YAML fields, see Issue-Planner Section 6 in `.github/agents/Issue-Planner.agent.md`.
+> **Scope**: The following format applies to `.copilot-tracking/` research and tracking files only — not to session memory plan files. For session memory plan YAML fields, see Issue-Planner Section 6 in `agents/Issue-Planner.agent.md`.
 
 All tracking files **MUST** include YAML frontmatter at the top of the file:
 

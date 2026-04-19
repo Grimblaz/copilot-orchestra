@@ -29,7 +29,7 @@ VS Code 1.110 ships built-in slash commands for scaffolding customization files:
 
 - Kebab-case `name` in frontmatter (e.g., `my-skill`, not `MySkill`)
 - `description` must include usage triggers ("Use when ..." phrasing) for discoverability
-- Directory structure: `.github/skills/{skill-name}/SKILL.md`
+- Directory structure: `skills/{skill-name}/SKILL.md`
 - Required frontmatter fields: `name` and `description` only — no unsupported fields
 
 ## Required Frontmatter Format
@@ -50,7 +50,7 @@ description: What the skill does AND when to use it. This description triggers s
 ## Directory Structure
 
 ```
-.github/skills/
+skills/
 └── {skill-name}/
     ├── SKILL.md          # Required: Main skill file with frontmatter
     ├── reference.md      # Optional: Detailed reference material
@@ -133,7 +133,7 @@ Before finalizing a skill's `description:` field, verify:
 1. **Length target**: ≤60 words total (positive triggers + negative signals combined)
 2. **Positive triggers**: includes "Use when..." with 2–3 specific, distinct scenarios — not generic summary language
 3. **Negative signals**: includes "DO NOT USE FOR:..." with at least one adjacent skill pointer, e.g. `(use {other-skill})`
-4. **Collision check**: before finalizing, use `grep_search` with query `your-trigger-word` and `includePattern: ".github/skills/*/SKILL.md"` to check for naming collisions with existing skills. Add explicit "DO NOT USE FOR:" signals to **both** sides of any conflict.
+4. **Collision check**: before finalizing, use `grep_search` with query `your-trigger-word` and `includePattern: "skills/*/SKILL.md"` to check for naming collisions with existing skills. Add explicit "DO NOT USE FOR:" signals to **both** sides of any conflict.
 
 ## Writing Guidelines
 
@@ -224,7 +224,7 @@ Use `[CUSTOMIZE]` for sections that need project adaptation:
 
 A **supplement skill** layers project-specific constraints, themes, or identity guidance on top of an existing hub skill. When a project has one, load both together — the hub skill provides universal principles and the supplement narrows them for the project.
 
-**Naming convention**: `.github/skills/{project}-{hub-skill-name}/SKILL.md` — for example, `windgust-frontend-design` supplements `frontend-design`.
+**Naming convention**: `skills/{project}-{hub-skill-name}/SKILL.md` — for example, `windgust-frontend-design` supplements `frontend-design`.
 
 **Supplement ≠ replacement**: A supplement adds to the hub skill; it does not replace it. Load both together. If your supplement contradicts hub skill guidance, the benefit of shared defaults is lost.
 
@@ -305,7 +305,7 @@ Systematic approach to reviewing code changes.
 | Using extra frontmatter fields (`allowed-tools`, `applyTo`, custom keys)      | Only `name` and `description` are supported; extras are silently ignored | Use only `name` and `description` in frontmatter                                     |
 | Writing a vague description: `description: Debugging guide.`                  | Skill never appears in suggestions — description fails semantic matching | Include "Use when..." with 2–3 specific observable triggers                          |
 | Omitting "DO NOT USE FOR:..." negative signals                                | Skill collides with adjacent skills; wrong one is chosen                 | Include at least one `DO NOT USE FOR:` pointer with the alternative skill name       |
-| Not running a collision check before finalizing                               | New skill's trigger words shadow an existing skill                       | `grep_search` trigger phrases across `.github/skills/*/SKILL.md` before finalizing   |
+| Not running a collision check before finalizing                               | New skill's trigger words shadow an existing skill                       | `grep_search` trigger phrases across `skills/*/SKILL.md` before finalizing   |
 | Using camelCase or PascalCase for `name` (`MySkill`)                          | Naming convention violation; potential discovery failure                 | Use kebab-case (`my-skill`) for the `name` frontmatter field                         |
 | Creating `references/`, `examples/`, and `templates/` directories immediately | File bloat; harder to navigate and maintain                              | Start with Minimal structure; split only when core document becomes hard to navigate |
 | Creating a supplement that contradicts or overrides the hub skill's defaults  | Loses shared hub-skill defaults; teams diverge without a shared baseline | Layer on top — supplements narrow or extend hub guidance, never replace; load both together      |

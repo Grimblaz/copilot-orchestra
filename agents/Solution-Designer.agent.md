@@ -91,15 +91,15 @@ Create a feature branch if one doesn't already exist.
 
 Design exploration happens in **conversation**, not documents. Discuss first, document after decisions.
 
-Load `.github/skills/design-exploration/SKILL.md` for reusable research sequencing, optional current-app inspection, option comparison, question preparation, end-to-end design summarization, testing-scope selection, and design-payload preparation.
+Load `skills/design-exploration/SKILL.md` for reusable research sequencing, optional current-app inspection, option comparison, question preparation, end-to-end design summarization, testing-scope selection, and design-payload preparation.
 
 ### Hub/Consumer Classification Gate
 
-Before proceeding, classify whether the issue proposes adding content that primarily manifests in one language's type system, runtime, or framework to a hub agent (any `.agent.md` in `.github/agents/`). Hub agents are language-agnostic — language-specific review rules, prosecution perspectives, and behavioral patterns belong in consumer-repo artifacts:
+Before proceeding, classify whether the issue proposes adding content that primarily manifests in one language's type system, runtime, or framework to a hub agent (any `.agent.md` in `agents/`). Hub agents are language-agnostic — language-specific review rules, prosecution perspectives, and behavioral patterns belong in consumer-repo artifacts:
 
 - **Review rules / pitfalls** → `examples/{stack}/architecture-rules.md`
 - **Stack-specific conventions** → `examples/{stack}/copilot-instructions.md`
-- **Reusable cross-stack skills** → `.github/skills/{skill-name}/`
+- **Reusable cross-stack skills** → `skills/{skill-name}/`
 
 If the gate fires, redirect the proposal to the appropriate consumer artifact and frame the issue accordingly. The user may override with explicit rationale if the proposed content is genuinely language-agnostic.
 

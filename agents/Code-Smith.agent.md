@@ -70,11 +70,11 @@ A focused implementation mode that executes code changes following approved plan
 
 Implements code to satisfy the approved tests and plan, writing minimal code (YAGNI) needed for the tests to pass.
 
-For Build-Test orchestration (Requirement Contract, defect triage, convergence gate, loop budget), follow `.github/skills/parallel-execution/SKILL.md`.
+For Build-Test orchestration (Requirement Contract, defect triage, convergence gate, loop budget), follow `skills/parallel-execution/SKILL.md`.
 
-Use the `implementation-discipline` skill (`.github/skills/implementation-discipline/SKILL.md`) for the reusable pre-implementation review, minimal-coding rules, delegation-over-duplication guidance, and markdown hygiene.
+Use the `implementation-discipline` skill (`skills/implementation-discipline/SKILL.md`) for the reusable pre-implementation review, minimal-coding rules, delegation-over-duplication guidance, and markdown hygiene.
 
-For terminal and validation execution guardrails, load `.github/skills/terminal-hygiene/SKILL.md`.
+For terminal and validation execution guardrails, load `skills/terminal-hygiene/SKILL.md`.
 
 **🚨 Bad Test Detection (CRITICAL - STOP IMMEDIATELY)**:
 
@@ -153,16 +153,16 @@ In parallel mode, this check is mandatory before claiming implementation complet
 **When implementing domain/core logic layer code or organizing modules:**
 
 - Load `implementation-discipline` for the implementation workflow and delegation-first coding rules
-- Load `.github/skills/software-architecture/SKILL.md` for Clean Architecture and layer rules
+- Load `skills/software-architecture/SKILL.md` for Clean Architecture and layer rules
 
 **When debugging issues:**
 
-- Load `.github/skills/systematic-debugging/SKILL.md` for structured 4-phase debugging
+- Load `skills/systematic-debugging/SKILL.md` for structured 4-phase debugging
 - Follow the Iron Law: NO FIXES WITHOUT ROOT CAUSE INVESTIGATION FIRST
 
 **When implementing UI components:**
 
-- Reference `.github/skills/frontend-design/SKILL.md` for aesthetic guidance
+- Reference `skills/frontend-design/SKILL.md` for aesthetic guidance
 
 ---
 

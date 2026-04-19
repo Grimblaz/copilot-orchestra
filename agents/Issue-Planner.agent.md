@@ -66,7 +66,7 @@ Cycle through these phases based on user input. This is iterative, not linear.
 
 ## 2. Discovery
 
-Load `.github/skills/plan-authoring/SKILL.md` for the reusable discovery workflow, CE Gate input handling, stress-test preparation, and context-management guidance.
+Load `skills/plan-authoring/SKILL.md` for the reusable discovery workflow, CE Gate input handling, stress-test preparation, and context-management guidance.
 
 Run #tool:agent/runSubagent to gather context and discover potential blockers or ambiguities.
 
@@ -87,7 +87,7 @@ If research reveals ambiguities or if you need to validate assumptions:
 
 Once context is clear, draft a comprehensive implementation plan per <plan_style_guide>.
 
-Use `.github/skills/plan-authoring/SKILL.md` for the reusable draft workflow covering discovery synthesis, CE Gate step construction, adversarial stress-test preparation, and context-compaction timing.
+Use `skills/plan-authoring/SKILL.md` for the reusable draft workflow covering discovery synthesis, CE Gate step construction, adversarial stress-test preparation, and context-compaction timing.
 
 The plan should reflect:
 
@@ -111,7 +111,7 @@ The plan should reflect:
 
 ### BDD Scenario Classification (opt-in)
 
-When the consumer repo's `copilot-instructions.md` contains a `## BDD Framework` section, use the `bdd-scenarios` skill (`.github/skills/bdd-scenarios/SKILL.md`) to classify each scenario with `[auto]` or `[manual]` using this classification rubric:
+When the consumer repo's `copilot-instructions.md` contains a `## BDD Framework` section, use the `bdd-scenarios` skill (`skills/bdd-scenarios/SKILL.md`) to classify each scenario with `[auto]` or `[manual]` using this classification rubric:
 
 | Condition                                           | Classification        |
 | --------------------------------------------------- | --------------------- |
