@@ -25,14 +25,17 @@
 #>
 
 BeforeDiscovery {
-    $script:DiscoveryPhase = if ($env:ISSUE_367_SWEEP_PHASE) { $env:ISSUE_367_SWEEP_PHASE } else { 'pre-mv' }
+    # Post-merge default is 'final' — the sweep gate's post-#367 purpose is to flag any accidental
+    # reintroduction of .github/(agents|skills) literals. Set ISSUE_367_SWEEP_PHASE to replay a
+    # historical migration phase locally.
+    $script:DiscoveryPhase = if ($env:ISSUE_367_SWEEP_PHASE) { $env:ISSUE_367_SWEEP_PHASE } else { 'final' }
 }
 
 Describe 'Issue #367 path-migration sweep gate' -Tag 'issue-367', 'sweep-gate' {
 
     BeforeAll {
         $script:RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '../../..')).Path
-        $script:Phase = if ($env:ISSUE_367_SWEEP_PHASE) { $env:ISSUE_367_SWEEP_PHASE } else { 'pre-mv' }
+        $script:Phase = if ($env:ISSUE_367_SWEEP_PHASE) { $env:ISSUE_367_SWEEP_PHASE } else { 'final' }
 
         # Final allow-list (post-step-12): paths that may retain .github/(agents|skills)
         # matches forever. Glob patterns are matched with -like (where * is greedy).
@@ -65,7 +68,6 @@ Describe 'Issue #367 path-migration sweep gate' -Tag 'issue-367', 'sweep-gate' {
                 'README.md'
                 'CONTRIBUTING.md'
                 'examples/*/README.md'
-                'Documents/Decisions/0367-sweep-ledger.md'
             )
             'post-mv' = @(
                 'agents/*.agent.md'
@@ -82,7 +84,6 @@ Describe 'Issue #367 path-migration sweep gate' -Tag 'issue-367', 'sweep-gate' {
                 'README.md'
                 'CONTRIBUTING.md'
                 'examples/*/README.md'
-                'Documents/Decisions/0367-sweep-ledger.md'
             )
             'step5'   = @(
                 '.github/scripts/Tests/*.Tests.ps1'
@@ -94,7 +95,6 @@ Describe 'Issue #367 path-migration sweep gate' -Tag 'issue-367', 'sweep-gate' {
                 'README.md'
                 'CONTRIBUTING.md'
                 'examples/*/README.md'
-                'Documents/Decisions/0367-sweep-ledger.md'
                 # files with $copilotRoot/.github/skills not yet updated (Step 6 owns)
                 'skills/post-pr-review/SKILL.md'
                 'skills/session-startup/SKILL.md'
@@ -112,7 +112,6 @@ Describe 'Issue #367 path-migration sweep gate' -Tag 'issue-367', 'sweep-gate' {
                 'README.md'
                 'CONTRIBUTING.md'
                 'examples/*/README.md'
-                'Documents/Decisions/0367-sweep-ledger.md'
             )
             'step9'   = @(
                 '.github/scripts/validate-architecture.ps1'
@@ -123,11 +122,9 @@ Describe 'Issue #367 path-migration sweep gate' -Tag 'issue-367', 'sweep-gate' {
                 'README.md'
                 'CONTRIBUTING.md'
                 'examples/*/README.md'
-                'Documents/Decisions/0367-sweep-ledger.md'
             )
             'step10'  = @(
                 '.github/architecture-rules.md'
-                'Documents/Decisions/0367-sweep-ledger.md'
             )
             'final'   = @()
         }
@@ -201,8 +198,6 @@ Describe 'Issue #367 path-migration sweep gate' -Tag 'issue-367', 'sweep-gate' {
             $closePattern = '<!--\s*/legacy-path\s*-->'
             $unbalanced = @()
             foreach ($file in $script:MatchingFiles) {
-                # The ledger documents the fence convention verbatim; skip self-reference to avoid false positives.
-                if ($file -eq 'Documents/Decisions/0367-sweep-ledger.md') { continue }
                 $full = Join-Path $script:RepoRoot $file
                 $content = Get-Content -LiteralPath $full -Raw -ErrorAction SilentlyContinue
                 if ($null -eq $content) { continue }
