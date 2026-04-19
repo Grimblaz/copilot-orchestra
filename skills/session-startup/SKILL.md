@@ -45,13 +45,21 @@ Before any automatic startup detector run, check session memory for the marker a
 
 ### Step 3 — Run the detector script
 
-Run the following command in the terminal. The path is resolved relative to the `agent-orchestra` plugin (or repo clone) where this skill file lives — the wrapper itself resolves its repo root via `$PSScriptRoot`, so no env vars are needed:
+Run the detector wrapper in the terminal. The wrapper self-resolves its repo root via `$PSScriptRoot`, so no env vars are needed — but the terminal's working directory in a consumer repo is usually the consumer's workspace, **not** the orchestra plugin. Invoke the script by a path that resolves from wherever the `agent-orchestra` content actually lives.
+
+**Repo clone** (contributors, CWD is the repo root — relative path works):
 
 ```powershell
 pwsh -NoProfile -NonInteractive -File "skills/session-startup/scripts/session-cleanup-detector.ps1"
 ```
 
-Invoke the script by its absolute path if the current working directory is not the `agent-orchestra` root (for plugin-cache installs, use the plugin directory; for clones, use the repo root).
+**Plugin-cache install** (Copilot or Claude Code consumers, CWD is the consumer workspace — pass the plugin's absolute path). Resolve the plugin directory from the chat/IDE context (Copilot: the `chat.agentFilesLocations` entry; Claude Code: `<plugins-cache-root>/agent-orchestra/`), then:
+
+```powershell
+pwsh -NoProfile -NonInteractive -File "<plugin-root>/skills/session-startup/scripts/session-cleanup-detector.ps1"
+```
+
+If neither path resolves (the script is genuinely missing), skip the check silently per Step 1.
 
 ### Step 4 — Record the run-once marker
 

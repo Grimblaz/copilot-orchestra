@@ -392,7 +392,7 @@ If `$repoSlug` cannot be resolved (no clone path known, git command fails, URL d
 
 If resolved:
 
-1. **Idempotency check**: Read `.github/copilot-instructions.md` and check if it already contains a line starting with `agent-orchestra-repo:`. If present → skip (already injected).
+1. **Idempotency check**: Read `.github/copilot-instructions.md` and check if it already contains a line starting with `agent-orchestra-repo:` or the legacy `copilot-orchestra-repo:`. If either is present → skip (already injected; consumers upgrading from v1.x may still have the legacy key — see README §"Migrating from copilot-orchestra" for the rename).
 2. **Inject**: Use the `replace_string_in_file` tool to append `agent-orchestra-repo: {resolved-value}` as a new line at the end of `.github/copilot-instructions.md`. Do **not** use shell-level file-append commands — the file-write tool avoids encoding issues.
 
    **Forming the anchor**: Use the last non-empty line of the file as `old_str`, and set `new_str` to `{last-line}\nagent-orchestra-repo: {value}`. If the file was freshly generated in the same session, its closing lines are already known — use them directly. Example:

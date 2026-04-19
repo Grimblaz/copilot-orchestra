@@ -319,9 +319,9 @@ After §4.7 analysis completes, proceed to §4.9 for root cause analysis and gua
 
 - If `.github/instructions/local-gotchas.instructions.md` does not exist → skip §4.8 silently
 - If the file exists but is empty → skip §4.8 silently
-- Read `agent-orchestra-repo` from `.github/copilot-instructions.md` (look for line `agent-orchestra-repo: {owner}/{repo}`)
-- If field is absent → skip §4.8 silently
-- Pre-flight access check: `gh repo view {agent-orchestra-repo} --json name 2>&1` — if non-zero exit or error output → emit `⚠️ Upstream gotcha flow skipped — gh access to {agent-orchestra-repo} failed` and fall back to creating a local GitHub issue labeled `upstream-gotcha` and `priority: medium`
+- Read the upstream repo slug from `.github/copilot-instructions.md` — prefer `agent-orchestra-repo: {owner}/{repo}`, and fall back to the legacy `copilot-orchestra-repo: {owner}/{repo}` if the new key is absent (v2.0.0 rename; legacy key stays readable for one release to smooth consumer migration — see README §"Migrating from copilot-orchestra")
+- If neither field is present → skip §4.8 silently
+- Pre-flight access check: `gh repo view {agent-orchestra-repo} --json name 2>&1` — if non-zero exit or error output → emit `⚠️ Upstream gotcha flow skipped — gh access to {agent-orchestra-repo} failed` and fall back to creating a local GitHub issue labeled `upstream-gotcha` and `priority: medium` (the `{agent-orchestra-repo}` placeholder is the resolved slug, whether it came from the new `agent-orchestra-repo:` key or the legacy `copilot-orchestra-repo:` fallback)
 
 **Step 2 — Scan for unresolved entries**:
 

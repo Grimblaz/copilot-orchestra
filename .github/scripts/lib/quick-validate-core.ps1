@@ -51,7 +51,14 @@ function Test-QVLegacyReference {
         return [PSCustomObject]@{ Name = $Name; Passed = $true; Detail = '' }
     }
 
-    $fileList = ($hits | ForEach-Object { $_.Path }) -join ', '
+    $rootFull = (Resolve-Path -LiteralPath $RootPath).Path.TrimEnd([IO.Path]::DirectorySeparatorChar, [IO.Path]::AltDirectorySeparatorChar)
+    $fileList = ($hits | ForEach-Object {
+            $p = $_.Path
+            if ($p.StartsWith($rootFull, [StringComparison]::OrdinalIgnoreCase)) {
+                $p.Substring($rootFull.Length).TrimStart([IO.Path]::DirectorySeparatorChar, [IO.Path]::AltDirectorySeparatorChar)
+            }
+            else { $p }
+        }) -join ', '
     return [PSCustomObject]@{ Name = $Name; Passed = $false; Detail = "$($hits.Count) reference(s) found: $fileList" }
 }
 

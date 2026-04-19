@@ -305,6 +305,18 @@ Reinstall the plugin from the new marketplace path:
 
 GitHub automatically redirects `github.com/Grimblaz/copilot-orchestra` to the new URL. Existing clones and remotes continue to work without any changes — though running `git remote set-url` with the new name avoids the redirect hop.
 
+### 5. Rename `copilot-orchestra-repo` in `.github/copilot-instructions.md`
+
+If your downstream repo has a `copilot-orchestra-repo:` field in `.github/copilot-instructions.md` (used by the Process-Review upstream-gotcha flow), rename it to `agent-orchestra-repo:`. Process-Review reads both names during the transition — the legacy key continues to work — but new injections (via `/setup`) use the new name, and a future release will drop the legacy fallback. One-line change:
+
+```text
+# Before
+copilot-orchestra-repo: Grimblaz/copilot-orchestra
+
+# After
+agent-orchestra-repo: Grimblaz/agent-orchestra
+```
+
 ---
 
 ## Contributing
