@@ -29,8 +29,12 @@ function Test-QVLegacyReference {
         [string[]]$ExtraExcludeNames = @()
     )
 
-    $githubPath = Join-Path $RootPath '.github'
-    if (-not (Test-Path $githubPath)) {
+    $scanRoots = @()
+    foreach ($candidate in @('.github', 'agents', 'skills')) {
+        $path = Join-Path $RootPath $candidate
+        if (Test-Path $path) { $scanRoots += $path }
+    }
+    if ($scanRoots.Count -eq 0) {
         return [PSCustomObject]@{ Name = $Name; Passed = $true; Detail = '' }
     }
 
@@ -39,7 +43,7 @@ function Test-QVLegacyReference {
         $excludePattern += '|' + (($ExtraExcludeNames | ForEach-Object { [regex]::Escape($_) }) -join '|')
     }
 
-    $mdFiles = Get-ChildItem -Path $githubPath -Recurse -Filter '*.md' |
+    $mdFiles = Get-ChildItem -Path $scanRoots -Recurse -Filter '*.md' |
         Where-Object { $_.Name -notmatch $excludePattern }
 
     $hits = @($mdFiles | Select-String -Pattern $Pattern -SimpleMatch)
@@ -47,7 +51,7 @@ function Test-QVLegacyReference {
         return [PSCustomObject]@{ Name = $Name; Passed = $true; Detail = '' }
     }
 
-    $fileList = ($hits | ForEach-Object { $_.RelativePath($githubPath) ?? $_.Path }) -join ', '
+    $fileList = ($hits | ForEach-Object { $_.Path }) -join ', '
     return [PSCustomObject]@{ Name = $Name; Passed = $false; Detail = "$($hits.Count) reference(s) found: $fileList" }
 }
 

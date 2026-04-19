@@ -6,10 +6,10 @@
 
 .DESCRIPTION
     Locks the issue #196 downstream ownership contract across:
-      - .github/agents/Code-Conductor.agent.md
+      - agents/Code-Conductor.agent.md
       - Documents/Design/hub-mode-ux.md
-    - .github/skills/safe-operations/SKILL.md
-      - .github/agents/Process-Review.agent.md
+    - skills/safe-operations/SKILL.md
+      - agents/Process-Review.agent.md
 
         The files must describe the same semantics for:
             - exactly three work classes for downstream orchestration scope
@@ -31,10 +31,10 @@ Describe 'downstream ownership boundary contract' {
 
     BeforeAll {
         $script:RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '../../..')).Path
-        $script:CodeConductor = Join-Path $script:RepoRoot '.github/agents/Code-Conductor.agent.md'
+        $script:CodeConductor = Join-Path $script:RepoRoot 'agents/Code-Conductor.agent.md'
         $script:HubModeUx = Join-Path $script:RepoRoot 'Documents/Design/hub-mode-ux.md'
-        $script:SafeOperations = Join-Path $script:RepoRoot '.github/skills/safe-operations/SKILL.md'
-        $script:ProcessReview = Join-Path $script:RepoRoot '.github/agents/Process-Review.agent.md'
+        $script:SafeOperations = Join-Path $script:RepoRoot 'skills/safe-operations/SKILL.md'
+        $script:ProcessReview = Join-Path $script:RepoRoot 'agents/Process-Review.agent.md'
 
         $script:ReadContent = {
             param([string]$Path)

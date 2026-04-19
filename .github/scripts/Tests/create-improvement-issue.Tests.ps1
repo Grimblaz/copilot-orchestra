@@ -14,8 +14,8 @@
 Describe 'Invoke-CreateImprovementIssue' -Tag 'no-gh' {
     BeforeAll {
         $script:RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '../../..')).Path
-        $script:CorePath = Join-Path $script:RepoRoot '.github\skills\calibration-pipeline\scripts\create-improvement-issue-core.ps1'
-        $script:WrapperPath = Join-Path $script:RepoRoot '.github\skills\calibration-pipeline\scripts\create-improvement-issue.ps1'
+        $script:CorePath = Join-Path $script:RepoRoot 'skills\calibration-pipeline\scripts\create-improvement-issue-core.ps1'
+        $script:WrapperPath = Join-Path $script:RepoRoot 'skills\calibration-pipeline\scripts\create-improvement-issue.ps1'
         . $script:CorePath
 
         # ── temp root for all test data ──────────────────────────────
@@ -152,7 +152,7 @@ exit 99
             EvidencePrs             = @(245, 248, 252)
             FirstEmittedAt          = '2026-04-03T10:00:00Z'
             FixTypeLevel            = 5
-            TargetFile              = '.github/agents/Code-Critic.agent.md'
+            TargetFile              = 'agents/Code-Critic.agent.md'
             ProposedChange          = 'Add defensive validation for empty input arrays'
             SystemicFixType         = 'agent-prompt'
             Repo                    = 'Grimblaz/copilot-orchestra'
@@ -377,7 +377,7 @@ exit 99
             $params = $script:BaseParams.Clone()
             $params.GhCliPath = $mock
             $params.FixTypeLevel = 5
-            $params.TargetFile = '.github/agents/Code-Critic.agent.md'
+            $params.TargetFile = 'agents/Code-Critic.agent.md'
             $params.ComplexityJsonPath = $complexityPath
 
             # Act
@@ -400,7 +400,7 @@ exit 99
             $params = $script:BaseParams.Clone()
             $params.GhCliPath = $mock
             $params.FixTypeLevel = 2
-            $params.TargetFile = '.github/agents/Code-Critic.agent.md'
+            $params.TargetFile = 'agents/Code-Critic.agent.md'
             $params.ComplexityJsonPath = $complexityPath
 
             # Act
@@ -421,7 +421,7 @@ exit 99
                 -IssueCreateOutput 'https://github.com/Grimblaz/copilot-orchestra/issues/207'
             $params = $script:BaseParams.Clone()
             $params.GhCliPath = $mock
-            $params.TargetFile = '.github/skills/safe-operations/SKILL.md'
+            $params.TargetFile = 'skills/safe-operations/SKILL.md'
             $params.ComplexityJsonPath = $complexityPath
 
             # Act
@@ -443,7 +443,7 @@ exit 99
             $params = $script:BaseParams.Clone()
             $params.GhCliPath = $mock
             $params.FixTypeLevel = 5
-            $params.TargetFile = '.github/agents/Code-Critic.agent.md'
+            $params.TargetFile = 'agents/Code-Critic.agent.md'
             $params.ComplexityJsonPath = $complexityPath
 
             # Act

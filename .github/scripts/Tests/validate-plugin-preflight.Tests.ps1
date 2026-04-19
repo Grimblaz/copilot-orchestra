@@ -25,8 +25,8 @@ Describe 'Invoke-PluginPreflight' -Tag 'unit' {
             )
 
             $githubDir = Join-Path $Root '.github'
-            $agentsDir = Join-Path $githubDir 'agents'
-            $skillsRoot = Join-Path $githubDir 'skills'
+            $agentsDir = Join-Path $Root 'agents'
+            $skillsRoot = Join-Path $Root 'skills'
 
             New-Item -ItemType Directory -Path $githubDir  -Force | Out-Null
             New-Item -ItemType Directory -Path $agentsDir  -Force | Out-Null
@@ -40,7 +40,7 @@ Describe 'Invoke-PluginPreflight' -Tag 'unit' {
             for ($i = 1; $i -le $SkillCount; $i++) {
                 $skillName = "skill-$i"
                 New-Item -ItemType Directory -Path (Join-Path $skillsRoot $skillName) -Force | Out-Null
-                $skillEntries.Add("  `"./skills/$skillName/`"")
+                $skillEntries.Add("  `"../skills/$skillName/`"")
             }
 
             $authorName = if ($Placeholders) { 'YOUR-ORG' } else { 'Grimblaz' }
@@ -57,7 +57,7 @@ Describe 'Invoke-PluginPreflight' -Tag 'unit' {
   "version": "1.13.0",
   "author": { "name": "$authorName" },
   "repository": "$repoUrl",
-  "agents": ["./agents/"],
+  "agents": ["../agents/"],
   "skills": [
 $($skillEntries -join ",`n")
   ]$commandsBlock
@@ -163,7 +163,7 @@ $($skillEntries -join ",`n")
 
         It 'reports FAIL SkillCountMatch when filesystem has more skills than plugin.json' {
             $root = & $script:NewFixture -SkillCount 39
-            New-Item -ItemType Directory -Path (Join-Path $root '.github\skills\extra-skill') -Force | Out-Null
+            New-Item -ItemType Directory -Path (Join-Path $root 'skills\extra-skill') -Force | Out-Null
             $pjPath = Join-Path $root '.github\plugin.json'
             $result = Invoke-PluginPreflight -RootPath $root -PluginJsonPath $pjPath
             $check = $result.Results | Where-Object { $_.Name -eq 'SkillCountMatch' }
@@ -173,7 +173,7 @@ $($skillEntries -join ",`n")
 
         It 'reports FAIL SkillPathsExist when a declared skill directory is missing' {
             $root = & $script:NewFixture
-            Remove-Item -Path (Join-Path $root '.github\skills\skill-5') -Recurse -Force
+            Remove-Item -Path (Join-Path $root 'skills\skill-5') -Recurse -Force
             $pjPath = Join-Path $root '.github\plugin.json'
             $result = Invoke-PluginPreflight -RootPath $root -PluginJsonPath $pjPath
             $check = $result.Results | Where-Object { $_.Name -eq 'SkillPathsExist' }

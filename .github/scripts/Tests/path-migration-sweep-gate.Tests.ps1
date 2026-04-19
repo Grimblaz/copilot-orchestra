@@ -40,6 +40,7 @@ Describe 'Issue #367 path-migration sweep gate' -Tag 'issue-367', 'sweep-gate' {
             'Documents/Design/*.md'
             'CUSTOMIZATION.md'
             'examples/*/copilot-instructions.md'
+            '.github/scripts/Tests/path-migration-sweep-gate.Tests.ps1'
         )
 
         # Per-phase additional allow-list entries (in-flight files not yet updated).
