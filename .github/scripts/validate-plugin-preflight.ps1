@@ -5,10 +5,11 @@
 
 .DESCRIPTION
     Verifies that plugin.json accurately describes the repository:
+    - Manifest exists at .github/plugin.json and parses
     - Placeholder author/repository values have been replaced
-    - All declared agent, skill, and command paths exist on disk
-    - Declared counts match filesystem counts
-    - Command count is exactly 9 (no /release)
+    - All declared agent and skill paths exist on disk
+    - Agent count is 14, declared skill count matches filesystem
+    - Manifest does not declare fields VS Code silently ignores (e.g. `commands`)
 
     Run from any directory — paths resolve relative to the repo root.
 

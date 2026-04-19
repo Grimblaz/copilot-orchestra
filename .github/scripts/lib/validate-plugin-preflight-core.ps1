@@ -19,7 +19,7 @@ function Invoke-PluginPreflight {
             $RootPath = (Resolve-Path (Join-Path $PSScriptRoot '../../..')).Path
         }
         if (-not $PluginJsonPath) {
-            $PluginJsonPath = Join-Path -Path $RootPath -ChildPath '.github' -AdditionalChildPath 'plugin', 'plugin.json'
+            $PluginJsonPath = Join-Path -Path $RootPath -ChildPath '.github' -AdditionalChildPath 'plugin.json'
         }
 
         $results = [System.Collections.Generic.List[PSCustomObject]]::new()
@@ -116,34 +116,21 @@ function Invoke-PluginPreflight {
         }
         catch { $results.Add([PSCustomObject]@{ Name = 'SkillCountMatch'; Passed = $false; Detail = "Error: $_" }) }
 
-        # --- 7. All declared command paths exist ---
+        # --- 7. Manifest does not declare unsupported fields ---
+        # VS Code 1.110 schema: name, description, version, author, skills, agents,
+        # hooks, mcpServers. A `commands` field is silently ignored — guard against
+        # re-introduction since slash-command intent should live in skills/agents.
         try {
-            $commandPaths = @($manifest.commands | Where-Object { $_ })
-            $missingCommands = @($commandPaths | ForEach-Object {
-                    $abs = Resolve-Path -LiteralPath (Join-Path $manifestDir $_) -ErrorAction SilentlyContinue
-                    if (-not $abs) { $_ }
-                })
-            if ($missingCommands.Count -eq 0) {
-                $results.Add([PSCustomObject]@{ Name = 'CommandPathsExist'; Passed = $true; Detail = '' })
+            $manifestProps = @($manifest.PSObject.Properties.Name)
+            $unsupported = @($manifestProps | Where-Object { $_ -eq 'commands' })
+            if ($unsupported.Count -eq 0) {
+                $results.Add([PSCustomObject]@{ Name = 'NoUnsupportedFields'; Passed = $true; Detail = '' })
             }
             else {
-                $results.Add([PSCustomObject]@{ Name = 'CommandPathsExist'; Passed = $false; Detail = "$($missingCommands.Count) missing: $($missingCommands -join ', ')" })
+                $results.Add([PSCustomObject]@{ Name = 'NoUnsupportedFields'; Passed = $false; Detail = "Manifest declares fields VS Code ignores: $($unsupported -join ', ')" })
             }
         }
-        catch { $results.Add([PSCustomObject]@{ Name = 'CommandPathsExist'; Passed = $false; Detail = "Error: $_" }) }
-
-        # --- 8. Command count is 9 (no /release) ---
-        try {
-            $declaredCommandCount = @($manifest.commands).Count
-            $expectedCommandCount = 9
-            if ($declaredCommandCount -eq $expectedCommandCount) {
-                $results.Add([PSCustomObject]@{ Name = 'CommandCount'; Passed = $true; Detail = "$declaredCommandCount commands declared" })
-            }
-            else {
-                $results.Add([PSCustomObject]@{ Name = 'CommandCount'; Passed = $false; Detail = "Expected $expectedCommandCount commands, found $declaredCommandCount" })
-            }
-        }
-        catch { $results.Add([PSCustomObject]@{ Name = 'CommandCount'; Passed = $false; Detail = "Error: $_" }) }
+        catch { $results.Add([PSCustomObject]@{ Name = 'NoUnsupportedFields'; Passed = $false; Detail = "Error: $_" }) }
 
         return _PreflightSummary $results
     }

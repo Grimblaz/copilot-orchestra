@@ -64,7 +64,7 @@ pwsh .github/scripts/bump-version.ps1 -Version {next-version}
 Then commit and push:
 
 ```powershell
-git add .github/plugin/plugin.json .github/plugin/marketplace.json README.md
+git add .github/plugin.json .github/plugin/marketplace.json README.md
 git commit -m "chore: bump version to {next-version}"
 git push
 ```
