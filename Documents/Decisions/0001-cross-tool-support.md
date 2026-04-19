@@ -11,19 +11,19 @@
 The landscape has since changed:
 
 1. **Claude Code now ships a first-class plugin system** (`.claude-plugin/plugin.json` — see ADR-0002) that auto-discovers `agents/` and `skills/` at the plugin root. No documentation duplication is required — the same skill and agent content loads natively.
-2. **Copilot-Orchestra is explicitly a hub** (confirmed 2026-04-19, user): this repo exists to be *consumed by other repos* as a plugin. Single-tool support makes the hub irrelevant to consumers who work in a different tool.
+2. **Agent-Orchestra is explicitly a hub** (confirmed 2026-04-19, user): this repo exists to be *consumed by other repos* as a plugin. Single-tool support makes the hub irrelevant to consumers who work in a different tool.
 3. **Consumer-side evidence**: Issue #367 surfaced consumers who already run both tools in the same workspace. Forcing them to pick one leaks the engineering-internal decision into their product workflow.
 
 D1's rationale was operational (dual-maintenance of parallel docs). That cost no longer exists under plugin distribution: both tools consume the same `skills/<name>/SKILL.md` and `agents/*.md` files, from the same paths, with different manifests pointing at the same content.
 
 ## Decision
 
-**Copilot-Orchestra supports GitHub Copilot and Claude Code as first-class distribution targets via dual plugin manifests over shared content.**
+**Agent-Orchestra supports GitHub Copilot and Claude Code as first-class distribution targets via dual plugin manifests over shared content.**
 
 Layout (Shape A):
 
 - Content at repo root: `agents/` (14 agent files) + `skills/` (39 skill dirs).
-- `.github/plugin.json` — Copilot manifest, paths resolved relative to `.github/` (so entries use `../agents/`, `../skills/...`).
+- `plugin.json` (repo root) — Copilot manifest, paths resolved relative to the manifest directory. Manifest sits at the plugin root so entries use plugin-root-relative `./agents/` + `./skills/...` with no `..` escapes. (Relocated from `.github/plugin.json` in v2.0.0 per D10 fallback.)
 - `.claude-plugin/plugin.json` — Claude Code manifest, metadata-only (auto-discovers `agents/` and `skills/` at plugin root; setting `agents`/`skills` arrays would disable auto-discovery per ADR-0002).
 
 Content is platform-neutral. Six skills that require tool-specific invocation syntax (`session-startup`, `provenance-gate`, `step-commit`, `parallel-execution`, `design-exploration`, `customer-experience`) split platform-specific blocks into `platforms/copilot.md` and `platforms/claude.md` under each skill, with a canonical routing footer in SKILL.md. `session-startup` has a documented D3b soft exemption to retain methodology alongside the footer.
@@ -40,18 +40,18 @@ Content is platform-neutral. Six skills that require tool-specific invocation sy
 ### Positive
 
 - Hub is usable from either tool with identical workflow semantics.
-- Adding a new skill requires `.github/plugin.json` update only (Copilot); Claude Code auto-picks it up on next version bump.
+- Adding a new skill requires repo-root `plugin.json` update only (Copilot); Claude Code auto-picks it up on next version bump.
 - Contributor-experience parity: SKILL.md is platform-neutral; each platforms/ file documents its tool's specific invocations.
 
 ### Negative
 
 - Two manifests must stay version-synchronized — handled by `bump-version.ps1` dual-write (non-optional per ADR-0002 for cache invalidation).
 - Six skills split across SKILL.md + platforms/ files introduces a small maintenance surface (canonical footer parity enforced by sweep gate in Step 12).
-- VS Code Copilot's behavior with `../` path escapes in `.github/plugin.json` (repo root from manifest-dir perspective) is the one open risk — Step 13 local install acts as the gate. If it fails, this plan HARD STOPS (per plan F1.6) rather than pivoting mid-flight.
+- ~~VS Code Copilot's behavior with `../` path escapes in `.github/plugin.json` (repo root from manifest-dir perspective) is the one open risk — Step 13 local install acts as the gate. If it fails, this plan HARD STOPS (per plan F1.6) rather than pivoting mid-flight.~~ **Resolved (v2.0.0)**: D10 fallback applied pre-emptively — manifest relocated to repo-root `plugin.json` so paths use `./agents/` + `./skills/{name}/` with no `..` escapes. The sandbox-escape risk is eliminated by construction.
 
 ### Reversibility
 
-- Reversible: delete `.claude-plugin/`, revert `.github/plugin.json` paths to `./agents/` + `./skills/`, and move content back under `.github/`. `bump-version.ps1` reverts with the manifest.
+- Reversible: delete `.claude-plugin/`, move `plugin.json` back to `.github/plugin.json` (restoring pre-v2.0.0 location), and move content back under `.github/`. `bump-version.ps1` reverts with the manifest.
 - If reverted, ADR-0001 is marked "Superseded" and D1 restored.
 
 ## Supersession notice (to be placed on `tool-support.md` D1)

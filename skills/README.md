@@ -45,7 +45,7 @@ This keeps prompts concise while preserving depth when needed.
 | `research-methodology` | Evidence-driven technical research and recommendation workflow | ✅ Included |
 | `review-judgment` | Single-shot review judgment and scoring methodology | ✅ Included |
 | `session-startup` | Automatic startup cleanup guard for new conversations | ✅ Included |
-| `terminal-hygiene` | Terminal and test execution guardrails for Copilot Orchestra workflows | ✅ Included |
+| `terminal-hygiene` | Terminal and test execution guardrails for Agent Orchestra workflows | ✅ Included |
 | `skill-creator` | Guide for creating new skills with proper frontmatter format | ✅ Included |
 | `software-architecture` | Clean Architecture, SOLID principles, and architectural decision guidance | ✅ Included |
 | `specification-authoring` | Structured authoring guidance for formal specifications | ✅ Included |

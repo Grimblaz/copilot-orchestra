@@ -1,10 +1,10 @@
 ---
 
 name: research-methodology
-description: Evidence-driven research methodology for technical analysis and recommendation building. Use when gathering verified findings, cross-referencing internal and external sources, or converging multiple options into one recommended approach. DO NOT USE FOR: implementation work (use implementation-discipline) or debugging a live failure path (use systematic-debugging)
+description: "Evidence-driven research methodology for technical analysis and recommendation building. Use when gathering verified findings, cross-referencing internal and external sources, or converging multiple options into one recommended approach. DO NOT USE FOR: implementation work (use implementation-discipline) or debugging a live failure path (use systematic-debugging)"
 ---
 
-<!-- platform-assumptions: markdown skill guidance for VS Code custom agents in Copilot Orchestra; assumes evidence is gathered from workspace and approved external sources. -->
+<!-- platform-assumptions: markdown skill guidance for VS Code custom agents in Agent Orchestra; assumes evidence is gathered from workspace and approved external sources. -->
 <!-- markdownlint-disable-file MD041 MD003 -->
 
 # Research Methodology

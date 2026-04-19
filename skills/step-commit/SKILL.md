@@ -1,6 +1,6 @@
 ---
 name: step-commit
-description: Discrete validated-step commit workflow for Code-Conductor. Use when capturing per-step validated work as structured commits. DO NOT USE FOR: deciding whether auto-commit is enabled or replacing the PR-time formatting gate.
+description: "Discrete validated-step commit workflow for Code-Conductor. Use when capturing per-step validated work as structured commits. DO NOT USE FOR: deciding whether auto-commit is enabled or replacing the PR-time formatting gate."
 ---
 
 # Step Commit Protocol

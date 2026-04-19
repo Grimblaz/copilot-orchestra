@@ -1,6 +1,6 @@
 # Architecture Rules
 
-These rules define the structural constraints for Copilot Orchestra. All agents and contributors must follow them.
+These rules define the structural constraints for Agent Orchestra. All agents and contributors must follow them.
 
 ## Directory Structure
 
@@ -14,8 +14,9 @@ These rules define the structural constraints for Copilot Orchestra. All agents 
 | `.github/scripts/`       | Automation scripts invoked by agents or instructions | `*.ps1` PowerShell scripts                                    |
 | `.github/scripts/lib/`   | Library modules dot-sourced by CLI wrappers and tests | `{name}-core.ps1` files exposing `Invoke-*` functions; the corresponding CLI script in `.github/scripts/` is a thin wrapper that dot-sources the library and relays results |
 | `.github/config/`        | Committed configuration files consumed by automation scripts | JSON config files                                      |
-| `.github/plugin.json`    | Copilot/VS Code plugin manifest (paths relative to `.github/`, so `../agents/` + `../skills/...`) | `plugin.json` |
+| `plugin.json`            | Copilot/VS Code plugin manifest at repo root (paths `./agents/` + `./skills/...`; relocated from `.github/plugin.json` in v2.0.0 per issue #367 D10) | `plugin.json` |
 | `.claude-plugin/plugin.json` | Claude Code plugin manifest (metadata only; Claude Code auto-discovers repo-root `agents/` + `skills/`) | `plugin.json` |
+| `.claude-plugin/marketplace.json` | Claude Code marketplace catalog (enables `/plugin marketplace add Grimblaz/agent-orchestra`)  | `marketplace.json` |
 | `.github/plugin/`        | Marketplace manifest for the Copilot plugin          | `marketplace.json`                                             |
 | `Documents/Design/`      | Design documents (committed with implementation PRs) | `{domain-slug}.md`                                            |
 | `Documents/Decisions/`   | Standalone decision records                          | Markdown files                                                 |
@@ -23,7 +24,7 @@ These rules define the structural constraints for Copilot Orchestra. All agents 
 
 ## Layer Model
 
-| Layer | Purpose | In Copilot Orchestra |
+| Layer | Purpose | In Agent Orchestra |
 |-------|---------|---------------------|
 | **Top (fat)** | Skills — judgment, methodology, process, documentation, and supporting data loaded on demand | `skills/` (repo root) |
 | **Middle (thin)** | Harness — routing, context management, safety, and decision authority | Agent files (`agents/` at repo root) |

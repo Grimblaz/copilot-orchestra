@@ -17,7 +17,11 @@
 
 . "$PSScriptRoot/session-cleanup-detector-core.ps1"
 
-$repoRoot = if ($env:COPILOT_ORCHESTRA_ROOT) { $env:COPILOT_ORCHESTRA_ROOT } elseif ($env:WORKFLOW_TEMPLATE_ROOT) { $env:WORKFLOW_TEMPLATE_ROOT } else { '' }
+# Resolve repo root relative to this script's location.
+# Works for plugin-cache installs and direct clones alike: in both cases this
+# file lives at {repo}/skills/session-startup/scripts/ so repo root is three
+# levels up. No env var configuration needed.
+$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '../../..')).Path
 
 $result = Invoke-SessionCleanupDetector -RepoRoot $repoRoot
 

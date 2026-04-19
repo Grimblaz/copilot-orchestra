@@ -1,6 +1,6 @@
 ---
 name: provenance-gate
-description: First-contact issue-framing assessment for cold pickups. Use when a user-invocable agent receives an existing GitHub issue without a warm handoff, needs the three-question assessment, or must record the first-contact-assessed marker. DO NOT USE FOR: post-merge review cleanup (use post-pr-review) or implementation debugging after work has already started (use systematic-debugging).
+description: "First-contact issue-framing assessment for cold pickups. Use when a user-invocable agent receives an existing GitHub issue without a warm handoff, needs the three-question assessment, or must record the first-contact-assessed marker. DO NOT USE FOR: post-merge review cleanup (use post-pr-review) or implementation debugging after work has already started (use systematic-debugging)."
 ---
 
 # Provenance Gate

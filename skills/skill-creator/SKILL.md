@@ -1,6 +1,6 @@
 ---
 name: skill-creator
-description: Guide for creating new skills in this system with proper frontmatter format. Use when adding new skills, updating skill templates, or reviewing skill structure. DO NOT USE FOR: general agent or instruction file customization (use agent-customization) or modifying existing skill logic/content.
+description: "Guide for creating new skills in this system with proper frontmatter format. Use when adding new skills, updating skill templates, or reviewing skill structure. DO NOT USE FOR: general agent or instruction file customization (use agent-customization) or modifying existing skill logic/content."
 ---
 
 # Skill Creator

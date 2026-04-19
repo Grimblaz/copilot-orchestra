@@ -1,9 +1,9 @@
 ---
 name: review-judgment
-description: Reusable single-shot review judgment methodology for scoring prosecution and defense ledgers, verifying evidence, and emitting judge output. Use when ruling on review findings after prosecution and defense are available. DO NOT USE FOR: GitHub review intake routing, response-location policy, or fix execution ownership (keep those in Code-Review-Response.agent.md).
+description: "Reusable single-shot review judgment methodology for scoring prosecution and defense ledgers, verifying evidence, and emitting judge output. Use when ruling on review findings after prosecution and defense are available. DO NOT USE FOR: GitHub review intake routing, response-location policy, or fix execution ownership (keep those in Code-Review-Response.agent.md)."
 ---
 
-<!-- platform-assumptions: markdown skill guidance for VS Code custom agents in Copilot Orchestra; assumes the calling agent owns intake routing, categorization policy, and handoff to implementation. -->
+<!-- platform-assumptions: markdown skill guidance for VS Code custom agents in Agent Orchestra; assumes the calling agent owns intake routing, categorization policy, and handoff to implementation. -->
 <!-- markdownlint-disable-file MD041 MD003 -->
 
 # Review Judgment

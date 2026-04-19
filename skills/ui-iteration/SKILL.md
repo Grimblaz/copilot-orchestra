@@ -1,9 +1,9 @@
 ---
 name: ui-iteration
-description: Reusable screenshot-driven UI polish workflow for iterative visual refinement. Use when improving layout, hierarchy, spacing, feedback, or Tailwind-based presentation through repeated review-and-adjust passes. DO NOT USE FOR: functional bug fixing, accessibility-only audits, or major redesign strategy work (use Code-Smith or frontend-design).
+description: "Reusable screenshot-driven UI polish workflow for iterative visual refinement. Use when improving layout, hierarchy, spacing, feedback, or Tailwind-based presentation through repeated review-and-adjust passes. DO NOT USE FOR: functional bug fixing, accessibility-only audits, or major redesign strategy work (use Code-Smith or frontend-design)."
 ---
 
-<!-- platform-assumptions: markdown skill guidance for VS Code custom agents in Copilot Orchestra; assumes the calling agent owns browser-tool applicability, invocation boundaries, and implementation handoff decisions. -->
+<!-- platform-assumptions: markdown skill guidance for VS Code custom agents in Agent Orchestra; assumes the calling agent owns browser-tool applicability, invocation boundaries, and implementation handoff decisions. -->
 <!-- markdownlint-disable-file MD041 MD003 -->
 
 # UI Iteration

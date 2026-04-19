@@ -1,6 +1,6 @@
 ---
 name: Issue-Planner
-description: Researches and outlines multi-step plans
+description: "Researches and outlines multi-step plans"
 argument-hint: Outline the goal or problem to research
 target: vscode
 tools:

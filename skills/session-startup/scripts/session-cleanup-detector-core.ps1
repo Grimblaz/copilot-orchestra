@@ -50,7 +50,7 @@ function Invoke-SessionCleanupDetector {
         $output = [pscustomobject]@{
             hookSpecificOutput = [pscustomobject]@{
                 hookEventName     = 'SessionStart'
-                additionalContext = 'Neither COPILOT_ORCHESTRA_ROOT nor WORKFLOW_TEMPLATE_ROOT is set. Set one of these environment variables to your local copilot-orchestra repo path so the session startup check can locate its scripts.'
+                additionalContext = 'Repo root could not be resolved for the session startup check. Ensure the agent-orchestra plugin is installed correctly (or that session-cleanup-detector.ps1 is invoked from its repo-relative location).'
             }
         } | ConvertTo-Json -Depth 3 -Compress
         return @{ ExitCode = 1; Output = $output; Error = '' }

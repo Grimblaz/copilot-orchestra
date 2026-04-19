@@ -4,9 +4,11 @@
 **Status**: Accepted
 **Context**: Issue #367 — cross-tool plugin support.
 
+> **Note (v2.0.0 update)**: References to `.github/plugin.json` below describe the state at ADR authoring time. In v2.0.0 the Copilot manifest was relocated to repo-root `plugin.json` (D10 fallback pre-emptively applied so paths read as `./agents/` + `./skills/{name}/` with no `..` escapes). The schema decision for `.claude-plugin/plugin.json` is unaffected.
+
 ## Context
 
-Implementing issue #367 (cross-tool plugin support) requires authoritative knowledge of the `.claude-plugin/plugin.json` schema so Copilot-Orchestra ships a correct Claude Code manifest alongside its existing `.github/plugin.json`. The plan prosecution pass 2 flagged F2.1 — schema was invented without citation. This ADR resolves that gap.
+Implementing issue #367 (cross-tool plugin support) requires authoritative knowledge of the `.claude-plugin/plugin.json` schema so Agent-Orchestra ships a correct Claude Code manifest alongside its existing `.github/plugin.json`. The plan prosecution pass 2 flagged F2.1 — schema was invented without citation. This ADR resolves that gap.
 
 ## Findings
 
@@ -38,7 +40,7 @@ Source: <https://code.claude.com/docs/en/plugins-reference#component-path-fields
 
 ### Install commands
 
-- **Remote from marketplace**: `/plugin marketplace add Grimblaz/copilot-orchestra` (one-time), then `/plugin install copilot-orchestra@<marketplace-name>`.
+- **Remote from marketplace**: `/plugin marketplace add Grimblaz/agent-orchestra` (one-time), then `/plugin install agent-orchestra@<marketplace-name>`.
 - **Local/dev**: `claude --plugin-dir ./path-to-repo`.
 - **Non-interactive CLI**: `claude plugin install <plugin> [--scope user|project|local]`.
 
@@ -60,12 +62,12 @@ For #367 step 7(b), `.claude-plugin/plugin.json` ships as metadata-only:
 
 ```json
 {
-  "name": "copilot-orchestra",
+  "name": "agent-orchestra",
   "version": "1.14.0",
   "description": "Multi-agent workflow system. Pipeline-based agent orchestration: Issue -> Design -> Plan -> Implement -> Review -> PR.",
   "author": { "name": "Grimblaz" },
-  "homepage": "https://github.com/Grimblaz/copilot-orchestra",
-  "repository": "https://github.com/Grimblaz/copilot-orchestra",
+  "homepage": "https://github.com/Grimblaz/agent-orchestra",
+  "repository": "https://github.com/Grimblaz/agent-orchestra",
   "license": "MIT",
   "keywords": ["workflow","agents","orchestration","code-review","planning","tdd","multi-agent","pipeline"]
 }
@@ -77,7 +79,7 @@ For #367 step 7(b), `.claude-plugin/plugin.json` ships as metadata-only:
 
 ## Consequences
 
-- Claude Code users install via `/plugin marketplace add Grimblaz/copilot-orchestra` + `/plugin install copilot-orchestra@<marketplace-name>` — README step 10(c) must document this two-step flow explicitly (step 13/CE Gate S2b verifies it).
+- Claude Code users install via `/plugin marketplace add Grimblaz/agent-orchestra` + `/plugin install agent-orchestra@<marketplace-name>` — README step 10(c) must document this two-step flow explicitly (step 13/CE Gate S2b verifies it).
 - The Claude Code manifest does NOT mirror the 39-skill array from `.github/plugin.json`. This is asymmetric by design — Claude Code auto-discovers; Copilot requires explicit declaration.
 - Adding a new skill requires updating `.github/plugin.json` only (Copilot), not `.claude-plugin/plugin.json` (Claude Code auto-picks it up on next version bump).
 - Version-bump drift would silently break Claude Code cache invalidation — `bump-version.ps1` dual-write is non-optional.

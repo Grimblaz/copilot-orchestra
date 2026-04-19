@@ -309,7 +309,7 @@ After §4.7 analysis completes, proceed to §4.9 for root cause analysis and gua
 
 ### 4.8 Upstream Gotcha Lifecycle
 
-**Purpose**: Surface domain failure patterns discovered in downstream repos back to Copilot Orchestra as potential skill improvements.
+**Purpose**: Surface domain failure patterns discovered in downstream repos back to Agent Orchestra as potential skill improvements.
 
 **When to run**: Automatically during each full Process-Review retrospective invocation, including calibration-only mode. Skip in subagent mode (CE Gate Track 2).
 
@@ -319,9 +319,9 @@ After §4.7 analysis completes, proceed to §4.9 for root cause analysis and gua
 
 - If `.github/instructions/local-gotchas.instructions.md` does not exist → skip §4.8 silently
 - If the file exists but is empty → skip §4.8 silently
-- Read `copilot-orchestra-repo` from `.github/copilot-instructions.md` (look for line `copilot-orchestra-repo: {owner}/{repo}`)
+- Read `agent-orchestra-repo` from `.github/copilot-instructions.md` (look for line `agent-orchestra-repo: {owner}/{repo}`)
 - If field is absent → skip §4.8 silently
-- Pre-flight access check: `gh repo view {copilot-orchestra-repo} --json name 2>&1` — if non-zero exit or error output → emit `⚠️ Upstream gotcha flow skipped — gh access to {copilot-orchestra-repo} failed` and fall back to creating a local GitHub issue labeled `upstream-gotcha` and `priority: medium`
+- Pre-flight access check: `gh repo view {agent-orchestra-repo} --json name 2>&1` — if non-zero exit or error output → emit `⚠️ Upstream gotcha flow skipped — gh access to {agent-orchestra-repo} failed` and fall back to creating a local GitHub issue labeled `upstream-gotcha` and `priority: medium`
 
 **Step 2 — Scan for unresolved entries**:
 
@@ -338,7 +338,7 @@ For each upstream candidate:
 
 ```powershell
 # Search key is skill-name-only (per safe-operations §2c) to group all gotchas for this skill
-gh issue list --repo {copilot-orchestra-repo} --search "[Gotcha] {skill-name}" --state all --json number --jq length
+gh issue list --repo {agent-orchestra-repo} --search "[Gotcha] {skill-name}" --state all --json number --jq length
 ```
 
 - If `$LASTEXITCODE -ne 0` → dedup check failed; mark `<!-- gotcha-status: dedup-error -->` in local file and skip upstream issue creation
@@ -346,7 +346,7 @@ gh issue list --repo {copilot-orchestra-repo} --search "[Gotcha] {skill-name}" -
 - If result = 0 → create upstream issue:
 
 ```powershell
-gh issue create --repo {copilot-orchestra-repo} `
+gh issue create --repo {agent-orchestra-repo} `
   --title "[Gotcha] {skill-name}: {brief description}" `
   --body "## Gotcha Discovery`n`n- **Skill**: {skill-name}`n- **Trigger**: {trigger}`n- **Failure**: {what went wrong}`n- **Fix**: {correct approach}`n- **Source**: Discovered in {downstream-repo} during {workflow step}`n- **Frequency**: first occurrence`n`n## Context`n{additional context}" `
   --label "enhancement,priority: medium"
@@ -438,7 +438,7 @@ guardrail_proposals:
     evidence:
       - pr: 78, finding: F3
       - pr: 82, finding: F1
-    upstream: false  # true if fix targets copilot-orchestra shared files
+    upstream: false  # true if fix targets agent-orchestra shared files
     compression_required: false  # true when target agent exceeds complexity ceiling (agent-prompt proposals only)
     extraction_recommended: false  # true when agent has met persistent_threshold consecutive over-ceiling periods (agent-prompt proposals only)
     prevention_gate_outcome: created-new  # redirected=Step1-match; reframed=Step2-structural; created-new=Step3; exempt=outside-§2d-scope — outcome of the §2d prevention-analysis advisory applied before creating this upstream proposal
@@ -449,9 +449,9 @@ guardrail_proposals:
 For each proposal from Step 3 where `previously_proposed: false`:
 
 1. **Resolve upstream pre-flight** (retained from prior Step 4):
-   - Read `copilot-orchestra-repo` from `.github/copilot-instructions.md`
+   - Read `agent-orchestra-repo` from `.github/copilot-instructions.md`
    - If absent → set `UpstreamPreflightPassed = $false`, log "upstream repo not configured"
-   - Pre-flight access check: `gh repo view {copilot-orchestra-repo} --json name 2>&1` — if non-zero exit → set `UpstreamPreflightPassed = $false`, log access failure
+   - Pre-flight access check: `gh repo view {agent-orchestra-repo} --json name 2>&1` — if non-zero exit → set `UpstreamPreflightPassed = $false`, log access failure
    - If access check passes → set `UpstreamPreflightPassed = $true`
 
 2. **Construct parameter set** from Steps 2–3 outputs:
@@ -465,7 +465,7 @@ For each proposal from Step 3 where `previously_proposed: false`:
        TargetFile              = '{target_file from proposal}'
        ProposedChange          = '{proposed_change from proposal}'
        SystemicFixType         = '{systemic_fix_type from pattern}'
-       Repo                    = '{copilot-orchestra-repo or current repo}'
+       Repo                    = '{agent-orchestra-repo or current repo}'
        UpstreamPreflightPassed = ${UpstreamPreflightPassed}
        CalibrationPath         = '{calibration file path}'
        ComplexityJsonPath      = '{$complexityTempFile from §4.7}'

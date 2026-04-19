@@ -1,6 +1,6 @@
 ---
 name: pre-commit-formatting
-description: Backstop formatting workflow used during PR creation. Use when applying the final markdown and whitespace formatting gate before validation evidence capture. DO NOT USE FOR: per-step implementation formatting advice or PowerShell formatting rules outside this gate.
+description: "Backstop formatting workflow used during PR creation. Use when applying the final markdown and whitespace formatting gate before validation evidence capture. DO NOT USE FOR: per-step implementation formatting advice or PowerShell formatting rules outside this gate."
 ---
 
 # Pre-Commit Formatting Gate

@@ -1,10 +1,10 @@
 ---
 
 name: design-exploration
-description: Reusable technical design exploration methodology. Use when researching design options, grounding UI changes in the current experience, or converging trade-offs into one recommended design direction. DO NOT USE FOR: GitHub issue update ownership, adversarial design challenge orchestration, or approval-policy enforcement (keep those in Solution-Designer.agent.md)
+description: "Reusable technical design exploration methodology. Use when researching design options, grounding UI changes in the current experience, or converging trade-offs into one recommended design direction. DO NOT USE FOR: GitHub issue update ownership, adversarial design challenge orchestration, or approval-policy enforcement (keep those in Solution-Designer.agent.md)"
 ---
 
-<!-- platform-assumptions: markdown skill guidance for VS Code custom agents in Copilot Orchestra; assumes Solution-Designer retains GitHub issue ownership, adversarial challenge orchestration, and completion gating. -->
+<!-- platform-assumptions: markdown skill guidance for VS Code custom agents in Agent Orchestra; assumes Solution-Designer retains GitHub issue ownership, adversarial challenge orchestration, and completion gating. -->
 <!-- markdownlint-disable-file MD041 MD003 -->
 
 # Design Exploration

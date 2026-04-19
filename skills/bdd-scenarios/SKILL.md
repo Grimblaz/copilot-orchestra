@@ -1,11 +1,11 @@
 ---
 name: bdd-scenarios
-description: Structured Given/When/Then scenario authoring with ID traceability and CE Gate coverage gap detection. Use when writing or reviewing BDD scenarios in Copilot Orchestra, classifying scenarios as [auto]/[manual], managing scenario ID lifecycle, extracting scenario IDs for CE Gate pre-flight, generating Gherkin .feature files and step definitions for [auto] scenarios (Phase 2), or configuring framework runner dispatch for CE Gate (Phase 2). DO NOT USE FOR: general test strategy (use test-driven-development), or writing example-based unit tests.
+description: "Structured Given/When/Then scenario authoring with ID traceability and CE Gate coverage gap detection. Use when writing or reviewing BDD scenarios in Agent Orchestra, classifying scenarios as [auto]/[manual], managing scenario ID lifecycle, extracting scenario IDs for CE Gate pre-flight, generating Gherkin .feature files and step definitions for [auto] scenarios (Phase 2), or configuring framework runner dispatch for CE Gate (Phase 2). DO NOT USE FOR: general test strategy (use test-driven-development), or writing example-based unit tests."
 ---
 
 # BDD Scenarios
 
-Structured Given/When/Then scenario authoring with ID traceability and CE Gate coverage gap detection for Copilot Orchestra.
+Structured Given/When/Then scenario authoring with ID traceability and CE Gate coverage gap detection for Agent Orchestra.
 
 ## When to Use
 

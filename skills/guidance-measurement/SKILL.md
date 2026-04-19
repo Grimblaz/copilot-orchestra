@@ -1,6 +1,6 @@
 ---
 name: guidance-measurement
-description: Guidance-complexity measurement tooling and usage notes. Use when running or maintaining the guidance measurement script and related deterministic analysis assets for issue #360. DO NOT USE FOR: changing D10 ceiling rules or prompt-facing guidance policy, which remain in agent prompts.
+description: "Guidance-complexity measurement tooling and usage notes. Use when running or maintaining the guidance measurement script and related deterministic analysis assets for issue #360. DO NOT USE FOR: changing D10 ceiling rules or prompt-facing guidance policy, which remain in agent prompts."
 ---
 
 # Guidance Measurement

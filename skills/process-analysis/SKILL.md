@@ -1,10 +1,10 @@
 ---
 
 name: process-analysis
-description: Reusable retrospective and process-analysis methodology for workflow reviews. Use when analyzing execution timelines, plan adherence, documentation conflicts, workflow efficiency, or skill-usage gaps after work completes. DO NOT USE FOR: CE Gate Track 2 defect triage format that is contract-owned by Process-Review.agent.md, or live implementation debugging before root-cause evidence exists (use systematic-debugging)
+description: "Reusable retrospective and process-analysis methodology for workflow reviews. Use when analyzing execution timelines, plan adherence, documentation conflicts, workflow efficiency, or skill-usage gaps after work completes. DO NOT USE FOR: CE Gate Track 2 defect triage format that is contract-owned by Process-Review.agent.md, or live implementation debugging before root-cause evidence exists (use systematic-debugging)"
 ---
 
-<!-- platform-assumptions: markdown skill guidance for VS Code custom agents in Copilot Orchestra; assumes retrospective evidence can be gathered from repo history, session artifacts, and validation output. -->
+<!-- platform-assumptions: markdown skill guidance for VS Code custom agents in Agent Orchestra; assumes retrospective evidence can be gathered from repo history, session artifacts, and validation output. -->
 <!-- markdownlint-disable-file MD041 MD003 -->
 
 # Process Analysis

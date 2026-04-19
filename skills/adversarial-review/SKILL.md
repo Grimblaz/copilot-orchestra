@@ -1,9 +1,9 @@
 ---
 name: adversarial-review
-description: Reusable adversarial review methodology for prosecution, defense, design challenge, product-alignment, and proxy review passes. Use when reviewing code, plans, designs, or external review ledgers with evidence-first rigor. DO NOT USE FOR: final judgment ownership, GitHub intake routing, or fix execution decisions (use review-judgment or code-review-intake).
+description: "Reusable adversarial review methodology for prosecution, defense, design challenge, product-alignment, and proxy review passes. Use when reviewing code, plans, designs, or external review ledgers with evidence-first rigor. DO NOT USE FOR: final judgment ownership, GitHub intake routing, or fix execution decisions (use review-judgment or code-review-intake)."
 ---
 
-<!-- platform-assumptions: markdown skill guidance for VS Code custom agents in Copilot Orchestra; assumes the calling agent retains read-only boundaries, mode routing, and finding-schema ownership. -->
+<!-- platform-assumptions: markdown skill guidance for VS Code custom agents in Agent Orchestra; assumes the calling agent retains read-only boundaries, mode routing, and finding-schema ownership. -->
 <!-- markdownlint-disable-file MD041 MD003 -->
 
 # Adversarial Review

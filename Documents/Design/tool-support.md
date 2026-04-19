@@ -2,7 +2,7 @@
 
 ## Summary
 
-copilot-orchestra targets **GitHub Copilot in VS Code** as its sole supported tool.
+agent-orchestra targets **GitHub Copilot in VS Code** as its sole supported tool.
 The system previously shipped a Claude Code (Anthropic CLI) compatibility layer —
 `CLAUDE.md` project-context files and `.claude/commands/*.md` slash commands — but
 this layer was removed in issue #175. Every agent, skill, and instruction file is

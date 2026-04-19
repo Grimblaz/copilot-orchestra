@@ -1,6 +1,6 @@
 ---
 name: terminal-hygiene
-description: Terminal and test execution guardrails for Copilot Orchestra workflows. Use when choosing sync versus async terminal mode, scoping Pester runs, retrying background commands, or avoiding terminal and subagent batching mistakes. DO NOT USE FOR: application-level debugging root-cause analysis (use systematic-debugging) or post-merge archival workflow steps (use post-pr-review).
+description: "Terminal and test execution guardrails for Agent Orchestra workflows. Use when choosing sync versus async terminal mode, scoping Pester runs, retrying background commands, or avoiding terminal and subagent batching mistakes. DO NOT USE FOR: application-level debugging root-cause analysis (use systematic-debugging) or post-merge archival workflow steps (use post-pr-review)."
 ---
 
 # Terminal Hygiene
@@ -49,7 +49,7 @@ Code-Conductor manages background terminal lifecycle with its Terminal Lifecycle
 
 Root cause context:
 
-- Copilot Orchestra sessions generate high terminal command volume, especially around repeated structural checks.
+- Agent Orchestra sessions generate high terminal command volume, especially around repeated structural checks.
 - When the shared terminal buffer overflows at roughly 16 KB, commands appear to stall and later commands often shift to new background terminals.
 - At roughly 30 or more idle terminals, shells can enter CPU-spin states.
 - The consolidated `quick-validate.ps1` reduces per-pass command count and lowers overflow risk.

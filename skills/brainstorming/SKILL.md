@@ -1,6 +1,6 @@
 ---
 name: brainstorming
-description: Structured Socratic questioning for exploring ideas and solutions. Use when exploring new features, evaluating approaches, or thinking through complex decisions. DO NOT USE FOR: architecture evaluation or SOLID analysis (use software-architecture), UI component design (use frontend-design), or coordinating implementation lanes (use parallel-execution).
+description: "Structured Socratic questioning for exploring ideas and solutions. Use when exploring new features, evaluating approaches, or thinking through complex decisions. DO NOT USE FOR: architecture evaluation or SOLID analysis (use software-architecture), UI component design (use frontend-design), or coordinating implementation lanes (use parallel-execution)."
 ---
 
 # Brainstorming Skill

@@ -2,7 +2,7 @@
 applyTo: "**"
 ---
 
-# Project: Copilot Orchestra
+# Project: Agent Orchestra
 
 ## Overview
 

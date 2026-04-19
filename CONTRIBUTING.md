@@ -1,10 +1,10 @@
-# Contributing to Copilot Orchestra
+# Contributing to Agent Orchestra
 
 Thank you for your interest in contributing! This template aims to help teams work effectively with AI coding agents.
 
 ## Setup
 
-For the best experience with Copilot Orchestra:
+For the best experience with Agent Orchestra:
 
 ### Required
 
@@ -56,7 +56,7 @@ To make agents available globally across all VS Code workspaces (not just repos 
 ```json
 {
   "chat.agentFilesLocations": [
-    "/absolute/path/to/your/copilot-orchestra/agents"
+    "/absolute/path/to/your/agent-orchestra/agents"
   ]
 }
 ```
@@ -77,7 +77,7 @@ To enable automatic skill discovery from `skills/` at the repo root (VS Code 1.1
 
 This enables agents to interact directly with GitHub issues and PRs without external MCP server configuration.
 
-> **Note**: If you also use the copilot-orchestra plugin (via `chat.plugins.marketplaces`), do not add `chat.agentFilesLocations` — this creates duplicate agents in the chat picker. See [CUSTOMIZATION.md — Troubleshooting](CUSTOMIZATION.md#troubleshooting) for fix steps.
+> **Note**: If you also use the agent-orchestra plugin (via `chat.plugins.marketplaces`), do not add `chat.agentFilesLocations` — this creates duplicate agents in the chat picker. See [CUSTOMIZATION.md — Troubleshooting](CUSTOMIZATION.md#troubleshooting) for fix steps.
 
 ### Validated Step Commits
 
@@ -97,7 +97,7 @@ To disable per-step auto-commits, see the [Commit Policy](CUSTOMIZATION.md#commi
 
 ### Session Startup Check
 
-This template includes a session startup check (triggered from `.github/copilot-instructions.md` and delivered by the `session-startup` skill) that uses the session-memory marker `/memories/session/session-startup-check-complete.md` as a run-once guard before any automatic detector run. The first automatic check in a conversation looks for post-merge cleanup work, records that marker after the automatic check runs, and avoids repeated prompts from later agent hops even if cleanup is declined. The automatic check targets stale branches and issue-scoped tracking artifacts, not persistent calibration data. Requires PowerShell 7+ (`pwsh`) and `COPILOT_ORCHESTRA_ROOT` (or `WORKFLOW_TEMPLATE_ROOT`) set; if neither root variable is set, `pwsh` is unavailable, or the detector returns non-JSON output, the automatic check skips silently as documented in `skills/session-startup/SKILL.md`. If session-memory access fails, the workflow fails open and still runs the detector. Manual detector runs remain available.
+This template includes a session startup check (triggered from `.github/copilot-instructions.md` and delivered by the `session-startup` skill) that uses the session-memory marker `/memories/session/session-startup-check-complete.md` as a run-once guard before any automatic detector run. The first automatic check in a conversation looks for post-merge cleanup work, records that marker after the automatic check runs, and avoids repeated prompts from later agent hops even if cleanup is declined. The automatic check targets stale branches and issue-scoped tracking artifacts, not persistent calibration data. Requires PowerShell 7+ (`pwsh`); the detector script self-resolves its repo root via `$PSScriptRoot`, so no environment variables are needed. If `pwsh` is unavailable or the detector returns non-JSON output, the automatic check skips silently as documented in `skills/session-startup/SKILL.md`. If session-memory access fails, the workflow fails open and still runs the detector. Manual detector runs remain available.
 
 ## Ways to Contribute
 
@@ -154,7 +154,7 @@ When adding skills:
 
 This repo is distributed as a VS Code agent plugin (VS Code 1.110+). When you add or change **agents**, those changes are automatically distributed to plugin users when they update (agents use a directory glob in `plugin.json`). **Skills require a manual `plugin.json` update** — see the array below. Slash commands, instruction files, and repository templates are **not** distributed via the plugin (the VS Code plugin manifest schema has no `commands` field).
 
-When contributing new skills, update `.github/plugin.json` to add the new skill path to the `"skills"` array. To surface a new chat command, author it as a skill (directory with `SKILL.md`) rather than as a prompt file — `.prompt.md` files are not a first-class plugin manifest entry. To bump the version across all files consistently when publishing a new release, run: `pwsh .github/scripts/bump-version.ps1 -Version X.Y.Z` (replacing `X.Y.Z` with the new version).
+When contributing new skills, update the repo-root `plugin.json` to add the new skill path to the `"skills"` array. To surface a new chat command, author it as a skill (directory with `SKILL.md`) rather than as a prompt file — `.prompt.md` files are not a first-class plugin manifest entry. To bump the version across all files consistently when publishing a new release, run: `pwsh .github/scripts/bump-version.ps1 -Version X.Y.Z` (replacing `X.Y.Z` with the new version).
 
 ### Documentation
 

@@ -1,6 +1,6 @@
 ---
 name: calibration-pipeline
-description: Calibration and review-pipeline tooling guidance. Use when running or maintaining calibration scripts, review aggregation, and related deterministic assets for issue #360. DO NOT USE FOR: changing orchestration ownership or agent review policy.
+description: "Calibration and review-pipeline tooling guidance. Use when running or maintaining calibration scripts, review aggregation, and related deterministic assets for issue #360. DO NOT USE FOR: changing orchestration ownership or agent review policy."
 ---
 
 # Calibration Pipeline

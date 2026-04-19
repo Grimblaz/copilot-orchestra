@@ -1,9 +1,9 @@
 ---
 name: validation-methodology
-description: Reusable validation and review methodology for staged validation, failure triage, and prosecution-depth setup. Use when running validation ladders, triaging failures, or executing adversarial review passes. DO NOT USE FOR: CE Gate orchestration, specialist dispatch ownership, or step execution flow (keep those in Code-Conductor).
+description: "Reusable validation and review methodology for staged validation, failure triage, and prosecution-depth setup. Use when running validation ladders, triaging failures, or executing adversarial review passes. DO NOT USE FOR: CE Gate orchestration, specialist dispatch ownership, or step execution flow (keep those in Code-Conductor)."
 ---
 
-<!-- platform-assumptions: markdown skill guidance for VS Code custom agents in Copilot Orchestra; assumes the owning agent already controls routing, step order, and specialist handoffs. -->
+<!-- platform-assumptions: markdown skill guidance for VS Code custom agents in Agent Orchestra; assumes the owning agent already controls routing, step order, and specialist handoffs. -->
 
 # Validation Methodology
 

@@ -1,6 +1,6 @@
 ---
 name: process-troubleshooting
-description: Five-scenario workflow troubleshooting guide for diagnosing and fixing common orchestration failure patterns. Use when diagnosing premature implementation, agent confusion, validation gaps, documentation conflicts, or terminal stalls during a workflow session. DO NOT USE FOR: general code review (use code-review-intake), debugging application code (use systematic-debugging), or post-merge cleanup (use post-pr-review).
+description: "Five-scenario workflow troubleshooting guide for diagnosing and fixing common orchestration failure patterns. Use when diagnosing premature implementation, agent confusion, validation gaps, documentation conflicts, or terminal stalls during a workflow session. DO NOT USE FOR: general code review (use code-review-intake), debugging application code (use systematic-debugging), or post-merge cleanup (use post-pr-review)."
 ---
 
 # Process Troubleshooting

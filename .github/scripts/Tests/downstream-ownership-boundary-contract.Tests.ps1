@@ -53,7 +53,7 @@ Describe 'downstream ownership boundary contract' {
         $script:SafeOperationsDedupPattern = '(?is)Deduplication Check.{0,260}Before every `gh issue create`, search for existing open issues'
         $script:SafeOperationsPriorityLabelPattern = '(?is)Priority Label Requirement.{0,260}Every `gh issue create` command run by any agent.{0,120}(?:\*\*)?MUST(?:\*\*)? include a `--label` flag specifying a priority'
         $script:SafeOperationsOutputCapturePattern = '(?is)Output capture.{0,260}capture the returned issue URL.{0,260}Do not re-run'
-        $script:ProcessReviewGotchaFallbackPattern = '(?is)gh access to \{copilot-orchestra-repo\} failed.{0,220}fall back to creating a local GitHub issue labeled `upstream-gotcha` and `priority: medium`'
+        $script:ProcessReviewGotchaFallbackPattern = '(?is)gh access to \{agent-orchestra-repo\} failed.{0,220}fall back to creating a local GitHub issue labeled `upstream-gotcha` and `priority: medium`'
         $script:RepositoryAwareBypassPattern = '(?is)(repository-aware|shared(?:-| )workflow repo itself|active issue itself belongs to the shared(?:-| )workflow repo).{0,260}(valid in-scope|normal in-scope work|shared-agent edits remain normal in-scope work)'
         $script:DirtyUpstreamStatePattern = '(?is)(pre-existing upstream dirty state|pre-existing upstream edits|upstream edits are already present in the local clone).{0,240}(external state|not permission|does not grant permission)'
 

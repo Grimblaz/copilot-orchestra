@@ -309,7 +309,7 @@ function Test-DocumentationCoverage {
 
 try {
     Write-Host "`n╔════════════════════════════════════════════════════════╗" -ForegroundColor Cyan
-    Write-Host "║   Architecture Validation - Copilot Orchestra        ║" -ForegroundColor Cyan
+    Write-Host "║   Architecture Validation - Agent Orchestra        ║" -ForegroundColor Cyan
     Write-Host "╚════════════════════════════════════════════════════════╝`n" -ForegroundColor Cyan
 
     Write-Host "Starting validation at $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')`n"

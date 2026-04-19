@@ -1,6 +1,6 @@
 ---
 name: routing-tables
-description: Concise reference for deterministic specialist dispatch, review mode routing, CE surface mapping, enum values, and gate criteria extracted from current orchestration agents. Use when an agent or script needs the canonical current routing data without re-deriving it from duplicated prompt prose. DO NOT USE FOR: taking orchestration decisions away from the calling agent, replacing judgment on uncovered cases, or storing mutable runtime state.
+description: "Concise reference for deterministic specialist dispatch, review mode routing, CE surface mapping, enum values, and gate criteria extracted from current orchestration agents. Use when an agent or script needs the canonical current routing data without re-deriving it from duplicated prompt prose. DO NOT USE FOR: taking orchestration decisions away from the calling agent, replacing judgment on uncovered cases, or storing mutable runtime state."
 ---
 
 # Routing Tables

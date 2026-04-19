@@ -140,7 +140,7 @@ Any future pre-response trigger step runs **before** the Core Workflow, stays ou
 <!-- markdownlint-disable-next-line MD029 -->
 
 0. **Issue Transition (Step 0, before implementation)**:
-   - Cleanup note: The `session-startup` skill (loaded by pipeline-entry agents) detects stale tracking files from merged branches and prompts you at the start of your next conversation — cleanup requires one confirmation. If stale artifacts persist, run `$copilotRoot = if ($env:COPILOT_ORCHESTRA_ROOT) { $env:COPILOT_ORCHESTRA_ROOT } else { $env:WORKFLOW_TEMPLATE_ROOT }; pwsh "$copilotRoot/skills/session-startup/scripts/post-merge-cleanup.ps1" -IssueNumber {N} -FeatureBranch feature/issue-{N}-description` directly (only if `$copilotRoot` is non-empty — requires `COPILOT_ORCHESTRA_ROOT` or `WORKFLOW_TEMPLATE_ROOT` to be set).
+   - Cleanup note: The `session-startup` skill (loaded by pipeline-entry agents) detects stale tracking files from merged branches and prompts you at the start of your next conversation — cleanup requires one confirmation. If stale artifacts persist, run `pwsh "skills/session-startup/scripts/post-merge-cleanup.ps1" -IssueNumber {N} -FeatureBranch feature/issue-{N}-description` directly (path is relative to the agent-orchestra plugin or repo clone).
    - Optional planning lane: If scope/acceptance criteria changed or are ambiguous, call Issue-Planner to confirm whether plan updates are needed before execution.
    - If planning is unnecessary, explicitly note "Step 0 skipped: no planning transition required" and continue.
 
@@ -557,7 +557,7 @@ When a functional defect or intent deficiency is found:
 
 - Call Process-Review subagent with: the defect description, what scenario revealed it, and which agent/file/instruction likely caused the gap
 - Process-Review will emit a structured CE Gate Defect Analysis (gap description, affected agent/file, recommended fix, ready-to-use issue title + body) — if a systemic gap is confirmed, **Code-Conductor creates the issue** using Process-Review's ready-to-use title and body; Process-Review does not create GitHub issues itself
-- If a systemic gap is confirmed: before creating the follow-up GitHub issue, apply the prevention-analysis advisory from `skills/safe-operations/SKILL.md` §2d. Then create the follow-up issue in the copilot-orchestra repository (or fallback to current repo with label `process-gap-upstream`)
+- If a systemic gap is confirmed: before creating the follow-up GitHub issue, apply the prevention-analysis advisory from `skills/safe-operations/SKILL.md` §2d. Then create the follow-up issue in the agent-orchestra repository (or fallback to current repo with label `process-gap-upstream`)
 - "No systemic gap found" is a valid Process-Review outcome — log it in the PR body
 - Track 2 is non-blocking: do not hold up Track 1 fix or PR creation
 

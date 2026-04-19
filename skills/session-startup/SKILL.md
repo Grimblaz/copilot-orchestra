@@ -1,6 +1,6 @@
 ---
 name: session-startup
-description: Automatic startup cleanup guard for new conversations. Use when deciding whether to run the session cleanup detector before the first reply, handling stale-state prompts, or preserving run-once startup semantics. DO NOT USE FOR: post-merge archival workflows (use post-pr-review) or general workflow troubleshooting outside startup detection (use process-troubleshooting).
+description: "Automatic startup cleanup guard for new conversations. Use when deciding whether to run the session cleanup detector before the first reply, handling stale-state prompts, or preserving run-once startup semantics. DO NOT USE FOR: post-merge archival workflows (use post-pr-review) or general workflow troubleshooting outside startup detection (use process-troubleshooting)."
 ---
 
 # Session Startup
@@ -37,7 +37,7 @@ Follow these steps exactly.
 
 ### Step 1 — Check prerequisites
 
-Resolve the root path: use `$env:COPILOT_ORCHESTRA_ROOT` if set; otherwise fall back to `$env:WORKFLOW_TEMPLATE_ROOT`. If neither is set, skip the entire check silently and continue with the user's request.
+Resolve the detector script path relative to this skill file: the wrapper at `scripts/session-cleanup-detector.ps1` (in this skill's directory) self-resolves its repo root via `$PSScriptRoot`, so no environment variables are required. If `pwsh` is unavailable or the script is missing, skip the entire check silently and continue with the user's request.
 
 ### Step 2 — Check the automatic run-once guard
 
@@ -45,14 +45,13 @@ Before any automatic startup detector run, check session memory for the marker a
 
 ### Step 3 — Run the detector script
 
-Run the following command in the terminal, using the root path resolved in Step 1:
+Run the following command in the terminal. The path is resolved relative to the `agent-orchestra` plugin (or repo clone) where this skill file lives — the wrapper itself resolves its repo root via `$PSScriptRoot`, so no env vars are needed:
 
 ```powershell
-$copilotRoot = if ($env:COPILOT_ORCHESTRA_ROOT) { $env:COPILOT_ORCHESTRA_ROOT } else { $env:WORKFLOW_TEMPLATE_ROOT }
-pwsh -NoProfile -NonInteractive -File "$copilotRoot/skills/session-startup/scripts/session-cleanup-detector.ps1"
+pwsh -NoProfile -NonInteractive -File "skills/session-startup/scripts/session-cleanup-detector.ps1"
 ```
 
-This keeps the detector path valid both in copilot-orchestra and in downstream repos that set the root environment variable.
+Invoke the script by its absolute path if the current working directory is not the `agent-orchestra` root (for plugin-cache installs, use the plugin directory; for clones, use the repo root).
 
 ### Step 4 — Record the run-once marker
 
@@ -74,7 +73,7 @@ The detector returns one of two JSON shapes.
 {
   "hookSpecificOutput": {
     "hookEventName": "SessionStart",
-    "additionalContext": "**Post-merge cleanup detected** - stale tracking artifacts found:\n\n- `.copilot-tracking/issue-42-my-feature.yml`\n\nTo clean up, run:\n```powershell\n# Run in a PowerShell (pwsh) terminal:\npwsh '/path/to/copilot-orchestra/skills/session-startup/scripts/post-merge-cleanup.ps1' -IssueNumber 42 -FeatureBranch 'feature/issue-42-my-feature'\n```\n"
+    "additionalContext": "**Post-merge cleanup detected** - stale tracking artifacts found:\n\n- `.copilot-tracking/issue-42-my-feature.yml`\n\nTo clean up, run:\n```powershell\n# Run in a PowerShell (pwsh) terminal:\npwsh '/path/to/agent-orchestra/skills/session-startup/scripts/post-merge-cleanup.ps1' -IssueNumber 42 -FeatureBranch 'feature/issue-42-my-feature'\n```\n"
   }
 }
 ````
@@ -97,12 +96,11 @@ Continue with the user's original request regardless of whether cleanup was run,
 
 Skip the entire check silently in any of these cases:
 
-- Neither `$env:COPILOT_ORCHESTRA_ROOT` nor `$env:WORKFLOW_TEMPLATE_ROOT` is set
 - `pwsh` is not available on `PATH`
 - The detector script does not exist at the expected path
 - The detector script returns an error or non-JSON output
 
-These are normal conditions in repos that have not configured Copilot Orchestra or in environments where PowerShell is unavailable.
+These are normal conditions in repos that have not installed the agent-orchestra plugin or in environments where PowerShell is unavailable.
 
 ## Gotchas
 

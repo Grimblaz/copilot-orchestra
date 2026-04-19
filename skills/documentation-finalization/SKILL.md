@@ -1,10 +1,10 @@
 ---
 
 name: documentation-finalization
-description: Documentation finalization workflow for accuracy, cleanup, and design-doc maintenance. Use when updating implementation-facing docs, synchronizing design documents with shipped behavior, or removing obsolete documentation. DO NOT USE FOR: formal specification drafting (use specification-authoring) or source-code implementation decisions (use implementation-discipline)
+description: "Documentation finalization workflow for accuracy, cleanup, and design-doc maintenance. Use when updating implementation-facing docs, synchronizing design documents with shipped behavior, or removing obsolete documentation. DO NOT USE FOR: formal specification drafting (use specification-authoring) or source-code implementation decisions (use implementation-discipline)"
 ---
 
-<!-- platform-assumptions: markdown skill guidance for VS Code custom agents in Copilot Orchestra; applies to repository documentation and agent markdown updates. -->
+<!-- platform-assumptions: markdown skill guidance for VS Code custom agents in Agent Orchestra; applies to repository documentation and agent markdown updates. -->
 <!-- markdownlint-disable-file MD041 MD003 -->
 
 # Documentation Finalization

@@ -1,6 +1,6 @@
 ---
 name: safe-operations
-description: Safe file-operation and issue-creation protocol for Copilot Orchestra. Use when choosing workspace tools, avoiding unsafe file writes, or creating GitHub issues under the workflow rules. DO NOT USE FOR: application-level debugging or replacing agent judgment on whether work is in scope.
+description: "Safe file-operation and issue-creation protocol for Agent Orchestra. Use when choosing workspace tools, avoiding unsafe file writes, or creating GitHub issues under the workflow rules. DO NOT USE FOR: application-level debugging or replacing agent judgment on whether work is in scope."
 ---
 
 # Safe Operations Instructions
@@ -129,14 +129,14 @@ If a matching issue exists, do NOT create a duplicate. Instead, reference the ex
 **Cross-repo gotcha dedup** (used by Process-Review §4.8 upstream lifecycle):
 
 ```powershell
-# Cross-repo dedup — use --repo flag to target the upstream Copilot Orchestra repo:
-# Read copilot-orchestra-repo from .github/copilot-instructions.md first
-gh issue list --repo {copilot-orchestra-repo} --search "[Gotcha] {skill-name}" --state all --json number,title --jq '.[] | "\(.number): \(.title)"'
+# Cross-repo dedup — use --repo flag to target the upstream Agent Orchestra repo:
+# Read agent-orchestra-repo from .github/copilot-instructions.md first
+gh issue list --repo {agent-orchestra-repo} --search "[Gotcha] {skill-name}" --state all --json number,title --jq '.[] | "\(.number): \(.title)"'
 ```
 
 Key differences from the standard pattern:
 
-- `--repo {copilot-orchestra-repo}` targets the upstream template repo (not the current repo)
+- `--repo {agent-orchestra-repo}` targets the upstream template repo (not the current repo)
 - `--state all` includes closed issues (a resolved gotcha should not be re-submitted)
 - Search key format is `[Gotcha] {skill-name}` — the `[Gotcha]` prefix groups all gotcha issues for that skill
 - If `gh` cannot access the upstream repo, fall back to creating a local issue labeled `upstream-gotcha` and `priority: medium` for manual transfer

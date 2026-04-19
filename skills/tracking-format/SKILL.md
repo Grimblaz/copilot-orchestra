@@ -1,6 +1,6 @@
 ---
 name: tracking-format
-description: Tracking-file frontmatter and coordination format guidance. Use when creating or reviewing local tracking files and related handoff conventions. DO NOT USE FOR: session-memory plan authoring rules outside the documented references here.
+description: "Tracking-file frontmatter and coordination format guidance. Use when creating or reviewing local tracking files and related handoff conventions. DO NOT USE FOR: session-memory plan authoring rules outside the documented references here."
 ---
 
 # Tracking Format Instructions

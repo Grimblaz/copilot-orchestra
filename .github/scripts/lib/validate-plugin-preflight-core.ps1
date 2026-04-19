@@ -33,7 +33,7 @@ function Invoke-PluginPreflight {
             $RootPath = (Resolve-Path (Join-Path $PSScriptRoot '../../..')).Path
         }
         if (-not $PluginJsonPath) {
-            $PluginJsonPath = Join-Path -Path $RootPath -ChildPath '.github' -AdditionalChildPath 'plugin.json'
+            $PluginJsonPath = Join-Path -Path $RootPath -ChildPath 'plugin.json'
         }
 
         $results = [System.Collections.Generic.List[PSCustomObject]]::new()
@@ -46,8 +46,10 @@ function Invoke-PluginPreflight {
                 return _PreflightSummary $results
             }
             $manifest = Get-Content -Path $PluginJsonPath -Raw | ConvertFrom-Json
-            # VS Code resolves paths in plugin.json relative to the manifest's directory,
-            # not the plugin/repo root.
+            # VS Code resolves paths in plugin.json relative to the manifest's directory.
+            # The manifest sits at the plugin/repo root (relocated from .github/plugin.json
+            # in v2.0.0 per issue #367 D10), so manifest-relative and plugin-root-relative
+            # resolution are equivalent — paths read as `./agents/` and `./skills/{name}/`.
             $manifestDir = Split-Path -Parent (Resolve-Path -LiteralPath $PluginJsonPath)
             $results.Add([PSCustomObject]@{ Name = 'PluginJsonExists'; Passed = $true; Detail = '' })
         }

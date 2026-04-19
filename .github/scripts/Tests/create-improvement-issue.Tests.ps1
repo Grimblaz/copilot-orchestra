@@ -155,7 +155,7 @@ exit 99
             TargetFile              = 'agents/Code-Critic.agent.md'
             ProposedChange          = 'Add defensive validation for empty input arrays'
             SystemicFixType         = 'agent-prompt'
-            Repo                    = 'Grimblaz/copilot-orchestra'
+            Repo                    = 'Grimblaz/agent-orchestra'
             UpstreamPreflightPassed = $true
         }
     }
@@ -221,7 +221,7 @@ exit 99
             $wd = & $script:NewWorkDir
             $mock = & $script:WriteMockGh -WorkDir $wd `
                 -IssueListOutput '[]' `
-                -IssueCreateOutput 'https://github.com/Grimblaz/copilot-orchestra/issues/201'
+                -IssueCreateOutput 'https://github.com/Grimblaz/agent-orchestra/issues/201'
             $params = $script:BaseParams.Clone()
             $params.GhCliPath = $mock
 
@@ -280,7 +280,7 @@ exit 99
             }
             $mock = & $script:WriteMockGh -WorkDir $wd `
                 -IssueListOutput '[]' `
-                -IssueCreateOutput 'https://github.com/Grimblaz/copilot-orchestra/issues/202'
+                -IssueCreateOutput 'https://github.com/Grimblaz/agent-orchestra/issues/202'
             $params = $script:BaseParams.Clone()
             $params.GhCliPath = $mock
             $params.CalibrationPath = $calPath
@@ -308,7 +308,7 @@ exit 99
             }
             $mock = & $script:WriteMockGh -WorkDir $wd `
                 -IssueListOutput '[]' `
-                -IssueCreateOutput 'https://github.com/Grimblaz/copilot-orchestra/issues/203'
+                -IssueCreateOutput 'https://github.com/Grimblaz/agent-orchestra/issues/203'
             $params = $script:BaseParams.Clone()
             $params.GhCliPath = $mock
             $params.CalibrationPath = $calPath
@@ -348,7 +348,7 @@ exit 99
             $mock = & $script:WriteMockGhDualList -WorkDir $wd `
                 -Section2dOutput '[]' `
                 -SearchDedupOutput '[]' `
-                -IssueCreateOutput 'https://github.com/Grimblaz/copilot-orchestra/issues/204'
+                -IssueCreateOutput 'https://github.com/Grimblaz/agent-orchestra/issues/204'
             $params = $script:BaseParams.Clone()
             $params.GhCliPath = $mock
 
@@ -373,7 +373,7 @@ exit 99
                 -AgentsOverCeiling @('Code-Critic.agent.md')
             $mock = & $script:WriteMockGh -WorkDir $wd `
                 -IssueListOutput '[]' `
-                -IssueCreateOutput 'https://github.com/Grimblaz/copilot-orchestra/issues/205'
+                -IssueCreateOutput 'https://github.com/Grimblaz/agent-orchestra/issues/205'
             $params = $script:BaseParams.Clone()
             $params.GhCliPath = $mock
             $params.FixTypeLevel = 5
@@ -396,7 +396,7 @@ exit 99
                 -AgentsOverCeiling @('Code-Critic.agent.md')
             $mock = & $script:WriteMockGh -WorkDir $wd `
                 -IssueListOutput '[]' `
-                -IssueCreateOutput 'https://github.com/Grimblaz/copilot-orchestra/issues/206'
+                -IssueCreateOutput 'https://github.com/Grimblaz/agent-orchestra/issues/206'
             $params = $script:BaseParams.Clone()
             $params.GhCliPath = $mock
             $params.FixTypeLevel = 2
@@ -418,7 +418,7 @@ exit 99
                 -AgentsOverCeiling @('Code-Critic.agent.md')
             $mock = & $script:WriteMockGh -WorkDir $wd `
                 -IssueListOutput '[]' `
-                -IssueCreateOutput 'https://github.com/Grimblaz/copilot-orchestra/issues/207'
+                -IssueCreateOutput 'https://github.com/Grimblaz/agent-orchestra/issues/207'
             $params = $script:BaseParams.Clone()
             $params.GhCliPath = $mock
             $params.TargetFile = 'skills/safe-operations/SKILL.md'
@@ -439,7 +439,7 @@ exit 99
                 -AgentsOverCeiling @('Code-Critic.agent.md')
             $mock = & $script:WriteMockGh -WorkDir $wd `
                 -IssueListOutput '[]' `
-                -IssueCreateOutput 'https://github.com/Grimblaz/copilot-orchestra/issues/208'
+                -IssueCreateOutput 'https://github.com/Grimblaz/agent-orchestra/issues/208'
             $params = $script:BaseParams.Clone()
             $params.GhCliPath = $mock
             $params.FixTypeLevel = 5
@@ -470,7 +470,7 @@ exit 99
             $wd = & $script:NewWorkDir
             $mock = & $script:WriteMockGh -WorkDir $wd `
                 -IssueListOutput '[]' `
-                -IssueCreateOutput 'https://github.com/Grimblaz/copilot-orchestra/issues/210'
+                -IssueCreateOutput 'https://github.com/Grimblaz/agent-orchestra/issues/210'
             $params = $script:BaseParams.Clone()
             $params.GhCliPath = $mock
             $params.SystemicFixType = $FixType
@@ -488,7 +488,7 @@ exit 99
             $wd = & $script:NewWorkDir
             $mock = & $script:WriteMockGh -WorkDir $wd `
                 -IssueListOutput '[]' `
-                -IssueCreateOutput 'https://github.com/Grimblaz/copilot-orchestra/issues/211'
+                -IssueCreateOutput 'https://github.com/Grimblaz/agent-orchestra/issues/211'
             $params = $script:BaseParams.Clone()
             $params.GhCliPath = $mock
             $params.ProposedChange = 'Add contract test for pattern detection'
@@ -506,7 +506,7 @@ exit 99
             $wd = & $script:NewWorkDir
             $mock = & $script:WriteMockGh -WorkDir $wd `
                 -IssueListOutput '[]' `
-                -IssueCreateOutput 'https://github.com/Grimblaz/copilot-orchestra/issues/213'
+                -IssueCreateOutput 'https://github.com/Grimblaz/agent-orchestra/issues/213'
             $params = $script:BaseParams.Clone()
             $params.GhCliPath = $mock
             $params.ProposedChange = 'Add pre-flight validation for detection'
@@ -524,7 +524,7 @@ exit 99
             $wd = & $script:NewWorkDir
             $mock = & $script:WriteMockGh -WorkDir $wd `
                 -IssueListOutput '[]' `
-                -IssueCreateOutput 'https://github.com/Grimblaz/copilot-orchestra/issues/214'
+                -IssueCreateOutput 'https://github.com/Grimblaz/agent-orchestra/issues/214'
             $params = $script:BaseParams.Clone()
             $params.GhCliPath = $mock
             $params.ProposedChange = 'Add template field for pattern detection'
@@ -542,7 +542,7 @@ exit 99
             $wd = & $script:NewWorkDir
             $mock = & $script:WriteMockGh -WorkDir $wd `
                 -IssueListOutput '[]' `
-                -IssueCreateOutput 'https://github.com/Grimblaz/copilot-orchestra/issues/212'
+                -IssueCreateOutput 'https://github.com/Grimblaz/agent-orchestra/issues/212'
             $params = $script:BaseParams.Clone()
             $params.GhCliPath = $mock
             $params.SystemicFixType = 'agent-prompt'
@@ -567,7 +567,7 @@ exit 99
             $wd = & $script:NewWorkDir
             $mock = & $script:WriteMockGh -WorkDir $wd `
                 -IssueListOutput '[]' `
-                -IssueCreateOutput 'https://github.com/Grimblaz/copilot-orchestra/issues/270'
+                -IssueCreateOutput 'https://github.com/Grimblaz/agent-orchestra/issues/270'
             $params = $script:BaseParams.Clone()
             $params.GhCliPath = $mock
 
@@ -585,7 +585,7 @@ exit 99
             # Arrange — use arg-capturing mock
             $wd = & $script:NewWorkDir
             $capture = & $script:WriteMockGhWithArgCapture -WorkDir $wd `
-                -CreateOutput 'https://github.com/Grimblaz/copilot-orchestra/issues/271'
+                -CreateOutput 'https://github.com/Grimblaz/agent-orchestra/issues/271'
             $params = $script:BaseParams.Clone()
             $params.GhCliPath = $capture.MockPath
 
@@ -609,7 +609,7 @@ exit 99
             # Arrange
             $wd = & $script:NewWorkDir
             $capture = & $script:WriteMockGhWithArgCapture -WorkDir $wd `
-                -CreateOutput 'https://github.com/Grimblaz/copilot-orchestra/issues/272'
+                -CreateOutput 'https://github.com/Grimblaz/agent-orchestra/issues/272'
             $params = $script:BaseParams.Clone()
             $params.GhCliPath = $capture.MockPath
             $params.FixTypeLevel = 5
@@ -644,7 +644,7 @@ exit 99
             }
             $mock = & $script:WriteMockGh -WorkDir $wd `
                 -IssueListOutput '[]' `
-                -IssueCreateOutput 'https://github.com/Grimblaz/copilot-orchestra/issues/270'
+                -IssueCreateOutput 'https://github.com/Grimblaz/agent-orchestra/issues/270'
             $params = $script:BaseParams.Clone()
             $params.GhCliPath = $mock
             $params.CalibrationPath = $calPath
