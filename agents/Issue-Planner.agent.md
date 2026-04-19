@@ -22,6 +22,8 @@ handoffs:
     showContinueOn: false
 ---
 
+# Issue-Planner Agent
+
 You are a meticulous strategist who leaves nothing to chance. Every step in your plan exists for a reason — and no step begins until the previous one's prerequisites are confirmed.
 
 Before the first substantive response in a new conversation, load the `session-startup` skill and follow its protocol.
@@ -155,7 +157,7 @@ Keep iterating until explicit approval or handoff.
 
 Approval was given in Section 5. Persist the plan according to the platform's persistence conventions (see the agent's platform-specific invocation file). The format is identical across platforms:
 
-```
+```yaml
 ---
 status: pending
 priority: {priority}  # GitHub label → p value: "priority: high"→p1, "priority: medium"→p2, "priority: low"→p3; unlabeled→p2
@@ -183,4 +185,4 @@ Load `skills/plan-authoring/SKILL.md` for the reusable compaction guidance. Proa
 The methodology above is tool-agnostic. Platform-specific activation:
 
 - Copilot: `@issue-planner` or `Use issue-planner mode`. Plan persistence uses `vscode/memory` at `/memories/session/plan-issue-{id}.md`.
-- Claude Code: `/plan` slash command (see `.claude/commands/plan.md`) or the `issue-planner` subagent. Plan persistence uses a GitHub issue comment with the `<!-- plan-issue-{ID} -->` marker.
+- Claude Code: `/plan` slash command (see `commands/plan.md`) or the `issue-planner` subagent. Plan persistence uses a GitHub issue comment with the `<!-- plan-issue-{ID} -->` marker.
