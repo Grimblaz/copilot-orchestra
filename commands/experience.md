@@ -3,6 +3,8 @@ description: Invoke Experience-Owner — customer framing upstream or CE Gate ev
 argument-hint: "[issue number or short description of what needs customer framing]"
 ---
 
+# /experience
+
 Dispatch the `experience-owner` subagent to do customer framing for the provided issue (upstream) or CE Gate evidence capture (downstream). Pass along the user's arguments verbatim as the task description.
 
 **Pre-flight**:

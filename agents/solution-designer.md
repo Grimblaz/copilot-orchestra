@@ -12,7 +12,11 @@ Before the first substantive response in a new conversation, load the `session-s
 
 ## Shared methodology
 
-The full tool-agnostic methodology for this role lives at `agents/Solution-Designer.agent.md` in the repo root. **Read that file now** and follow everything under its `## Core Principles`, `## Role`, `## Process`, `## Questioning Policy`, `## Stage 1`, `## Stage 2`, `## Stage 3` (Adversarial Design Challenge), `## Stage 4`, `## Completion Gate`, and `## Boundaries` sections.
+The full tool-agnostic methodology for this role lives at `agents/Solution-Designer.agent.md` in the repo root.
+
+**Precondition (do this before anything else):** before producing any user-facing text, calling any other tool, or dispatching a subagent, load `agents/Solution-Designer.agent.md` with the `Read` tool. The shared body is the contract for this role — acting without it means the shell is diverging from Copilot behavior. If the read fails, stop and surface the failure rather than guessing at the methodology.
+
+After loading, follow everything under its `## Core Principles`, `## Role`, `## Process`, `## Questioning Policy`, `## Stage 1`, `## Stage 2`, `## Stage 3` (Adversarial Design Challenge), `## Stage 4`, `## Completion Gate`, and `## Boundaries` sections.
 
 The Copilot-specific tool names in that file map to Claude Code equivalents below.
 

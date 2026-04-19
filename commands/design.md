@@ -3,6 +3,8 @@ description: Invoke Solution-Designer — technical design exploration with 3-pa
 argument-hint: "[issue number]"
 ---
 
+# /design
+
 Dispatch the `solution-designer` subagent to do technical design exploration for the provided issue.
 
 **Pre-flight**:

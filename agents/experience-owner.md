@@ -12,7 +12,11 @@ Before the first substantive response in a new conversation, load the `session-s
 
 ## Shared methodology
 
-The full tool-agnostic methodology for this role lives at `agents/Experience-Owner.agent.md` in the repo root. **Read that file now** and follow everything under its `## Core Principles`, `## Role`, `## Process`, `## Questioning Policy`, `## GitHub Setup`, `## Safe-Operations Compliance`, `## Upstream Phase`, `## Update Issue`, `## Upstream Completion Gate`, `## Downstream Phase`, `## Graceful Degradation`, and `## Boundaries` sections.
+The full tool-agnostic methodology for this role lives at `agents/Experience-Owner.agent.md` in the repo root.
+
+**Precondition (do this before anything else):** before producing any user-facing text, calling any other tool, or dispatching a subagent, load `agents/Experience-Owner.agent.md` with the `Read` tool. The shared body is the contract for this role — acting without it means the shell is diverging from Copilot behavior. If the read fails, stop and surface the failure rather than guessing at the methodology.
+
+After loading, follow everything under its `## Core Principles`, `## Role`, `## Process`, `## Questioning Policy`, `## GitHub Setup`, `## Safe-Operations Compliance`, `## Upstream Phase`, `## Update Issue`, `## Upstream Completion Gate`, `## Downstream Phase`, `## Graceful Degradation`, and `## Boundaries` sections.
 
 The Copilot-specific tool names in that file (e.g., `#tool:vscode/askQuestions`, `vscode/memory`) map to Claude Code equivalents below.
 

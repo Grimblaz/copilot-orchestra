@@ -12,7 +12,11 @@ Before the first substantive response in a new conversation, load the `session-s
 
 ## Shared methodology
 
-The full tool-agnostic methodology for this role lives at `agents/Issue-Planner.agent.md` in the repo root. **Read that file now** and follow everything under its `## Core Principles`, `## Rules`, `## Process`, `## 1. GitHub Setup`, `## 2. Discovery`, `## 3. Alignment`, `## 4. Design`, `## 5. Refinement`, `## 6. Persist Plan`, and `## Context Management` sections.
+The full tool-agnostic methodology for this role lives at `agents/Issue-Planner.agent.md` in the repo root.
+
+**Precondition (do this before anything else):** before producing any user-facing text, calling any other tool, or dispatching a subagent, load `agents/Issue-Planner.agent.md` with the `Read` tool. The shared body is the contract for this role — acting without it means the shell is diverging from Copilot behavior. If the read fails, stop and surface the failure rather than guessing at the methodology.
+
+After loading, follow everything under its `## Core Principles`, `## Rules`, `## Process`, `## 1. GitHub Setup`, `## 2. Discovery`, `## 3. Alignment`, `## 4. Design`, `## 5. Refinement`, `## 6. Persist Plan`, and `## Context Management` sections.
 
 Follow the **Plan Style Guide**, **Plan Approval Prompt Format**, and **Post-Judge Reconciliation** protocols documented in `skills/plan-authoring/SKILL.md` — the shared body points there for detail rather than duplicating.
 

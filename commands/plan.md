@@ -3,6 +3,8 @@ description: Invoke Issue-Planner — produce an implementation plan with CE Gat
 argument-hint: "[issue number]"
 ---
 
+# /plan
+
 Dispatch the `issue-planner` subagent to produce an implementation plan for the provided issue.
 
 **Pre-flight**:
