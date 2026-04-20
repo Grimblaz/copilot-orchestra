@@ -42,7 +42,21 @@ Claude Code auto-discovers `agents/` and `skills/` at the repo root via `.claude
 
 All 14 agents and 39 skills are immediately available. The marketplace command registers the source; the install command pulls the plugin into Claude Code's cache. See [`Documents/Decisions/0002-claude-code-plugin-schema.md`](Documents/Decisions/0002-claude-code-plugin-schema.md) for the schema rationale (metadata-only manifest preserves auto-discovery).
 
-**What requires clone/fork**: Same as the VS Code plugin — `.github/instructions/` and project templates are not distributed through the plugin surface.
+### Phase 1 — Upstream agents live in Claude Code
+
+The three upstream agents are first-class Claude Code citizens:
+
+- `/experience` — invoke Experience-Owner for customer framing or CE Gate evidence capture
+- `/design` — invoke Solution-Designer for technical design exploration with the 3-pass non-blocking challenge
+- `/plan` — invoke Issue-Planner for implementation planning with the full adversarial review pipeline
+
+Each agent reads its shared, tool-agnostic body from `agents/*.agent.md` and follows the named skills. Claude-native tool bindings (`AskUserQuestion`, `Agent`, `gh` CLI via `Bash`) are mapped from the shared body inside each shell at `agents/{name}.md` (lowercase filename for Claude; capitalized `*.agent.md` for Copilot). Plan persistence uses the GitHub comment marker `<!-- plan-issue-{ID} -->` (there is no session-memory equivalent in Claude Code — the marker is the durable record, compatible with Copilot's latest-comment-wins contract).
+
+See [`CLAUDE.md`](CLAUDE.md) for the Claude Code user guide and [issue #369](https://github.com/Grimblaz/agent-orchestra/issues/369) for the design history.
+
+**Phase 2 and beyond** — implementation/review agents (Code-Conductor, Code-Critic, Code-Smith, Test-Writer, Doc-Keeper, Refactor-Specialist, Review-Response, Process-Review) are tracked in [issue #379](https://github.com/Grimblaz/agent-orchestra/issues/379) and later phases. Until they ship, handoffs from `/plan` fall back to Copilot or native Claude Code for implementation.
+
+**What requires clone/fork**: same as the VS Code plugin — `.github/instructions/` and project templates are not distributed through the plugin surface.
 
 ---
 
