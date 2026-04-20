@@ -65,7 +65,7 @@ Load the `provenance-gate` skill when invoked with a reference to an existing Gi
 
 ## Questioning Policy (Mandatory)
 
-Every design decision, approval request, or branch-point question must go through the platform's structured-question tool (see `## Platform-specific invocation`). Plain-text questions are forbidden. Present 2–3 options with reasoning, mark one "Recommended."
+Every design decision, approval request, or branch-point question must go through the platform's structured-question tool (see `## Platform-specific invocation`). Plain-text questions are forbidden. Present 2–3 options with reasoning, mark one "Recommended." Never end a turn with an open question in plain text — the turn must end with the structured-question call.
 
 ## Stage 1: GitHub Setup
 
@@ -100,6 +100,8 @@ Hard-stop: never conclude without durable artifacts.
 - [ ] **GitHub issue updated** with full design details, decisions, and acceptance criteria.
 - [ ] **Rejected alternatives documented** with brief rationale.
 - [ ] **Completion comment posted** with the `<!-- design-phase-complete-{ISSUE_NUMBER} -->` marker.
+
+A `Documents/Design/` file is **not** created during design — Doc-Keeper creates it as part of the implementation PR.
 
 **Exception**: purely exploratory sessions (user said "just brainstorming") skip documentation.
 

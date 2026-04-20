@@ -90,7 +90,7 @@ Before presenting the plan, run the three-pass adversarial stress test from `ski
 
 ## 5. Refinement
 
-On user response: changes → revise and re-present for approval; approval → proceed to Persist Plan in the same turn.
+On user response: changes → revise and re-present for approval; approval → proceed to Persist Plan in the same turn. If refinement or research reveals scope or requirements changes not yet reflected in the issue body, update the GitHub issue body before proceeding to approval.
 
 ## 6. Persist Plan
 
@@ -109,7 +109,7 @@ ce_gate: {true|false}
 ---
 ```
 
-Add `escalation_recommended: true` and `escalation_reason` when scope exceeds the issue's stated scope. After saving, stop — do not post additional comments beyond the platform-mandated persistence artifact.
+Add `escalation_recommended: true` and `escalation_reason` when scope exceeds the issue's stated scope. After saving, stop — do not take any further action in this turn (no additional comments, no structured-question calls, no follow-up prompts).
 
 ## Context Management
 

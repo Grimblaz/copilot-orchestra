@@ -68,7 +68,7 @@ Load the `provenance-gate` skill when invoked with a reference to an existing Gi
 
 ## Questioning Policy (Mandatory)
 
-Every decision, approval request, or branch-point question must go through the platform's structured-question tool (see `## Platform-specific invocation`). Plain-text questions are forbidden. Present 2–3 options, mark one "Recommended."
+Every decision, approval request, or branch-point question must go through the platform's structured-question tool (see `## Platform-specific invocation`). Plain-text questions are forbidden. Present 2–3 options, mark one "Recommended." Never end a turn with an open question in plain text — the turn must end with the structured-question call.
 
 ## GitHub Setup
 
