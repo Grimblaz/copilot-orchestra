@@ -1,4 +1,4 @@
-#Requires -Version 7.0
+﻿#Requires -Version 7.0
 #Requires -Modules @{ ModuleName = 'Pester'; ModuleVersion = '5.0.0' }
 <#
 .SYNOPSIS
@@ -52,6 +52,7 @@ Describe 'session startup wording contract' {
             recordMarkerRegardlessOfCleanupChoice       = $true
             failOpenOnSessionMemoryAccessError          = $true
             manualDetectorRunsRemainAllowed             = $true
+            confirmSharedBodyLoadForAgentShells         = $true
         }
 
         $script:GetDocumentState = {
@@ -161,6 +162,20 @@ Describe 'session startup wording contract' {
 
         $contract = & $script:GetCanonicalContract -Content $skill.Content
         (& $script:ConvertToCanonicalJson -Value $contract) | Should -Be $expectedJson -Because 'the session-startup skill must publish the exact startup guard contract'
+    }
+
+    It 'requires Step 9 to describe shared-body load with Read + cite + halt semantics for agent shells' {
+        $skill = & $script:GetDocumentState -Path $script:SessionStartupSkill
+        $step9 = & $script:GetStepSection -Content $skill.Content -StepNumber 9
+        $warningGlyph = [string]([char]0x26A0) + [char]0xFE0F
+        $successCitation = 'Shared body loaded ' + [char]0x2014 + ' proceeding as'
+
+        $step9 | Should -Match '(?is)(not gated by .*run-once marker|outside .*run-once guard|fires on every agent-role adoption).{0,240}(every subagent dispatch|Do not wrap this step in the Step 2 or Step 4 marker guard)' -Because 'Step 9 must keep shared-body loading outside the session-startup run-once guard'
+        $step9 | Should -Match ([regex]::Escape('agents/{Name}.agent.md')) -Because 'Step 9 must name the paired shared-body path pattern literally'
+        $step9 | Should -Match ([regex]::Escape($warningGlyph) + '.*cannot continue without the canonical methodology') -Because 'Step 9 must require the canonical halt message when the shared-body load fails'
+        $step9 | Should -Match ([regex]::Escape($successCitation)) -Because 'Step 9 must require the canonical success citation'
+        $step9 | Should -Match ([regex]::Escape("platform's file-read tool")) -Because 'Step 9 must describe loading the paired body with a platform-neutral file-read tool reference'
+        $step9.Contains('Read tool') | Should -BeFalse -Because 'Step 9 must not hardcode the Copilot-specific Read tool name'
     }
 
     It 'requires the session-startup skill to describe the run-once guard in the canonical order' {
