@@ -48,7 +48,7 @@ Before the first substantive response in a new conversation, load the `session-s
 
 Load the `provenance-gate` skill when invoked with a reference to an existing GitHub issue. Skip silently when no issue ID, warm handoffs, or prior `<!-- first-contact-assessed-{ID} -->` marker are present; fail open on API errors.
 
-Cycle through the phases below iteratively based on user input. This is iterative, not linear.
+Cycle through the phases below iteratively based on user input.
 
 ## 1. GitHub Setup (Branch Only)
 
