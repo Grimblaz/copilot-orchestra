@@ -115,7 +115,7 @@ If you are not in a paired-body context, skip this step silently.
 
 If the same shared body is loaded more than once in a conversation, the load is idempotent — loading the same file a second time is harmless and does not require deduplication logic.
 
-Enforcement paths: inline dispatch (`/experience`, `/design`) is enforced by command-file read-and-adopt; subagent dispatch (`/plan` and Agent tool) is enforced by Step 9. Both paths end in the same citation and halt-on-failure behavior.
+Enforcement paths: subagent dispatch (`/plan` and Agent tool) is enforced by Step 9 — this step fires before the agent acts and halts on failure. Inline dispatch (`/experience`, `/design`) currently relies on command-file prose to read and adopt the paired body; the citation and halt-on-failure contract is not currently enforced on that path. Issue #396 tracks bringing inline dispatch to full parity with Step 9.
 
 ## Silent Skip Conditions
 

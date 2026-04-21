@@ -131,10 +131,10 @@ Describe 'Claude shell/shared-body parity contract' {
         $script:ShellDocuments = @(
             Get-ChildItem -Path $script:AgentsDirectory -Filter '*.md' -File |
                 Where-Object { $_.Name -notlike '*.agent.md' } |
-                Where-Object { (Get-Content -Path $_.FullName -Raw) -match [regex]::Escape($script:CanonicalTriggerText) } |
                 ForEach-Object {
                     $shell = & $script:GetDocumentState -Path $_.FullName
-                    $hasCanonicalTrigger = $shell.Content -match [regex]::Escape($script:CanonicalTriggerText)
+                    if ($shell.Content -notmatch [regex]::Escape($script:CanonicalTriggerText)) { return }
+                    $hasCanonicalTrigger = $true
                     $hasSharedMethodologyHeading = $shell.Content -match '(?m)^## Shared methodology\s*$'
                     $sharedMethodology = if ($hasSharedMethodologyHeading) {
                         & $script:GetSharedMethodologySection -Content $shell.Content
