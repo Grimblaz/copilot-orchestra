@@ -83,7 +83,7 @@ This template is the authoritative finding shape. Drift between this quoted copy
 
 The full tool-agnostic methodology for this role lives at `agents/Code-Critic.agent.md` in the repo root.
 
-**Precondition (do this before anything else):** before producing any user-facing text, calling any other tool, or dispatching a subagent, load `agents/Code-Critic.agent.md` with the `Read` tool. The shared body is the contract for this role — acting without it means the shell is diverging from Copilot behavior. If the read fails, stop and surface the failure rather than guessing at the methodology.
+**Precondition (load this before shared-body role work):** after the session-startup protocol completes and after the one-time Step 0 environment handshake verification runs, but before producing any substantive user-facing text, making any other role-work tool call, or dispatching a subagent, load `agents/Code-Critic.agent.md` with the `Read` tool. The only exceptions to this ordering are session-startup's required actions and the Step 0 live-git verification/tooling explicitly required above. The shared body is the contract for this role — acting without it means the shell is diverging from Copilot behavior. If the read fails, stop and surface the failure rather than guessing at the methodology.
 
 After loading, follow everything under its `## Core Principles`, `## Overview`, `## 🚨 CRITICAL: Read-Only Mode`, `## Adversarial Analysis Stance`, `## Review Mode Routing`, `## CE Prosecution Mode`, `## Finding Categories`, `## Review Scope And Responsibilities`, and `## Related Guidance` sections.
 
