@@ -332,6 +332,8 @@ Load and follow these references:
 
 Code-Conductor keeps only the orchestration boundary here: enter the correct review mode, apply express-lane routing only where the contract allows it, route post-judgment and post-fix outcomes, preserve any required calibration side effects, and proceed to the CE Gate in the documented sequence.
 
+GitHub-triggered review requests (`github review`, `review github`, `cr review`) still enter through the GitHub intake path described in the loaded references before the generic local review loop runs.
+
 ### Skill Mapping
 
 When delegating to subagents, instruct them to use the relevant skill(s):

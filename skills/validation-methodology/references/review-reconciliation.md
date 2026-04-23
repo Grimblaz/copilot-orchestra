@@ -83,9 +83,17 @@ After the merged ledger is finalized:
 
 If the owning agent supports an express lane for strictly mechanical low-severity findings, partition those findings only after the merged prosecution ledger is available. The owning agent still owns whether express lane exists and how routed findings are dispatched. See [../../code-review-intake/references/express-lane.md](../../code-review-intake/references/express-lane.md).
 
+### GitHub Review Intake & Judgment
+
+For `github review` / `review github` / `cr review`, follow `skills/code-review-intake/SKILL.md`. GitHub intake uses proxy prosecution: Code-Critic validates and scores each GitHub comment, then defense -> judge pipeline runs as normal.
+
 ### Non-GitHub Review Mode
 
 For local/internal reviews, run the same pipeline: 3 prosecution passes (parallel) -> merge ledger -> 1 defense pass -> 1 judge pass (Code-Review-Response).
+
+#### Short-Trigger Routing
+
+If the user gives `github review` / `review github` / `cr review`, run GitHub intake first (resolve PR from active context when omitted), then route into the same Review Reconciliation Loop.
 
 ### Improvement-First Decision Rule (Mandatory)
 
@@ -124,6 +132,10 @@ Before dispatching any findings to specialists, complete **all** routing decisio
 4. **Exception**: If two findings for the same agent require contradictory fix approaches (e.g., one requires adding a guard clause, another requires removing the same guard), split them into separate calls and document the rationale.
 
 This replaces the default pattern of one call per finding.
+
+#### GitHub Response Posting
+
+When the review originated from GitHub (proxy prosecution pipeline), Code-Conductor posts concise responses to GitHub review comments with final disposition and score evidence after routing accepted fixes to specialists.
 
 ### Post-Fix Targeted Prosecution Pass
 
