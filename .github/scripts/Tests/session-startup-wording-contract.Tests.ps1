@@ -23,6 +23,7 @@ Describe 'session startup wording contract' {
         $script:RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '../../..')).Path
         $script:SessionStartupSkill = Join-Path $script:RepoRoot 'skills\session-startup\SKILL.md'
         $script:CanonicalMarkerPath = '/memories/session/session-startup-check-complete.md'
+        $script:RetiredTriggerText = 'Before the first substantive response in a new conversation, load the `session-startup` skill and follow its protocol.'
         $script:LegacySilentSkipSummary = 'Skip the automatic startup check silently when neither `$env:COPILOT_ORCHESTRA_ROOT` nor `$env:WORKFLOW_TEMPLATE_ROOT` is set, `pwsh` is unavailable, or the detector returns non-JSON output.'
         $script:DetectorCommandPattern = '(?ms)^pwsh -NoProfile -NonInteractive -File "[^"]*skills/session-startup/scripts/session-cleanup-detector\.ps1"\s*$'
         $script:ContractHeadingPattern = '(?m)^### Canonical Automatic Startup Guard Contract\s*$'
@@ -150,8 +151,8 @@ Describe 'session startup wording contract' {
 
             $processSection = $processSectionMatch.Groups['body'].Value
 
-            $content | Should -Not -Match 'Before the first substantive response in a new conversation' -Because "$($agent.Name) must not retain the retired startup trigger text anywhere in the file"
-            $processSection | Should -Not -Match 'Before the first substantive response in a new conversation' -Because "$($agent.Name) must not retain the retired startup trigger inside its Process section"
+            $content | Should -Not -Match ([regex]::Escape($script:RetiredTriggerText)) -Because "$($agent.Name) must not retain the retired startup trigger text anywhere in the file"
+            $processSection | Should -Not -Match ([regex]::Escape($script:RetiredTriggerText)) -Because "$($agent.Name) must not retain the retired startup trigger inside its Process section"
             $content | Should -Not -Match ([regex]::Escape($script:LegacySilentSkipSummary)) -Because "$($agent.Name) must not retain the legacy silent-skip summary anywhere in the file"
         }
     }

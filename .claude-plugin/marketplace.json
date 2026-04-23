@@ -11,7 +11,7 @@
     {
       "name": "agent-orchestra",
       "source": "./",
-      "description": "Multi-agent workflow system with 14 specialized agents and 40 skills.",
+      "description": "Multi-agent workflow system with 14 specialized agents and a shared skill library.",
       "version": "2.3.1",
       "author": {
         "name": "Grimblaz"

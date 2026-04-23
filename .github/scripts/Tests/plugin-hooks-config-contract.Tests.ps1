@@ -13,7 +13,7 @@ Describe 'plugin hooks config contract' -Tag 'unit' {
         $script:ReleaseHygieneScript = 'skills/plugin-release-hygiene/scripts/plugin-release-hygiene-hook.ps1'
         $script:SessionStartMatcher = 'startup'
         $script:PostToolUseMatcher = '^(Edit|Write|MultiEdit)$'
-        $script:CopilotCacheLocator = 'agentPlugins/github.com/Grimblaz/agent-orchestra'
+        $script:SupportedProductDirs = @('Code', 'Code - Insiders', 'VSCodium', 'Cursor')
 
         function Get-JsonFile {
             param(
@@ -36,6 +36,17 @@ Describe 'plugin hooks config contract' -Tag 'unit' {
 
             $entries = $HooksConfig.hooks.$EventName
             @($entries)
+        }
+
+        function Get-CopilotCacheLocator {
+            param(
+                [Parameter(Mandatory)]
+                [object]$Manifest
+            )
+
+            $repositoryUri = [Uri]$Manifest.repository
+            $repositorySegments = $repositoryUri.AbsolutePath.Trim('/') -split '/'
+            return 'agentPlugins/github.com/{0}/{1}' -f $repositorySegments[0], $Manifest.name
         }
     }
 
@@ -72,15 +83,21 @@ Describe 'plugin hooks config contract' -Tag 'unit' {
 
     It 'declares Copilot hook commands that resolve the installed plugin cache path' {
         $config = Get-JsonFile -Path $script:CopilotHooksConfig
+        $rootManifest = Get-JsonFile -Path $script:RootPluginManifest
         $sessionEntries = Get-HookEntries -HooksConfig $config -EventName 'SessionStart'
         $postToolEntries = Get-HookEntries -HooksConfig $config -EventName 'PostToolUse'
+        $cacheLocator = Get-CopilotCacheLocator -Manifest $rootManifest
 
         $sessionEntries.Count | Should -Be 1
         $postToolEntries.Count | Should -Be 1
         $sessionEntries[0].matcher | Should -Be $script:SessionStartMatcher
         $postToolEntries[0].matcher | Should -Be $script:PostToolUseMatcher
-        $sessionEntries[0].hooks[0].command | Should -Match ([regex]::Escape($script:CopilotCacheLocator))
-        $postToolEntries[0].hooks[0].command | Should -Match ([regex]::Escape($script:CopilotCacheLocator))
+        foreach ($productDir in $script:SupportedProductDirs) {
+            $sessionEntries[0].hooks[0].command | Should -Match ([regex]::Escape("'$productDir'"))
+            $postToolEntries[0].hooks[0].command | Should -Match ([regex]::Escape("'$productDir'"))
+        }
+        $sessionEntries[0].hooks[0].command | Should -Match ([regex]::Escape("`$pluginSuffix = '$cacheLocator'"))
+        $postToolEntries[0].hooks[0].command | Should -Match ([regex]::Escape("`$pluginSuffix = '$cacheLocator'"))
         $sessionEntries[0].hooks[0].command | Should -Match ([regex]::Escape($script:SessionStartScript))
         $postToolEntries[0].hooks[0].command | Should -Match ([regex]::Escape($script:ReleaseHygieneScript))
     }
