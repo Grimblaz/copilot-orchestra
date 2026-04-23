@@ -1,6 +1,6 @@
 # Agent Orchestra
 
-[![Version](https://img.shields.io/badge/version-v2.3.1-blue.svg)](../../releases)
+[![Version](https://img.shields.io/badge/version-v2.3.2-blue.svg)](../../releases)
 [![Ready for Production](https://img.shields.io/badge/status-production%20ready-green.svg)](../../releases)
 
 A multi-agent workflow system that orchestrates AI-assisted software development across specialized agents in GitHub Copilot and Claude Code.
@@ -23,11 +23,11 @@ A multi-agent workflow system that orchestrates AI-assisted software development
    ```
 
 2. **Install** — In the Extensions view (`Ctrl+Shift+X`), search `@agentPlugins agent-orchestra` and install.
-3. **Use** — All 14 agents and 39 skills are immediately available in VS Code Chat.
+3. **Use** — All 14 agents and the shared skill library are immediately available in VS Code Chat.
 
-**What's included in the repo plugin payload**: 14 agents, 39 skills, and 9 command files under `commands/` (`/design`, `/experience`, `/plan`, `/orchestrate`, `/orchestra:review`, `/orchestra:review-lite`, `/orchestra:review-prosecute`, `/orchestra:review-defend`, `/orchestra:review-judge`). VS Code currently ignores the plugin `commands` field; Claude Code and CLI consumers use it.
+**What's included in the repo plugin payload**: 14 agents, the shared skill library, and 9 command files under `commands/` (`/design`, `/experience`, `/plan`, `/orchestrate`, `/orchestra:review`, `/orchestra:review-lite`, `/orchestra:review-prosecute`, `/orchestra:review-defend`, `/orchestra:review-judge`). VS Code currently ignores the plugin `commands` field; Claude Code and CLI consumers use it.
 
-**What requires clone/fork**: Instruction files (`.github/instructions/`) and project templates are not distributed via the plugin — they are auto-discovered by VS Code when you clone or fork the repo.
+**What requires clone/fork**: Instruction files (`.github/instructions/`) and project templates are not distributed via the plugin — they are auto-discovered by VS Code when you clone or fork the repo. Plugin-distributed hooks are also not active when you only point VS Code at a clone via `chat.agentFilesLocations`; deterministic `SessionStart` cleanup and Claude `PostToolUse` release-hygiene prompts require an actual plugin install.
 
 ---
 
@@ -40,7 +40,7 @@ Claude Code auto-discovers `agents/` and `skills/` at the repo root via `.claude
 /plugin install agent-orchestra@agent-orchestra
 ```
 
-All 14 agents and 39 skills are immediately available. The marketplace command registers the source; the install command pulls the plugin into Claude Code's cache. See [`Documents/Decisions/0002-claude-code-plugin-schema.md`](Documents/Decisions/0002-claude-code-plugin-schema.md) for the schema rationale (metadata-only manifest preserves auto-discovery).
+All 14 agents and the shared skill library are immediately available. The marketplace command registers the source; the install command pulls the plugin into Claude Code's cache. See [`Documents/Decisions/0002-claude-code-plugin-schema.md`](Documents/Decisions/0002-claude-code-plugin-schema.md) for the schema rationale (metadata-only manifest preserves auto-discovery).
 
 ### Phase 1 — Upstream agents live in Claude Code
 
@@ -74,7 +74,7 @@ The durable handoff set for Claude orchestration is the same GitHub-marker contr
 
 The remaining implementation specialists are still tracked in later phases. When a planned specialist shell does not exist yet, Code-Conductor follows the documented fallback paths instead of treating Claude orchestration itself as unavailable.
 
-**What requires clone/fork**: same as the VS Code plugin — `.github/instructions/` and project templates are not distributed through the plugin surface.
+**What requires clone/fork**: same as the VS Code plugin — `.github/instructions/` and project templates are not distributed through the plugin surface. If you only load agents from a clone, Claude will not pick up the plugin-distributed `SessionStart` or `PostToolUse` hooks; those automation paths require `/plugin install`.
 
 ---
 
@@ -264,6 +264,8 @@ You can make all agents available globally in VS Code — not just in repos that
 ```
 
 Replace `/path/to/your/agent-orchestra` with the absolute path to where you cloned this repo. VS Code will load agent definitions from that folder for all workspaces.
+
+This path-based setup only loads agent definitions. It does not load the plugin manifests or their `hooks.json` files, so automatic session-start cleanup and plugin release-hygiene prompts remain plugin-only behavior.
 
 <!-- legacy-path -->
 > **Upgrading from v1.13 or earlier?** Agents lived at `.github/agents/` before v1.14. If your `settings.json` still points at `/path/to/your/agent-orchestra/.github/agents`, update it to `/path/to/your/agent-orchestra/agents`. See [CUSTOMIZATION.md — Migrating from pre-1.14 layouts](CUSTOMIZATION.md#migrating-from-pre-114-layouts-issue-367).

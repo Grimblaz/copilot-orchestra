@@ -16,7 +16,6 @@ Describe 'Code-Conductor Claude shell parity contract' {
     BeforeAll {
         $script:RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '../../..')).Path
         $script:AgentsDirectory = Join-Path $script:RepoRoot 'agents'
-        $script:CanonicalTriggerText = 'Before the first substantive response in a new conversation, load the `session-startup` skill and follow its protocol.'
         $script:ParitySuffixPattern = '($|: |\s+\(|\s*$)'
 
         $script:ShellPath = Join-Path $script:AgentsDirectory 'code-conductor.md'
@@ -155,7 +154,7 @@ Describe 'Code-Conductor Claude shell parity contract' {
         $discoveredNames = @(
             Get-ChildItem -Path $script:AgentsDirectory -Filter '*.md' -File |
                 Where-Object { $_.Name -notlike '*.agent.md' } |
-                Where-Object { (Get-Content -Path $_.FullName -Raw) -match [regex]::Escape($script:CanonicalTriggerText) } |
+                Where-Object { (Get-Content -Path $_.FullName -Raw) -match '(?m)^## Shared methodology\s*$' } |
                 ForEach-Object { $_.BaseName }
         )
 
