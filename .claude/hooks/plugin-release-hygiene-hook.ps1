@@ -39,7 +39,7 @@ function Test-PRHEntryPointPath {
         [string]$RelativePath
     )
 
-    $normalized = ($RelativePath -replace '\\', '/').TrimStart('./')
+    $normalized = ($RelativePath -replace '\\', '/') -replace '^(\./|\.\\)', ''
     return (
         $normalized -like 'agents/*' -or
         $normalized -like 'commands/*' -or
@@ -91,12 +91,17 @@ function Get-PRHStatePath {
         [string]$RepoRoot
     )
 
-    $stateDir = Join-Path $RepoRoot '.claude/.state'
-    if (-not (Test-Path $stateDir)) {
-        New-Item -ItemType Directory -Path $stateDir -Force | Out-Null
-    }
+    try {
+        $stateDir = Join-Path $RepoRoot '.claude/.state'
+        if (-not (Test-Path $stateDir)) {
+            New-Item -ItemType Directory -Path $stateDir -Force | Out-Null
+        }
 
-    return Join-Path $stateDir ("release-hygiene-{0}.json" -f (Get-PRHSlug))
+        return Join-Path $stateDir ("release-hygiene-{0}.json" -f (Get-PRHSlug))
+    }
+    catch {
+        return $null
+    }
 }
 
 function Get-PRHState {
@@ -123,10 +128,16 @@ function Save-PRHState {
         [string]$StatePath,
 
         [Parameter(Mandatory)]
-        [hashtable]$State
+        [PSCustomObject]$State
     )
 
-    $State | ConvertTo-Json -Depth 10 | Set-Content -Path $StatePath -Encoding UTF8
+    try {
+        $State | ConvertTo-Json -Depth 10 | Set-Content -Path $StatePath -Encoding UTF8
+        return $true
+    }
+    catch {
+        return $false
+    }
 }
 
 $repoRoot = Get-PRHRepoRoot
@@ -143,20 +154,39 @@ if (-not $payload) {
     exit 0
 }
 
-$filePath = $payload.tool_input.file_path
-if ([string]::IsNullOrWhiteSpace($filePath)) {
+$targetPaths = @()
+if (-not [string]::IsNullOrWhiteSpace($payload.tool_input.file_path)) {
+    $targetPaths += [string]$payload.tool_input.file_path
+}
+if ($null -ne $payload.tool_input.files) {
+    foreach ($file in @($payload.tool_input.files)) {
+        if (-not [string]::IsNullOrWhiteSpace($file.filePath)) {
+            $targetPaths += [string]$file.filePath
+        }
+    }
+}
+if ($targetPaths.Count -eq 0) {
     exit 0
 }
 
-$relativePath = Get-PRHRelativePath -RepoRoot $repoRoot -FilePath $filePath
-if (-not (Test-PRHEntryPointPath -RelativePath $relativePath)) {
+$entryPaths = @()
+foreach ($targetPath in $targetPaths) {
+    $relativePath = Get-PRHRelativePath -RepoRoot $repoRoot -FilePath $targetPath
+    if (Test-PRHEntryPointPath -RelativePath $relativePath) {
+        $entryPaths += $relativePath
+    }
+}
+if ($entryPaths.Count -eq 0) {
     exit 0
 }
+
+$relativePath = $entryPaths[0]
 
 $statePath = Get-PRHStatePath -RepoRoot $repoRoot
+$canPersistState = -not [string]::IsNullOrWhiteSpace($statePath)
 $state = Get-PRHState -StatePath $statePath
 
-if ($null -ne $state) {
+if ($canPersistState -and $null -ne $state) {
     $touched = @()
     if ($null -ne $state.touched_files) {
         $touched = @($state.touched_files)
@@ -165,25 +195,27 @@ if ($null -ne $state) {
         $touched += $relativePath
     }
 
-    $updatedState = @{
+    $updatedState = [PSCustomObject]@{
         proposed_level = if ($state.proposed_level) { [string]$state.proposed_level } else { 'patch' }
         chosen_level   = if ($state.chosen_level) { [string]$state.chosen_level } else { $null }
         touched_files  = $touched
     }
 
-    Save-PRHState -StatePath $statePath -State $updatedState
+    [void](Save-PRHState -StatePath $statePath -State $updatedState)
     exit 0
 }
 
-$newState = @{
+$newState = [PSCustomObject]@{
     proposed_level = 'patch'
     chosen_level   = $null
     touched_files  = @($relativePath)
 }
-Save-PRHState -StatePath $statePath -State $newState
+if ($canPersistState) {
+    [void](Save-PRHState -StatePath $statePath -State $newState)
+}
 
-$result = @{
-    hookSpecificOutput = @{
+$result = [PSCustomObject]@{
+    hookSpecificOutput = [PSCustomObject]@{
         hookEventName     = 'PostToolUse'
         additionalContext = "Entry-point edit detected: $relativePath. Load the plugin-release-hygiene skill to propose a version bump."
     }

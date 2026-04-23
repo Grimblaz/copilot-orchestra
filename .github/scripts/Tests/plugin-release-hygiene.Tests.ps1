@@ -1,7 +1,7 @@
 #Requires -Version 7.0
 #Requires -Modules @{ ModuleName = 'Pester'; ModuleVersion = '5.0.0' }
 
-Describe 'plugin release hygiene hook' -Tag 'unit' {
+Describe 'plugin release hygiene hook contract' -Tag 'unit' {
 
     BeforeAll {
         $script:RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '../../..')).Path
@@ -52,11 +52,20 @@ Describe 'plugin release hygiene hook' -Tag 'unit' {
                 [Parameter(Mandatory)]
                 [string]$FixtureRoot,
 
-                [Parameter(Mandatory)]
-                [string]$FilePath
+                [string]$FilePath,
+
+                [object[]]$Files
             )
 
-            $payload = @{ tool_input = @{ file_path = $FilePath } } | ConvertTo-Json -Depth 10 -Compress
+            $toolInput = [ordered]@{}
+            if (-not [string]::IsNullOrWhiteSpace($FilePath)) {
+                $toolInput.file_path = $FilePath
+            }
+            if ($null -ne $Files) {
+                $toolInput.files = $Files
+            }
+
+            $payload = [PSCustomObject]@{ tool_input = [PSCustomObject]$toolInput } | ConvertTo-Json -Depth 10 -Compress
 
             Push-Location $FixtureRoot
             try {
@@ -119,6 +128,53 @@ Describe 'plugin release hygiene hook' -Tag 'unit' {
         $state.proposed_level | Should -Be 'patch'
         @($state.touched_files) | Should -Contain 'agents/First.agent.md'
         @($state.touched_files) | Should -Contain 'commands/design.md'
+    }
+
+    It 'detects entry-point edits from MultiEdit payload files' {
+        $fixture = New-PluginReleaseHygieneFixture
+        $commandsDir = Join-Path $fixture 'commands'
+        $docsDir = Join-Path $fixture 'Documents'
+        New-Item -ItemType Directory -Path $commandsDir -Force | Out-Null
+        New-Item -ItemType Directory -Path $docsDir -Force | Out-Null
+        $entryPoint = Join-Path $commandsDir 'review.md'
+        $nonEntry = Join-Path $docsDir 'notes.md'
+        Set-Content -Path $entryPoint -Value '# Review' -Encoding UTF8
+        Set-Content -Path $nonEntry -Value '# Notes' -Encoding UTF8
+
+        $raw = Invoke-HookInFixture -FixtureRoot $fixture -Files @(
+            [PSCustomObject]@{ filePath = $nonEntry },
+            [PSCustomObject]@{ filePath = $entryPoint }
+        )
+        $result = $raw | ConvertFrom-Json
+
+        $result.hookSpecificOutput.additionalContext | Should -Match 'commands/review.md'
+    }
+
+    It 'preserves leading-dot entry-point paths during normalization' {
+        $fixture = New-PluginReleaseHygieneFixture
+        $pluginDir = Join-Path $fixture '.claude-plugin'
+        New-Item -ItemType Directory -Path $pluginDir -Force | Out-Null
+        $target = Join-Path $pluginDir 'plugin.json'
+        Set-Content -Path $target -Value '{ }' -Encoding UTF8
+
+        $raw = Invoke-HookInFixture -FixtureRoot $fixture -FilePath $target
+        $result = $raw | ConvertFrom-Json
+
+        $result.hookSpecificOutput.additionalContext | Should -Match '.claude-plugin/plugin.json'
+    }
+
+    It 'fails open when the state path cannot be created' {
+        $fixture = New-PluginReleaseHygieneFixture
+        $target = Join-Path $fixture 'agents\Example.agent.md'
+        Set-Content -Path $target -Value '# Example' -Encoding UTF8
+        New-Item -ItemType Directory -Path (Join-Path $fixture '.claude') -Force | Out-Null
+        Set-Content -Path (Join-Path $fixture '.claude\.state') -Value 'blocked' -Encoding UTF8
+
+        $raw = Invoke-HookInFixture -FixtureRoot $fixture -FilePath $target
+        $result = $raw | ConvertFrom-Json
+
+        $result.hookSpecificOutput.hookEventName | Should -Be 'PostToolUse'
+        Test-Path (Join-Path $fixture '.claude\.state\release-hygiene-389.json') | Should -BeFalse
     }
 
     It 'documents the full Claude plugin CLI surface in the three required files' {
