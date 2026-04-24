@@ -38,12 +38,13 @@ Describe 'Code-Conductor review pipeline enforcement contract' {
 
     It 'keeps the review pipeline completeness rule in the stopping_rules hard stop list' {
         $script:StoppingRulesBlock | Should -Not -BeNullOrEmpty -Because 'Code-Conductor must have a <stopping_rules> block'
-        $script:StoppingRulesBlock | Should -Match '(?si)(prosecution|review cycle).{0,300}(defense).{0,300}(judgment|judge)' -Because 'stopping rules must name prosecution, defense, and judgment as required stages for review completeness'
-        $script:StoppingRulesBlock | Should -Match '(?si)(missing|skip|absent).{0,200}(askQuestions|ask.{0,15}questions|protocol violation)' -Because 'stopping rules must require askQuestions or flag a protocol violation when review stages are missing'
+        $script:StoppingRulesBlock | Should -Match '(?si)(prosecution).{0,150}(defense).{0,150}(judgment|judge)' -Because 'stopping rules must name prosecution, defense, and judgment as required stages in one coherent rule'
+        $script:StoppingRulesBlock | Should -Match '(?si)(missing|skip|absent).{0,100}(askQuestions|ask.{0,15}questions|protocol violation)' -Because 'stopping rules must require askQuestions or flag a protocol violation when review stages are missing'
     }
 
     It 'keeps an explicit review pipeline gate in Code-Conductor Step 4 before PR creation' {
-        $script:ConductorBody | Should -Match '(?si)review pipeline gate.{0,600}(prosecution|defense|judgment).{0,200}(missing|absent|skipped).{0,200}askQuestions' -Because 'Step 4 must include an explicit review pipeline gate that blocks PR creation when stages are missing'
+        # Review pipeline gate heading followed within 400 chars by a stage name, then by a blocked-signal and askQuestions
+        $script:ConductorBody | Should -Match '(?si)review pipeline gate.{0,400}(prosecution|defense|judgment).{0,150}(missing|absent|skipped).{0,100}askQuestions' -Because 'Step 4 must include an explicit review pipeline gate that blocks PR creation when stages are missing'
     }
 
     It 'keeps review-state persistence instructions in the Review Reconciliation Loop section' {

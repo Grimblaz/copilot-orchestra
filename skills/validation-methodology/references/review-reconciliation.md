@@ -99,7 +99,7 @@ Before fix routing, before post-fix prosecution, and before CE Gate entry, verif
 2. If the required input is not available (e.g., the ledger was lost after compaction), re-run the review cycle from the first missing stage.
 3. If the abbreviated path is intentional (e.g., post-fix R2 pipeline, `review-lite` command, or explicit user override), document the abbreviated mode and the skipped stages in the PR body under `## Review Coverage`.
 
-**Review-state persistence**: After each stage completes, the owning agent writes stage completion state to session memory at `/memories/session/review-state-issue-{ID}.md`. The minimum schema:
+**Review-state persistence**: After each stage completes, the owning agent writes stage completion state to session memory at `/memories/session/review-state-issue-{ID}.md` using the `vscode/memory` tool (the same VS Code agent memory API used throughout the pipeline for plan and design caching). The minimum schema:
 
 ```yaml
 # review-state-issue-{ID}
