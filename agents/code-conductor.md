@@ -109,7 +109,7 @@ When a required specialist shell for a planned step does not exist yet, use the 
 
 1. Hand off this step to Copilot, resume in Claude after
 2. Attempt inline in the main conversation (no specialist dispatch)
-3. Pause here - wait for Phase 4 specialist to land
+3. Pause here - wait for the missing specialist shell to land
 
 ## Persistence differences
 

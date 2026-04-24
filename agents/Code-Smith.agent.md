@@ -7,6 +7,7 @@ tools:
   - execute/testFailure
   - execute/getTerminalOutput
   - execute/runInTerminal
+  - vscode/memory
   - read
   - edit
   - search
