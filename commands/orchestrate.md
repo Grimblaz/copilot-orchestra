@@ -15,7 +15,7 @@ In Claude Code, `/orchestrate` is also the resume entry point for paused Code-Co
 
 1. Resolve the issue context from the arguments. Accept a single issue number, an issue URL, or a multi-issue bundle. If the arguments do not identify at least one issue, use the `AskUserQuestion` tool.
 2. For each resolved issue, check the issue's comments/timeline for the smart-resume markers `<!-- plan-issue-{ID} -->`, `<!-- design-issue-{ID} -->`, `<!-- design-phase-complete-{ID} -->`, and `<!-- experience-owner-complete-{ID} -->`.
-3. If any resolved issue is missing its `<!-- plan-issue-{ID} -->` marker, use the `AskUserQuestion` tool to ask whether to run `/plan` first or to continue only after a plan exists. Carry the resolved issue list and marker status into the dispatch prompt so Code-Conductor can resume from the most advanced durable artifact available, including whether a durable `<!-- design-issue-{ID} -->` handoff already exists for D9 suppression and full-pipeline resume.
+3. If any resolved issue is missing its `<!-- plan-issue-{ID} -->` marker, do not block dispatch. Carry the resolved issue list and marker status into the dispatch prompt so Code-Conductor can either resume from the most advanced durable artifact available or continue fresh hub-mode execution and call Issue-Planner itself. Include whether a durable `<!-- design-issue-{ID} -->` handoff already exists for D9 suppression and full-pipeline resume.
 
 **Handshake preamble** (per `skills/subagent-env-handshake/SKILL.md` — the `code-conductor` subagent is tree-dependent and may make tree-grounded claims):
 
