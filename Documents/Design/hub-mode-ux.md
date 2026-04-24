@@ -252,3 +252,29 @@ D29: The original single stopping rule prevented false completion claims but not
 |------|--------|
 | `.github/agents/Code-Conductor.agent.md` | Added Continuation Contract inside `<critical_rules>` with 3-step escalation ladder and 5 key continuation checkpoints; expanded `<stopping_rules>` from 1 rule to 3 hard stop rules covering silent abandonment |
 | `.github/scripts/Tests/continuation-contract.Tests.ps1` | Added contract test validating continuation contract language exists inside `<critical_rules>`, key checkpoint coverage, and expanded stopping rules |
+
+---
+
+## Issue #413 Additions: Skip Scope Classification on Full-Upstream-Complete Resume
+
+### Summary
+
+Issue #413 fixes a UX gap in hub-mode `/orchestrate` resume paths. When smart resume already detects that all upstream phases are complete and a plan exists, Code-Conductor was still prompting the user with the scope-classification ask before proceeding to implementation. This is redundant: the tier and plan were established in a prior session, and the resume path already proves the issue went through the full pipeline.
+
+### Design Decisions
+
+| ID | Decision | Details |
+|----|----------|---------|
+| D30 | Skip Scope Classification on Full-Upstream-Complete Resume | When smart resume detects that ALL three of `<!-- experience-owner-complete-{ID} -->`, `<!-- design-phase-complete-{ID} -->`, and `<!-- plan-issue-{ID} -->` are present in the issue comments, the Scope Classification Gate is skipped entirely. The pipeline tier and plan were established in a prior session; asking again is redundant and disrupts the resume UX. Code-Conductor proceeds directly to the Hub Execution Workflow at step 4 (D9 Checkpoint). For multi-issue bundles, this skip applies only when ALL bundled issues satisfy the full-completion condition; any issue missing one or more of the three required markers still requires classification. The classification ask, user override, and escalation-check paths remain unchanged for fresh hub-mode entries and partial-resume paths. |
+
+### Rationale
+
+D30: The scope-classification ask was designed for fresh hub-mode entries where the pipeline tier is genuinely unknown. On a full-upstream-complete resume path, smart resume has already proven: (1) Experience-Owner ran and completed, (2) Solution-Designer ran and completed, and (3) Issue-Planner ran and a durable plan comment exists. All three together are definitive evidence the issue went through the full pipeline in a prior session. Asking the user to re-classify at this point provides no benefit — the tier is already full, the plan is already approved, and D9 (the legitimate prior-session checkpoint) is available for model-switch decisions if needed. Skipping classification keeps the resume path consistent with smart resume's intent: detect completed prior-session work and proceed from the correct resume point without unnecessary interruption.
+
+### Files Changed (Issue #413)
+
+| File | Change |
+|------|--------|
+| `agents/Code-Conductor.agent.md` | Added "Skip scope classification when" condition at the top of the Scope Classification Gate section; updated Multi-Issue Bundling step 2 to apply the skip condition per-issue before classification |
+| `Documents/Design/hub-mode-ux.md` | Added this design section documenting decision D30 |
+| `.github/scripts/Tests/scope-classification-resume-skip-contract.Tests.ps1` | Added contract test locking the skip-on-full-upstream-completion wording in Code-Conductor and hub-mode-ux design doc |
