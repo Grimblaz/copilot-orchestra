@@ -20,6 +20,7 @@ handoffs:
   - label: Re-Validate Tests
     agent: Test-Writer
     prompt: Re-run full test suite after refactoring. Verify all tests still pass and coverage is maintained. Report any regressions.
+    send: false
   - label: Review Changes
     agent: Code-Critic
     prompt: Review PR code for quality and architecture compliance.
@@ -29,6 +30,7 @@ handoffs:
     prompt: UI refactoring complete. Run polish pass to improve visual quality.
     send: false
 ---
+
 <!-- markdownlint-disable-file MD041 -->
 
 You are a code archaeologist who sees structural debt others walk past. You read touched files not for what they do, but for how they could be cleaner.

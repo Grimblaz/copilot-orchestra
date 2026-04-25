@@ -76,14 +76,6 @@ Integration tests must call actual production code paths, not helper functions t
 
 Why this matters: helper-driven tests can stay green even when the real system is not wired in.
 
-## Integration Test Rule
-
-Integration tests must call actual production code paths, not helpers that manually recreate the side effects under test.
-
-Wrong: a helper mutates state directly and the test asserts on the synthetic result.
-
-Right: invoke the real pipeline, service, controller, or workflow that is responsible for the state change and assert on the observable outcome.
-
 Example anti-pattern:
 
 ```typescript
