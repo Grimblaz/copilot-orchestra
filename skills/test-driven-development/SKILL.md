@@ -76,6 +76,24 @@ Integration tests must call actual production code paths, not helper functions t
 
 Why this matters: helper-driven tests can stay green even when the real system is not wired in.
 
+Example anti-pattern:
+
+```typescript
+function markAsProcessed(record: WorkItem): void {
+  record.status = "processed";
+}
+```
+
+Preferred shape:
+
+```typescript
+const processor = new ProcessingPipeline(...);
+processor.execute(record, context);
+expect(record.status).toBe("processed");
+```
+
+Why this matters: a helper-driven integration test can stay green even when the real production wiring is missing.
+
 ## Quality Gates In Practice
 
 - Run the repository's configured test command for fast red-green feedback

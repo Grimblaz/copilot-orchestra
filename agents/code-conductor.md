@@ -103,11 +103,13 @@ When the shared body tells users to pause and resume with `/implement`, Claude C
 
 Phase 3 Claude specialist shells available for Code-Conductor dispatch are `code-critic`, `code-review-response`, and `experience-owner`.
 
+Phase 4 Claude specialist shells available for Code-Conductor dispatch are `code-smith`, `test-writer`, `refactor-specialist`, and `doc-keeper`.
+
 When a required specialist shell for a planned step does not exist yet, use the exact D1 fallback labels below:
 
 1. Hand off this step to Copilot, resume in Claude after
 2. Attempt inline in the main conversation (no specialist dispatch)
-3. Pause here - wait for Phase 4 specialist to land
+3. Pause here - wait for the missing specialist shell to land
 
 ## Persistence differences
 
