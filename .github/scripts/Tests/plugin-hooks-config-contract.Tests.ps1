@@ -9,6 +9,8 @@ Describe 'plugin hooks config contract' -Tag 'unit' {
         $script:ClaudeHooksConfig = Join-Path $script:RepoRoot 'hooks\hooks.json'
         $script:RootPluginManifest = Join-Path $script:RepoRoot 'plugin.json'
         $script:ClaudePluginManifest = Join-Path $script:RepoRoot '.claude-plugin\plugin.json'
+        $script:CopilotMarketplaceManifest = Join-Path $script:RepoRoot '.github\plugin\marketplace.json'
+        $script:ClaudeMarketplaceManifest = Join-Path $script:RepoRoot '.claude-plugin\marketplace.json'
         $script:SessionStartScript = 'skills/session-startup/scripts/session-cleanup-detector.ps1'
         $script:ReleaseHygieneScript = 'skills/plugin-release-hygiene/scripts/plugin-release-hygiene-hook.ps1'
         $script:SessionStartMatcher = 'startup'
@@ -123,5 +125,10 @@ Describe 'plugin hooks config contract' -Tag 'unit' {
 
         $rootManifest.hooks | Should -Be 'hooks.json'
         $claudeManifest.hooks | Should -Be './hooks/hooks.json'
+    }
+
+    It 'keeps both marketplace manifests valid JSON' {
+        { Get-JsonFile -Path $script:CopilotMarketplaceManifest } | Should -Not -Throw
+        { Get-JsonFile -Path $script:ClaudeMarketplaceManifest } | Should -Not -Throw
     }
 }

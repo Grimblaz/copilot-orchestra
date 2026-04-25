@@ -8,7 +8,7 @@ description: "Maintainer-side version-bump guardrail and Claude startup drift ba
 
 # Plugin Release Hygiene
 
-Reusable guidance for preventing plugin entry-point changes from shipping without a version bump and for keeping the Claude-side update surface explicit. The maintainer-side trigger now lives in the plugin-distributed `PostToolUse` hook declared in `hooks/hooks.json` and runs `skills/plugin-release-hygiene/scripts/plugin-release-hygiene-hook.ps1`.
+Reusable guidance for preventing plugin entry-point changes from shipping without a version bump and for keeping the Claude-side update surface explicit. The maintainer-side trigger now lives in the plugin-distributed `PostToolUse` hooks declared in `hooks/hooks.json` for Claude and `hooks.json` for Copilot, both of which run `skills/plugin-release-hygiene/scripts/plugin-release-hygiene-hook.ps1`.
 
 ## When to Use
 

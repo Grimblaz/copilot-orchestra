@@ -64,8 +64,8 @@ Describe 'plugin release hygiene hook contract' -Tag 'unit' {
 
             Set-Content -Path (Join-Path $Root 'plugin.json') -Value "{`"version`":`"$Version`"}" -Encoding UTF8
             Set-Content -Path (Join-Path $Root '.claude-plugin\plugin.json') -Value "{`"version`":`"$Version`"}" -Encoding UTF8
-            Set-Content -Path (Join-Path $Root '.claude-plugin\marketplace.json') -Value "{`"metadata`":{`"version`":`"$Version`"},`"plugins``:[{`"version`":`"$Version`"}]}" -Encoding UTF8
-            Set-Content -Path (Join-Path $Root '.github\plugin\marketplace.json') -Value "{`"metadata`":{`"version`":`"$Version`"},`"plugins``:[{`"version`":`"$Version`"}]}" -Encoding UTF8
+            Set-Content -Path (Join-Path $Root '.claude-plugin\marketplace.json') -Value "{`"metadata`":{`"version`":`"$Version`"},`"plugins`": [{`"version`":`"$Version`"}]}" -Encoding UTF8
+            Set-Content -Path (Join-Path $Root '.github\plugin\marketplace.json') -Value "{`"metadata`":{`"version`":`"$Version`"},`"plugins`": [{`"version`":`"$Version`"}]}" -Encoding UTF8
             Set-Content -Path (Join-Path $Root 'README.md') -Value "[![Version](https://img.shields.io/badge/version-v$Version-blue.svg)](../../releases)" -Encoding UTF8
         }
 

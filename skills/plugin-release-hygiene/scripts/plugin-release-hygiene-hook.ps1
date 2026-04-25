@@ -210,25 +210,6 @@ function Get-PRHStatePath {
     }
 }
 
-function Get-PRHPluginVersion {
-    param(
-        [Parameter(Mandatory)]
-        [string]$JsonContent
-    )
-
-    try {
-        $parsed = $JsonContent | ConvertFrom-Json -ErrorAction Stop
-        if ([string]::IsNullOrWhiteSpace($parsed.version)) {
-            return $null
-        }
-
-        return [version]([string]$parsed.version)
-    }
-    catch {
-        return $null
-    }
-}
-
 function Get-PRHManagedVersionState {
     param(
         [Parameter(Mandatory)]
@@ -246,7 +227,7 @@ function Get-PRHManagedVersionState {
             @{ Path = 'README.md'; Pattern = 'version-v([\d.]+)-blue'; Expected = 1 }
         )
 
-        $versions = New-Object System.Collections.Generic.List[string]
+        $versions = [System.Collections.Generic.List[string]]::new()
         foreach ($entry in $paths) {
             $content = if ([string]::IsNullOrWhiteSpace($GitRef)) {
                 $fullPath = Join-Path $RepoRoot $entry.Path
@@ -257,7 +238,7 @@ function Get-PRHManagedVersionState {
                 [System.IO.File]::ReadAllText($fullPath)
             }
             else {
-                $gitContent = (& git show "$GitRef`:$($entry.Path)" 2>$null)
+                $gitContent = (& git show "${GitRef}:$($entry.Path)" 2>$null)
                 if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($gitContent)) {
                     return $null
                 }
@@ -266,7 +247,7 @@ function Get-PRHManagedVersionState {
             }
 
             $versionMatches = [regex]::Matches($content, $entry.Pattern)
-            if ($versionMatches.Count -ne $entry.Expected) {
+            if ($versionMatches.Count -lt $entry.Expected) {
                 return $null
             }
 
@@ -369,10 +350,6 @@ if (-not $payload) {
     exit 0
 }
 
-if (Test-PRHVersionAlreadyBumped -RepoRoot $repoRoot) {
-    exit 0
-}
-
 $targetPaths = @()
 if (-not [string]::IsNullOrWhiteSpace($payload.tool_input.file_path)) {
     $targetPaths += [string]$payload.tool_input.file_path
@@ -400,6 +377,10 @@ if ($entryPaths.Count -eq 0) {
 }
 
 $relativePath = $entryPaths[0]
+
+if (Test-PRHVersionAlreadyBumped -RepoRoot $repoRoot) {
+    exit 0
+}
 
 $keyingInfo = Get-PRHKeyingInfo -Payload $payload
 $statePath = Get-PRHStatePath -RepoRoot $repoRoot -Slug $keyingInfo.slug
