@@ -244,7 +244,7 @@ Final fallback — manual screenshot paste:
                 Name                        = 'research-agent'
                 BodyPointer                 = 'agents/Research-Agent.agent.md'
                 RequiredLiteralAnnouncement = ''
-                RequiresHeadingBijection    = $false
+                RequiresHeadingBijection    = $true
             }
             [pscustomobject]@{
                 Name                        = 'specification'
@@ -256,6 +256,7 @@ Final fallback — manual screenshot paste:
 
         $script:CanonicalStepZero = & $script:GetSectionBody -Content (Get-Content -Path (Join-Path $script:AgentsDirectory 'code-critic.md') -Raw -ErrorAction Stop) -Heading '## Step 0: Environment Handshake Verification'
         $script:BrowserToolsDesignDocument = & $script:GetDocumentState -Path (Join-Path $script:RepoRoot 'Documents/Design/claude-browser-tools.md')
+        $script:PolishCommandDocument = & $script:GetDocumentState -Path (Join-Path $script:RepoRoot 'commands/polish.md')
         $script:DesignDocumentCe6Literal = & $script:GetMarkedFencedTextBlock -Content $script:BrowserToolsDesignDocument.Content -MarkerName 'ce6-literal'
         $script:ThisTestDocument = & $script:GetDocumentState -Path (Join-Path $script:RepoRoot '.github/scripts/Tests/specialist-shell-parity.Tests.ps1')
         $script:UiIteratorCe6LiteralSource = & $script:GetSingleQuotedHereStringBody -Content $script:ThisTestDocument.Content -VariableName '$script:UiIteratorCe6Literal'
@@ -375,19 +376,22 @@ Final fallback — manual screenshot paste:
         }
     }
 
-    It 'keeps the CE6 literal byte-identical across the design doc, the UI-Iterator shell, and the parity fixture' {
+    It 'keeps the CE6 literal locked across the design doc, the UI-Iterator shell, the /polish command, and the parity fixture' {
         $uiIteratorShell = $script:ShellDocuments | Where-Object { $_.Name -eq 'ui-iterator' } | Select-Object -First 1
 
         $uiIteratorShell | Should -Not -BeNullOrEmpty -Because 'the UI-Iterator shell fixture must exist for CE6 parity assertions'
 
         $normalizedDesignLiteral = & $script:NormalizeContent -Content $script:DesignDocumentCe6Literal
         $normalizedShellLiteral = & $script:NormalizeContent -Content $uiIteratorShell.Ce6Literal
+        $normalizedPolishCommandContent = & $script:NormalizeContent -Content $script:PolishCommandDocument.Content
         $normalizedFixtureLiteral = & $script:NormalizeContent -Content $script:UiIteratorCe6LiteralSource
 
         $normalizedDesignLiteral | Should -Not -BeNullOrEmpty -Because 'the design doc must keep the CE6 literal inside the locked marker block'
         $normalizedShellLiteral | Should -Not -BeNullOrEmpty -Because 'the UI-Iterator shell must keep the CE6 literal inside the locked marker block'
+        $normalizedPolishCommandContent | Should -Not -BeNullOrEmpty -Because 'the /polish command document must exist for CE6 parity assertions'
         $normalizedFixtureLiteral | Should -Not -BeNullOrEmpty -Because 'the parity fixture must keep the CE6 literal inside the locked single-quoted here-string'
         $normalizedDesignLiteral | Should -Be $normalizedShellLiteral -Because 'the UI-Iterator shell CE6 block must stay byte-identical to the design doc literal after LF normalization'
+        $normalizedPolishCommandContent | Should -Match ([regex]::Escape($normalizedDesignLiteral)) -Because 'the /polish command must embed the locked CE6 literal byte-identically rather than drifting from the design contract'
         $normalizedDesignLiteral | Should -Be $normalizedFixtureLiteral -Because 'the parity fixture CE6 literal must stay byte-identical to the design doc literal after LF normalization'
     }
 }
