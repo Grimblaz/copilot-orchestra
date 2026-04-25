@@ -87,6 +87,17 @@ Describe 'plugin hooks config contract' -Tag 'unit' {
         $sessionEntries = Get-HookEntries -HooksConfig $config -EventName 'SessionStart'
         $postToolEntries = Get-HookEntries -HooksConfig $config -EventName 'PostToolUse'
         $cacheLocator = Get-CopilotCacheLocator -Manifest $rootManifest
+        $requiredEscapedTokens = @(
+            '`$productDirs',
+            '`$pluginSuffix',
+            '`$paths',
+            '`$env:APPDATA',
+            '`$env:XDG_CONFIG_HOME',
+            '`$HOME',
+            '`$productDir',
+            '`$pluginRoot',
+            '`$_'
+        )
 
         $sessionEntries.Count | Should -Be 1
         $postToolEntries.Count | Should -Be 1
@@ -100,6 +111,10 @@ Describe 'plugin hooks config contract' -Tag 'unit' {
         $postToolEntries[0].hooks[0].command | Should -Match ([regex]::Escape("`$pluginSuffix = '$cacheLocator'"))
         $sessionEntries[0].hooks[0].command | Should -Match ([regex]::Escape($script:SessionStartScript))
         $postToolEntries[0].hooks[0].command | Should -Match ([regex]::Escape($script:ReleaseHygieneScript))
+        foreach ($token in $requiredEscapedTokens) {
+            $sessionEntries[0].hooks[0].command | Should -Match ([regex]::Escape($token))
+            $postToolEntries[0].hooks[0].command | Should -Match ([regex]::Escape($token))
+        }
     }
 
     It 'declares format-appropriate hooks in both plugin manifests' {
