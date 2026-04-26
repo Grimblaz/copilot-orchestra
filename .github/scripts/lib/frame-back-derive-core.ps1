@@ -142,12 +142,36 @@ function Get-FBDGitHubJson {
         [Parameter(Mandatory)][string]$Context
     )
 
-    $output = & $GhCliPath @Arguments 2>&1
-    $exitCode = $LASTEXITCODE
+    $stderrPath = [System.IO.Path]::GetTempFileName()
+    try {
+        $output = & $GhCliPath @Arguments 2> $stderrPath
+        $commandSucceeded = $?
+        $exitCode = $LASTEXITCODE
+        $rawError = if (Test-Path -LiteralPath $stderrPath) { [string](Get-Content -Raw -Path $stderrPath -ErrorAction SilentlyContinue) } else { '' }
+    }
+    finally {
+        Remove-Item -Force -LiteralPath $stderrPath -ErrorAction SilentlyContinue
+    }
+
     $rawOutput = (@($output) | ForEach-Object { $_.ToString() }) -join [Environment]::NewLine
 
+    if ($null -eq $exitCode) {
+        $exitCode = if ($commandSucceeded) { 0 } else { 1 }
+    }
+    elseif (-not $commandSucceeded -and [int]$exitCode -eq 0) {
+        $exitCode = 1
+    }
+
     if ($exitCode -ne 0) {
-        $message = $rawOutput.Trim()
+        $messageParts = @()
+        if (-not [string]::IsNullOrWhiteSpace($rawError)) {
+            $messageParts += $rawError.Trim()
+        }
+        if (-not [string]::IsNullOrWhiteSpace($rawOutput)) {
+            $messageParts += $rawOutput.Trim()
+        }
+
+        $message = ($messageParts -join [Environment]::NewLine).Trim()
         if ([string]::IsNullOrWhiteSpace($message)) {
             $message = "$Context exited with code $exitCode."
         }
@@ -295,6 +319,18 @@ function Resolve-FBDLinkedIssue {
     return $null
 }
 
+function Get-FBDLinkedIssueSourceLabel {
+    param($LinkedIssue)
+
+    $source = [string](Get-FBDPropertyValue -InputObject $LinkedIssue -Name 'Source')
+    switch ($source) {
+        'closingIssuesReferences' { return 'closingIssuesReferences' }
+        'pr-body' { return 'PR body fallback' }
+        'commit-message' { return 'commit-message fallback' }
+        default { return 'unknown linked-issue source' }
+    }
+}
+
 function Get-FBDPortOrder {
     param([Parameter(Mandatory)][string]$PortsDir)
 
@@ -379,34 +415,35 @@ function Get-FBDPortCredit {
     if ($LinkedIssue) {
         $issueNumber = [int]$LinkedIssue.Number
     }
+    $issueSourceLabel = Get-FBDLinkedIssueSourceLabel -LinkedIssue $LinkedIssue
 
     switch ($Port) {
         'experience' {
             switch ($MetricsVersion) {
                 '1' {
                     if ($issueNumber) {
-                        return New-FBDCredit -Port $Port -Status 'passed' -Evidence ("Issue #{0} was resolved from closingIssuesReferences for this v1-era PR." -f $issueNumber)
+                        return New-FBDCredit -Port $Port -Status 'passed' -Evidence ("Issue #{0} was resolved from {1} for this v1-era PR." -f $issueNumber, $issueSourceLabel)
                     }
 
                     return New-FBDCredit -Port $Port -Status 'inconclusive' -Evidence 'The v1 fixture does not resolve a linked issue for this PR.'
                 }
                 '2' {
                     if ($issueNumber) {
-                        return New-FBDCredit -Port $Port -Status 'passed' -Evidence ("Issue #{0} was resolved from closingIssuesReferences for this v2-era PR." -f $issueNumber)
+                        return New-FBDCredit -Port $Port -Status 'passed' -Evidence ("Issue #{0} was resolved from {1} for this v2-era PR." -f $issueNumber, $issueSourceLabel)
                     }
 
                     return New-FBDCredit -Port $Port -Status 'inconclusive' -Evidence 'The v2 fixture does not resolve a linked issue for this PR.'
                 }
                 '3' {
                     if ($issueNumber) {
-                        return New-FBDCredit -Port $Port -Status 'passed' -Evidence ("Linked issue #{0} resolved from closingIssuesReferences for a v3-era PR." -f $issueNumber)
+                        return New-FBDCredit -Port $Port -Status 'passed' -Evidence ("Linked issue #{0} resolved from {1} for a v3-era PR." -f $issueNumber, $issueSourceLabel)
                     }
 
                     return New-FBDCredit -Port $Port -Status 'inconclusive' -Evidence 'The v3 fixture does not resolve a linked issue for this PR.'
                 }
                 default {
                     if ($issueNumber) {
-                        return New-FBDCredit -Port $Port -Status 'passed' -Evidence ("Linked issue #{0} resolved from closingIssuesReferences for a post-thin/fat pipeline PR." -f $issueNumber)
+                        return New-FBDCredit -Port $Port -Status 'passed' -Evidence ("Linked issue #{0} resolved from {1} for a post-thin/fat pipeline PR." -f $issueNumber, $issueSourceLabel)
                     }
 
                     return New-FBDCredit -Port $Port -Status 'inconclusive' -Evidence 'The historical fixture does not resolve a linked issue for this PR.'

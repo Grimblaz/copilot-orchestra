@@ -108,6 +108,45 @@ exit 99
         $script:LibFile | Should -Exist
     }
 
+    It 'parses successful gh JSON stdout when stderr contains a warning' {
+        $workDir = & $script:NewWorkDir
+        $mockPath = Join-Path $workDir 'gh-warning.ps1'
+        @"
+param()
+if (`$args.Count -ge 1 -and `$args[0] -eq 'json') {
+    `$ErrorActionPreference = 'Continue'
+    Write-Error 'gh warning on stderr'
+    Write-Output '{"ok":true,"number":451}'
+    exit 0
+}
+Write-Error "Mock gh: unsupported command `$(`$args -join ' ')"
+exit 99
+"@ | Set-Content -Path $mockPath -Encoding UTF8
+
+        $response = Get-FBDGitHubJson -GhCliPath $mockPath -Arguments @('json') -Context 'mock gh warning'
+
+        $response['ok'] | Should -Be $true
+        $response['number'] | Should -Be 451
+    }
+
+    It 'labels experience evidence with PR body fallback for metrics_version <MetricsVersion>' -ForEach @(
+        @{ MetricsVersion = '1' }
+        @{ MetricsVersion = '2' }
+        @{ MetricsVersion = '3' }
+        @{ MetricsVersion = '4' }
+    ) {
+        param($MetricsVersion)
+
+        $credit = Get-FBDPortCredit -Port 'experience' -MetricsVersion $MetricsVersion -LinkedIssue ([ordered]@{
+                Number = 123
+                Source = 'pr-body'
+            }) -MetricsBlock ("metrics_version: {0}" -f $MetricsVersion)
+
+        $credit.status | Should -Be 'passed'
+        $credit.evidence | Should -Match 'PR body fallback'
+        $credit.evidence | Should -Not -Match 'closingIssuesReferences'
+    }
+
     It 'replays metrics_version <MetricsVersion> fixture input for PR <PrNumber>' -ForEach $script:VersionFixtures {
         param($MetricsVersion, $PrNumber, $FixtureFile)
 

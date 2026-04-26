@@ -164,7 +164,7 @@ The ranking is further constrained by current design intent:
 
 - Only `stable` ports are eligible.
 - Ports with zero score are ignored.
-- `ce-gate-*` ports with inconclusive-only ambiguity are intentionally kept out of the recommendation ranking so CE surface ambiguity is visible historically without dominating the action list.
+- `ce-gate-*` ports with any inconclusive count are intentionally kept out of the recommendation ranking, even when missing or skipped counts are also present; they remain visible in the report tables so CE surface ambiguity is visible historically without dominating the action list.
 - `tbd-decision-pending` ports are listed separately under `tbd_ports` with pre-pivot and post-pivot totals and an explicit excluded reason.
 
 The recommendation output is therefore a maintainer aid for triage and follow-up prioritization. It does not trigger hooks, mutate PRs, or escalate automatically.

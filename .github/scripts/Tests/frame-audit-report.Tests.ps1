@@ -43,8 +43,6 @@ Describe 'Invoke-FrameAuditReport' {
                 [ordered]@{
                     number   = [int]$fixture.number
                     mergedAt = [string]$fixture.mergedAt
-                    title    = [string]$fixture.title
-                    body     = [string]$fixture.body
                 }
             }
 
@@ -428,6 +426,47 @@ exit 99
 
     It 'ships the in-process frame-audit-report core library' {
         $script:LibFile | Should -Exist
+    }
+
+    It 'requests only PR selection fields and tolerates successful gh list stderr warnings' {
+        if (-not (& $script:RequireImplementation)) {
+            return
+        }
+
+        $workDir = & $script:NewWorkDir
+        $argsFile = Join-Path $workDir 'pr-list-args.txt'
+        $mockPath = Join-Path $workDir 'gh-list-warning.ps1'
+        @"
+param()
+if (`$args.Count -ge 2 -and `$args[0] -eq 'pr' -and `$args[1] -eq 'list') {
+    (`$args -join [Environment]::NewLine) | Set-Content -Path '$($argsFile -replace "'", "''")' -Encoding UTF8
+    `$jsonIndex = [array]::IndexOf(`$args, '--json')
+    if (`$jsonIndex -lt 0) {
+        Write-Error 'Missing --json argument.'
+        exit 87
+    }
+
+    if (`$args[`$jsonIndex + 1] -ne 'number,mergedAt') {
+        Write-Error "Unexpected --json fields: `$(`$args[`$jsonIndex + 1])"
+        exit 88
+    }
+
+    `$ErrorActionPreference = 'Continue'
+    Write-Error 'gh warning on stderr'
+    Write-Output '[{"number":451,"mergedAt":"2026-04-25T00:00:00Z"},{"number":449,"mergedAt":"2026-04-24T00:00:00Z"}]'
+    exit 0
+}
+Write-Error "Mock gh: unsupported command `$(`$args -join ' ')"
+exit 99
+"@ | Set-Content -Path $mockPath -Encoding UTF8
+
+        $selected = Get-FARSelectedPrNumbers -PrCount 2 -PrList ([int[]]@()) -Repo 'Grimblaz/agent-orchestra' -GhCliPath $mockPath
+
+        ($selected -join ',') | Should -Be '451,449'
+        $argsText = Get-Content -Raw -Path $argsFile
+        $argsText | Should -Match '(?m)^number,mergedAt\r?$'
+        $argsText | Should -Not -Match '(?m)^title\r?$'
+        $argsText | Should -Not -Match '(?m)^body\r?$'
     }
 
     It 'aggregates a fixture window containing metrics_version <MetricsVersion>' -ForEach $script:VersionFixtures {

@@ -29,38 +29,6 @@ function Get-FARArray {
     return @($Value)
 }
 
-function Get-FARGitHubJson {
-    param(
-        [Parameter(Mandatory)][string]$GhCliPath,
-        [Parameter(Mandatory)][string[]]$Arguments,
-        [Parameter(Mandatory)][string]$Context
-    )
-
-    $output = & $GhCliPath @Arguments 2>&1
-    $exitCode = $LASTEXITCODE
-    $rawOutput = (@($output) | ForEach-Object { $_.ToString() }) -join [Environment]::NewLine
-
-    if ($exitCode -ne 0) {
-        $message = $rawOutput.Trim()
-        if ([string]::IsNullOrWhiteSpace($message)) {
-            $message = "$Context exited with code $exitCode."
-        }
-
-        throw "$Context failed: $message"
-    }
-
-    if ([string]::IsNullOrWhiteSpace($rawOutput)) {
-        throw "$Context returned no output."
-    }
-
-    try {
-        return ($rawOutput | ConvertFrom-Json -AsHashtable)
-    }
-    catch {
-        throw "$Context returned invalid JSON: $($_.Exception.Message)"
-    }
-}
-
 function Get-FARBucketNames {
     return @('passed', 'failed', 'N/A', 'skipped', 'inconclusive', 'missing')
 }
@@ -154,14 +122,14 @@ function Get-FARSelectedPrNumbers {
         '--limit',
         [string]$limit,
         '--json',
-        'number,mergedAt,title,body'
+        'number,mergedAt'
     )
 
     if ($PSBoundParameters.ContainsKey('Since')) {
         $arguments += @('--search', ('merged:>={0}' -f $Since.ToString('yyyy-MM-dd')))
     }
 
-    $response = Get-FARGitHubJson -GhCliPath $GhCliPath -Arguments $arguments -Context 'gh pr list'
+    $response = Get-FBDGitHubJson -GhCliPath $GhCliPath -Arguments $arguments -Context 'gh pr list'
     $entries = @(Get-FARArray $response)
     if (@($entries).Count -eq 0) {
         return @()
