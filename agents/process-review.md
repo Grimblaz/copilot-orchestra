@@ -83,7 +83,7 @@ The full tool-agnostic methodology for this role lives at `agents/Process-Review
 
 **Precondition (load this before shared-body role work):** after the session-startup protocol completes and after the one-time Step 0 environment handshake verification runs, but before producing any substantive user-facing text, making any other role-work tool call, or dispatching a subagent, load `agents/Process-Review.agent.md` with the `Read` tool. The only exceptions to this ordering are session-startup's required actions and the Step 0 live-git verification/tooling explicitly required above. The shared body is the contract for this role — acting without it means the shell is diverging from Copilot behavior. If the read fails, stop and surface the failure rather than guessing at the methodology.
 
-After loading, follow everything under its `## Core Principles`, `## Overview`, `## 🚨 File Modification Restrictions 🚨`, `## Core Responsibilities`, `## When to Use This Agent`, `## Analysis Framework`, and `## Skills Reference` sections.
+After loading, follow everything under its `## Core Principles`, `## Overview`, `## 🚨 File Modification Restrictions 🚨`, `## Core Responsibilities`, `## When to Use This Agent`, `## Analysis Framework`, `## CE Gate Defect Analysis`, `## Calibration Analysis - Actionable Signals ({N} issues, effective n={X:.1f})`, `## Calibration Analysis - No Actionable Signals ({N} issues, effective n={X:.1f})`, `## Upstream Gotcha Summary`, `## Root Cause Analysis & Guardrail Proposals ({N} patterns analyzed)`, and `## Skills Reference` sections.
 
 The Copilot-specific tool names in that file map to Claude Code equivalents below.
 
@@ -96,16 +96,17 @@ The Copilot-specific tool names in that file map to Claude Code equivalents belo
 | `edit` | `Edit`, `Write` confined to `agents/*.agent.md`, `.github/instructions/*.instructions.md`, `.copilot-tracking/templates/`, and `.copilot-tracking/reviews/`; create the tracking directories first with `mkdir -p` when they do not already exist |
 | `search` | `Grep`, `Glob` |
 | `web` | `WebFetch` for known URLs |
-| `vscode/memory` | Read the parent Code-Conductor dispatch first, then fall back to the latest `<!-- plan-issue-{ID} -->` and `<!-- design-issue-{ID} -->` issue comments when needed |
-| calibration scripts | `pwsh` via `Bash` |
+| `vscode/memory` | Per `SMC-01` and `SMC-03`, read the parent Code-Conductor dispatch first, then fall back to the latest-comment-wins `<!-- plan-issue-{ID} -->` and `<!-- design-issue-{ID} -->` issue comments when needed |
+| calibration scripts | `pwsh` via `Bash`; raw calibration snapshots are per-dispatch under `SMC-09` and become durable only through PR-body pipeline metrics |
 
 ## Persistence differences
 
-Claude Code does not use `vscode/memory` as a Claude-only persistence layer for this specialist.
+Per `SMC-01` and `SMC-03`, Claude Code does not use `vscode/memory` as a Claude-only persistence layer for this specialist.
 
 - Treat the parent Code-Conductor dispatch as the first source of retrospective scope, plan context, and design context.
 - Track 2 CE Gate dispatch still comes from Code-Conductor; when invoked that way, honor the structured input and output contracts defined in the shared body instead of running a broader retrospective.
-- If parent context is incomplete, read the latest `<!-- plan-issue-{ID} -->` and `<!-- design-issue-{ID} -->` issue comments before falling back to the current issue body or other durable artifacts.
+- If parent context is incomplete, read the latest-comment-wins `<!-- plan-issue-{ID} -->` and `<!-- design-issue-{ID} -->` issue comments before falling back to the current issue body or other durable artifacts.
+- Treat calibration and prosecution-depth snapshots as per-dispatch under `SMC-09`; durable metrics persistence remains Code-Conductor/PR-body-owned.
 - Durable marker writes remain Code-Conductor-owned; Process-Review consumes those artifacts but does not create new handoff markers on its own.
 
 ## Invocation

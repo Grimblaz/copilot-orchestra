@@ -83,7 +83,7 @@ The full tool-agnostic methodology for this role lives at `agents/Research-Agent
 
 **Precondition (load this before shared-body role work):** after the session-startup protocol completes and after the one-time Step 0 environment handshake verification runs, but before producing any substantive user-facing text, making any other role-work tool call, or dispatching a subagent, load `agents/Research-Agent.agent.md` with the `Read` tool. The only exceptions to this ordering are session-startup's required actions and the Step 0 live-git verification/tooling explicitly required above. The shared body is the contract for this role — acting without it means the shell is diverging from Copilot behavior. If the read fails, stop and surface the failure rather than guessing at the methodology.
 
-After loading, follow everything under its `## Core Principles`, `## Role Definition`, `## User Interaction Protocol`, `## Operational Constraints`, `## File Deletion Procedure`, `## File Creation and Editing — CRITICAL RULES`, `## Information Management Requirements`, `## Research Standards`, `## Research Documentation Standards`, `## Research Lifecycle`, `## Research Completion Criteria`, `## Exception Handling`, `## Completion and Handoff`, `## Quality and Accuracy Standards`, `## Scope Management`, and `## Skills Reference` sections.
+After loading, follow everything under its `## Core Principles`, `## Role Definition`, `## User Interaction Protocol`, `## Operational Constraints`, `## File Deletion Procedure`, `## File Creation and Editing — CRITICAL RULES`, `## Information Management Requirements`, `## Research Standards`, `## Research Documentation Standards`, `## Research Executed`, `## Key Discoveries`, `## Recommended Approach`, `## Implementation Guidance`, `## Research Lifecycle`, `## Research Completion Criteria`, `## Exception Handling`, `## Completion and Handoff`, `## Quality and Accuracy Standards`, `## Scope Management`, and `## Skills Reference` sections.
 
 The Copilot-specific tool names in that file map to Claude Code equivalents below.
 
@@ -98,10 +98,10 @@ The Copilot-specific tool names in that file map to Claude Code equivalents belo
 
 ## Persistence differences
 
-Claude Code does not use `vscode/memory` as a persistence layer for this specialist, and research dispatches typically fit within roughly 50-200K input tokens before a durable artifact is needed.
+Survival: `within-worktree`; contract: `SMC-13` (`.copilot-tracking/` artifacts). Claude Code does not use `vscode/memory` as a persistence layer for this specialist, and research dispatches typically fit within roughly 50-200K input tokens before a worktree-backed artifact is needed; the existing write path remains `.copilot-tracking/research/{YYYYMMDD-name}-research.md`, available to tools sharing this checkout and not a separate durable cross-tool store.
 
 - Treat the parent Issue-Planner or Solution-Designer dispatch as the first source of research scope and constraints.
-- Persist durable research output at `.copilot-tracking/research/{YYYYMMDD-name}-research.md` when the investigation needs to survive conversation boundaries or support handoff.
+- Persist worktree-backed research output at `.copilot-tracking/research/{YYYYMMDD-name}-research.md` when the investigation needs to survive conversation boundaries or support same-checkout handoff.
 - On first use, create `.copilot-tracking/research/` before writing the artifact.
 
 ## Invocation
