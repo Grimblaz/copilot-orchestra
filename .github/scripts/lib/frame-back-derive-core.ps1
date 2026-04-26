@@ -117,9 +117,13 @@ function Get-FBDSectionBlock {
 
 function Test-FBDSectionBoolean {
     param(
-        [Parameter(Mandatory)][string]$SectionBlock,
+        [Parameter(Mandatory)][AllowEmptyString()][string]$SectionBlock,
         [Parameter(Mandatory)][string]$Name
     )
+
+    if ([string]::IsNullOrWhiteSpace($SectionBlock)) {
+        return $false
+    }
 
     $pattern = '(?m)^[ \t]+' + [regex]::Escape($Name) + '\s*:\s*true\s*$'
     return [regex]::IsMatch($SectionBlock, $pattern)
@@ -321,6 +325,10 @@ function Resolve-FBDLinkedIssue {
 
 function Get-FBDLinkedIssueSourceLabel {
     param($LinkedIssue)
+
+    if ($null -eq $LinkedIssue) {
+        return 'unknown linked-issue source'
+    }
 
     $source = [string](Get-FBDPropertyValue -InputObject $LinkedIssue -Name 'Source')
     switch ($source) {

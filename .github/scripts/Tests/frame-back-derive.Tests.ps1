@@ -147,6 +147,16 @@ exit 99
         $credit.evidence | Should -Not -Match 'closingIssuesReferences'
     }
 
+    It 'keeps review inconclusive when a v4 metrics block omits stages_run' {
+        $credit = Get-FBDPortCredit -Port 'review' -MetricsVersion '4' -MetricsBlock @'
+metrics_version: 4
+issue_number: 447
+'@
+
+        $credit.status | Should -Be 'inconclusive'
+        $credit.evidence | Should -Match 'does not encode enough review detail'
+    }
+
     It 'replays metrics_version <MetricsVersion> fixture input for PR <PrNumber>' -ForEach $script:VersionFixtures {
         param($MetricsVersion, $PrNumber, $FixtureFile)
 
