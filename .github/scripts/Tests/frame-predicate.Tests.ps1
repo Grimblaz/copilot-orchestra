@@ -17,7 +17,7 @@ Describe 'ConvertTo-FVPredicate' -Tag 'unit' {
 
     BeforeAll {
         $script:RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '../../..')).Path
-        $script:LibFile = Join-Path $script:RepoRoot '.github\scripts\lib\frame-predicate-core.ps1'
+        $script:LibFile = Join-Path $script:RepoRoot '.github/scripts/lib/frame-predicate-core.ps1'
         . $script:LibFile
 
         $script:GetAstKinds = {
@@ -186,6 +186,17 @@ Describe 'ConvertTo-FVPredicate' -Tag 'unit' {
             $kinds | Should -Contain 'Comparison'
             $values | Should -Contain 'adapter.kind'
             $values | Should -Contain 'metadata.priority'
+        }
+
+        It 'does not perform semantic field validation in parse-only mode' {
+            $ast = ConvertTo-FVPredicate -Predicate "unknown.future_field == 'anything'"
+
+            & $script:AssertAst -Result $ast
+            $kinds = & $script:GetAstKinds -Node $ast
+            $values = & $script:GetAstScalarValues -Node $ast
+
+            $kinds | Should -Contain 'Comparison'
+            $values | Should -Contain 'unknown.future_field'
         }
 
         It 'accepts <LiteralType> literals' -ForEach @(

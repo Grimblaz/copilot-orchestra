@@ -10,19 +10,33 @@
       frame/ports/*.yaml filename stems, with a graceful informational pass
       when the port catalog is absent.
 
-            Test-FVPredicateParse verifies applies-when predicates are parseable.
-            Invoke-FrameValidate contract tests exercise aggregate behavior across
-            the checks. Quick-validate integration tests exercise the CI aggregate wire.
+    Test-FVPredicateParse verifies applies-when predicates are parseable.
+    Invoke-FrameValidate contract tests exercise aggregate behavior across
+    the checks. Quick-validate integration tests exercise the CI aggregate wire.
 #>
 
 Describe 'Frame validator check functions' -Tag 'unit' {
 
     BeforeAll {
         $script:RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '../../..')).Path
-        $script:LibFile = Join-Path $script:RepoRoot '.github\scripts\lib\frame-validate-core.ps1'
-        $script:QuickValidateLibFile = Join-Path $script:RepoRoot '.github\scripts\lib\quick-validate-core.ps1'
+        $script:LibFile = Join-Path $script:RepoRoot '.github/scripts/lib/frame-validate-core.ps1'
+        $script:QuickValidateLibFile = Join-Path $script:RepoRoot '.github/scripts/lib/quick-validate-core.ps1'
         . $script:LibFile
         . $script:QuickValidateLibFile
+
+        $script:JoinFrameValidateTestPath = {
+            param(
+                [Parameter(Mandatory)][string]$Root,
+                [Parameter(Mandatory)][string]$RelativePath
+            )
+
+            $path = $Root
+            foreach ($part in @($RelativePath -split '[\\/]' | Where-Object { $_.Length -gt 0 })) {
+                $path = Join-Path -Path $path -ChildPath $part
+            }
+
+            return $path
+        }
 
         $script:AssertCheckResult = {
             param(
@@ -64,16 +78,16 @@ Describe 'Frame validator check functions' -Tag 'unit' {
                 [switch]$WithoutPortCatalog
             )
 
-            $agentsDir = Join-Path $Root 'agents'
-            $skillDir = Join-Path $Root 'skills\test-skill'
-            $commandsDir = Join-Path $Root 'commands'
+            $agentsDir = & $script:JoinFrameValidateTestPath -Root $Root -RelativePath 'agents'
+            $skillDir = & $script:JoinFrameValidateTestPath -Root $Root -RelativePath 'skills/test-skill'
+            $commandsDir = & $script:JoinFrameValidateTestPath -Root $Root -RelativePath 'commands'
 
             New-Item -ItemType Directory -Path $agentsDir -Force | Out-Null
             New-Item -ItemType Directory -Path $skillDir -Force | Out-Null
             New-Item -ItemType Directory -Path $commandsDir -Force | Out-Null
 
             if (-not $WithoutPortCatalog) {
-                $portsDir = Join-Path $Root 'frame\ports'
+                $portsDir = & $script:JoinFrameValidateTestPath -Root $Root -RelativePath 'frame/ports'
                 New-Item -ItemType Directory -Path $portsDir -Force | Out-Null
 
                 foreach ($port in $Ports) {
@@ -105,7 +119,7 @@ None.
                 [string[]]$AppliesWhen = @()
             )
 
-            $path = Join-Path $Root $RelativePath
+            $path = & $script:JoinFrameValidateTestPath -Root $Root -RelativePath $RelativePath
             New-Item -ItemType Directory -Path (Split-Path -Parent $path) -Force | Out-Null
 
             $lines = [System.Collections.Generic.List[string]]::new()
@@ -135,7 +149,7 @@ None.
         $script:NewQuickValidateSupportFixture = {
             param([Parameter(Mandatory)][string]$Root)
 
-            $configDir = Join-Path $Root '.github\config'
+            $configDir = & $script:JoinFrameValidateTestPath -Root $Root -RelativePath '.github/config'
             New-Item -ItemType Directory -Path $configDir -Force | Out-Null
 
             $complexityScriptPath = Join-Path $Root 'mock-measure-guidance-complexity.ps1'
@@ -147,7 +161,7 @@ None.
             return [PSCustomObject]@{
                 GuidanceComplexityScriptPath  = $complexityScriptPath
                 PSScriptAnalyzerSettingsPath = $settingsPath
-                ScriptsPath                  = Join-Path $Root '.github\scripts'
+                ScriptsPath                  = & $script:JoinFrameValidateTestPath -Root $Root -RelativePath '.github/scripts'
             }
         }
     }
@@ -163,6 +177,29 @@ None.
         It 'passes a clean adapter state' {
             $root = & $script:NewFrameValidateFixture
             & $script:AddFrameAdapter -Root $root -RelativePath 'agents\valid.agent.md' -Provides @('experience', 'review') | Out-Null
+
+            $result = Test-FVAdapterSymmetry -RootPath $root
+
+            & $script:AssertCheckResult -Result $result -ExpectedName 'AdapterSymmetry'
+            $result.Passed | Should -BeTrue
+            $result.Detail | Should -Be ''
+        }
+
+        It 'does not require every port to have an adapter declaration' {
+            $root = & $script:NewFrameValidateFixture -Ports @('experience', 'review')
+
+            $result = Test-FVAdapterSymmetry -RootPath $root
+
+            & $script:AssertCheckResult -Result $result -ExpectedName 'AdapterSymmetry'
+            $result.Passed | Should -BeTrue
+            $result.Detail | Should -Be ''
+        }
+
+        It 'uses frame port filename stems without reading YAML body names' {
+            $root = & $script:NewFrameValidateFixture -Ports @('experience')
+            $portFile = & $script:JoinFrameValidateTestPath -Root $root -RelativePath 'frame/ports/experience.yaml'
+            Set-Content -Path $portFile -Value 'name: not-the-port-name' -Encoding utf8NoBOM
+            & $script:AddFrameAdapter -Root $root -RelativePath 'agents\stem-port.agent.md' -Provides @('experience') | Out-Null
 
             $result = Test-FVAdapterSymmetry -RootPath $root
 

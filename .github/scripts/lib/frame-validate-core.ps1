@@ -21,6 +21,24 @@ function New-FVCheckResult {
     }
 }
 
+function New-FVAggregateResult {
+    param([AllowNull()][object[]]$Results)
+
+    $normalizedResults = if ($null -eq $Results) { @() } else { @($Results) }
+    $passCount = @($normalizedResults | Where-Object { $_.Passed -eq $true }).Count
+    $failCount = @($normalizedResults | Where-Object { $_.Passed -eq $false }).Count
+    $totalCount = $normalizedResults.Count
+    $exitCode = if ($failCount -gt 0) { 1 } else { 0 }
+
+    return [PSCustomObject]@{
+        Results    = [object[]]$normalizedResults
+        PassCount  = [int]$passCount
+        FailCount  = [int]$failCount
+        TotalCount = [int]$totalCount
+        ExitCode   = [int]$exitCode
+    }
+}
+
 function Resolve-FVRootPath {
     param([AllowNull()][string]$RootPath)
 
@@ -98,7 +116,7 @@ function Get-FVAdapterFiles {
         }
     }
 
-    return $files.ToArray()
+    return @($files.ToArray() | Sort-Object -Property FullName)
 }
 
 function ConvertFrom-FVYamlScalar {
@@ -400,26 +418,9 @@ function Invoke-FrameValidate {
             }
         }
 
-        $passCount = @($results | Where-Object { $_.Passed -eq $true }).Count
-        $failCount = @($results | Where-Object { $_.Passed -eq $false }).Count
-        $totalCount = $results.Count
-        $exitCode = if ($failCount -gt 0) { 1 } else { 0 }
-
-        return [PSCustomObject]@{
-            Results    = $results.ToArray()
-            PassCount  = [int]$passCount
-            FailCount  = [int]$failCount
-            TotalCount = [int]$totalCount
-            ExitCode   = [int]$exitCode
-        }
+        return (New-FVAggregateResult -Results $results.ToArray())
     }
     catch {
-        return [PSCustomObject]@{
-            Results    = @((New-FVCheckResult -Name 'FrameValidate' -Passed $false -Detail "Error: $_"))
-            PassCount  = 0
-            FailCount  = 1
-            TotalCount = 1
-            ExitCode   = 1
-        }
+        return (New-FVAggregateResult -Results @((New-FVCheckResult -Name 'FrameValidate' -Passed $false -Detail "Error: $_")))
     }
 }

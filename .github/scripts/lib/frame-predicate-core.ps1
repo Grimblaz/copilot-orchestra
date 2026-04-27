@@ -73,6 +73,165 @@ function Test-FVIdentifierPart {
     )
 }
 
+function Get-FVSingleCharacterTokenKind {
+    param([char]$Character)
+
+    switch ([string]$Character) {
+        '(' { return 'LParen' }
+        ')' { return 'RParen' }
+        '[' { return 'LBracket' }
+        ']' { return 'RBracket' }
+        ',' { return 'Comma' }
+        default { return $null }
+    }
+}
+
+function New-FVTokenReadResult {
+    param(
+        [Parameter(Mandatory)]$Value,
+        [Parameter(Mandatory)][int]$NextIndex
+    )
+
+    return [PSCustomObject]@{
+        Value     = $Value
+        NextIndex = $NextIndex
+    }
+}
+
+function Read-FVQuotedStringToken {
+    param(
+        [Parameter(Mandatory)][string]$Predicate,
+        [Parameter(Mandatory)][int]$StartIndex
+    )
+
+    $quote = $Predicate[$StartIndex]
+    $index = $StartIndex + 1
+    $builder = [System.Text.StringBuilder]::new()
+    $closed = $false
+
+    while ($index -lt $Predicate.Length) {
+        $current = $Predicate[$index]
+        if ($current -eq [char]92) {
+            if ($index + 1 -ge $Predicate.Length) {
+                return (New-FVTokenReadResult -Value (New-FVParseError -Position $StartIndex -Message 'Unterminated string literal.') -NextIndex $index)
+            }
+
+            [void]$builder.Append($Predicate[$index + 1])
+            $index += 2
+            continue
+        }
+
+        if ($current -eq $quote) {
+            $index++
+            $closed = $true
+            break
+        }
+
+        [void]$builder.Append($current)
+        $index++
+    }
+
+    if (-not $closed) {
+        return (New-FVTokenReadResult -Value (New-FVParseError -Position $StartIndex -Message 'Unterminated string literal.') -NextIndex $index)
+    }
+
+    $token = New-FVToken -Kind 'String' -Value $builder.ToString() -Position $StartIndex -Length ($index - $StartIndex)
+    return (New-FVTokenReadResult -Value $token -NextIndex $index)
+}
+
+function Read-FVNumberToken {
+    param(
+        [Parameter(Mandatory)][string]$Predicate,
+        [Parameter(Mandatory)][int]$StartIndex
+    )
+
+    $index = $StartIndex
+    if ($Predicate[$index] -eq [char]'-') {
+        $index++
+    }
+
+    while ($index -lt $Predicate.Length -and [char]::IsDigit($Predicate[$index])) {
+        $index++
+    }
+
+    if ($index -lt $Predicate.Length -and $Predicate[$index] -eq [char]'.' -and $index + 1 -lt $Predicate.Length -and [char]::IsDigit($Predicate[$index + 1])) {
+        $index++
+        while ($index -lt $Predicate.Length -and [char]::IsDigit($Predicate[$index])) {
+            $index++
+        }
+    }
+
+    if ($index -lt $Predicate.Length -and $Predicate[$index] -in @([char]'e', [char]'E')) {
+        $exponentStart = $index
+        $index++
+        if ($index -lt $Predicate.Length -and $Predicate[$index] -in @([char]'+', [char]'-')) {
+            $index++
+        }
+
+        if ($index -ge $Predicate.Length -or -not [char]::IsDigit($Predicate[$index])) {
+            return (New-FVTokenReadResult -Value (New-FVParseError -Position $exponentStart -Message 'Malformed number literal.') -NextIndex $index)
+        }
+
+        while ($index -lt $Predicate.Length -and [char]::IsDigit($Predicate[$index])) {
+            $index++
+        }
+    }
+
+    $number = $Predicate.Substring($StartIndex, $index - $StartIndex)
+    $token = New-FVToken -Kind 'Number' -Value $number -Position $StartIndex -Length ($index - $StartIndex)
+    return (New-FVTokenReadResult -Value $token -NextIndex $index)
+}
+
+function New-FVIdentifierOrKeywordToken {
+    param(
+        [Parameter(Mandatory)][string]$Identifier,
+        [Parameter(Mandatory)][int]$Position,
+        [Parameter(Mandatory)][int]$Length
+    )
+
+    switch ($Identifier.ToUpperInvariant()) {
+        'AND' { return (New-FVToken -Kind 'LogicalOperator' -Value 'AND' -Position $Position -Length $Length) }
+        'OR' { return (New-FVToken -Kind 'LogicalOperator' -Value 'OR' -Position $Position -Length $Length) }
+        'NOT' { return (New-FVToken -Kind 'Not' -Value 'NOT' -Position $Position -Length $Length) }
+        'IN' { return (New-FVToken -Kind 'Comparator' -Value 'in' -Position $Position -Length $Length) }
+        'TRUE' { return (New-FVToken -Kind 'Boolean' -Value $true -Position $Position -Length $Length) }
+        'FALSE' { return (New-FVToken -Kind 'Boolean' -Value $false -Position $Position -Length $Length) }
+        default { return (New-FVToken -Kind 'Identifier' -Value $Identifier -Position $Position -Length $Length) }
+    }
+}
+
+function Read-FVIdentifierOrKeywordToken {
+    param(
+        [Parameter(Mandatory)][string]$Predicate,
+        [Parameter(Mandatory)][int]$StartIndex
+    )
+
+    $index = $StartIndex + 1
+    while ($index -lt $Predicate.Length) {
+        $current = $Predicate[$index]
+        if (Test-FVIdentifierPart -Character $current) {
+            $index++
+            continue
+        }
+
+        if ($current -eq [char]'.') {
+            $index++
+            if ($index -ge $Predicate.Length -or -not (Test-FVIdentifierStart -Character $Predicate[$index])) {
+                return (New-FVTokenReadResult -Value (New-FVParseError -Position $index -Message "Expected identifier segment after '.'.") -NextIndex $index)
+            }
+
+            $index++
+            continue
+        }
+
+        break
+    }
+
+    $identifier = $Predicate.Substring($StartIndex, $index - $StartIndex)
+    $token = New-FVIdentifierOrKeywordToken -Identifier $identifier -Position $StartIndex -Length ($index - $StartIndex)
+    return (New-FVTokenReadResult -Value $token -NextIndex $index)
+}
+
 function Get-FVTokens {
     [CmdletBinding()]
     param([AllowNull()][string]$Predicate)
@@ -93,32 +252,9 @@ function Get-FVTokens {
             continue
         }
 
-        if ($character -eq [char]'(') {
-            $tokens.Add((New-FVToken -Kind 'LParen' -Value '(' -Position $index -Length 1))
-            $index++
-            continue
-        }
-
-        if ($character -eq [char]')') {
-            $tokens.Add((New-FVToken -Kind 'RParen' -Value ')' -Position $index -Length 1))
-            $index++
-            continue
-        }
-
-        if ($character -eq [char]'[') {
-            $tokens.Add((New-FVToken -Kind 'LBracket' -Value '[' -Position $index -Length 1))
-            $index++
-            continue
-        }
-
-        if ($character -eq [char]']') {
-            $tokens.Add((New-FVToken -Kind 'RBracket' -Value ']' -Position $index -Length 1))
-            $index++
-            continue
-        }
-
-        if ($character -eq [char]',') {
-            $tokens.Add((New-FVToken -Kind 'Comma' -Value ',' -Position $index -Length 1))
+        $singleCharacterTokenKind = Get-FVSingleCharacterTokenKind -Character $character
+        if ($singleCharacterTokenKind) {
+            $tokens.Add((New-FVToken -Kind $singleCharacterTokenKind -Value ([string]$character) -Position $index -Length 1))
             $index++
             continue
         }
@@ -147,136 +283,29 @@ function Get-FVTokens {
         }
 
         if ($character -eq [char]34 -or $character -eq [char]39) {
-            $quote = $character
-            $start = $index
-            $index++
-            $builder = [System.Text.StringBuilder]::new()
-            $closed = $false
+            $readResult = Read-FVQuotedStringToken -Predicate $Predicate -StartIndex $index
+            if (Test-FVParseError -Value $readResult.Value) { return $readResult.Value }
 
-            while ($index -lt $length) {
-                $current = $Predicate[$index]
-                if ($current -eq [char]92) {
-                    if ($index + 1 -ge $length) {
-                        return (New-FVParseError -Position $start -Message 'Unterminated string literal.')
-                    }
-
-                    [void]$builder.Append($Predicate[$index + 1])
-                    $index += 2
-                    continue
-                }
-
-                if ($current -eq $quote) {
-                    $index++
-                    $closed = $true
-                    break
-                }
-
-                [void]$builder.Append($current)
-                $index++
-            }
-
-            if (-not $closed) {
-                return (New-FVParseError -Position $start -Message 'Unterminated string literal.')
-            }
-
-            $tokens.Add((New-FVToken -Kind 'String' -Value $builder.ToString() -Position $start -Length ($index - $start)))
+            $tokens.Add($readResult.Value)
+            $index = $readResult.NextIndex
             continue
         }
 
         if (($character -eq [char]'-' -and $index + 1 -lt $length -and [char]::IsDigit($Predicate[$index + 1])) -or [char]::IsDigit($character)) {
-            $start = $index
-            if ($character -eq [char]'-') {
-                $index++
-            }
+            $readResult = Read-FVNumberToken -Predicate $Predicate -StartIndex $index
+            if (Test-FVParseError -Value $readResult.Value) { return $readResult.Value }
 
-            while ($index -lt $length -and [char]::IsDigit($Predicate[$index])) {
-                $index++
-            }
-
-            if ($index -lt $length -and $Predicate[$index] -eq [char]'.' -and $index + 1 -lt $length -and [char]::IsDigit($Predicate[$index + 1])) {
-                $index++
-                while ($index -lt $length -and [char]::IsDigit($Predicate[$index])) {
-                    $index++
-                }
-            }
-
-            if ($index -lt $length -and $Predicate[$index] -in @([char]'e', [char]'E')) {
-                $exponentStart = $index
-                $index++
-                if ($index -lt $length -and $Predicate[$index] -in @([char]'+', [char]'-')) {
-                    $index++
-                }
-
-                if ($index -ge $length -or -not [char]::IsDigit($Predicate[$index])) {
-                    return (New-FVParseError -Position $exponentStart -Message 'Malformed number literal.')
-                }
-
-                while ($index -lt $length -and [char]::IsDigit($Predicate[$index])) {
-                    $index++
-                }
-            }
-
-            $number = $Predicate.Substring($start, $index - $start)
-            $tokens.Add((New-FVToken -Kind 'Number' -Value $number -Position $start -Length ($index - $start)))
+            $tokens.Add($readResult.Value)
+            $index = $readResult.NextIndex
             continue
         }
 
         if (Test-FVIdentifierStart -Character $character) {
-            $start = $index
-            $index++
+            $readResult = Read-FVIdentifierOrKeywordToken -Predicate $Predicate -StartIndex $index
+            if (Test-FVParseError -Value $readResult.Value) { return $readResult.Value }
 
-            while ($index -lt $length) {
-                $current = $Predicate[$index]
-                if (Test-FVIdentifierPart -Character $current) {
-                    $index++
-                    continue
-                }
-
-                if ($current -eq [char]'.') {
-                    $index++
-                    if ($index -ge $length -or -not (Test-FVIdentifierStart -Character $Predicate[$index])) {
-                        return (New-FVParseError -Position $index -Message "Expected identifier segment after '.'.")
-                    }
-                    $index++
-                    continue
-                }
-
-                break
-            }
-
-            $identifier = $Predicate.Substring($start, $index - $start)
-            $keyword = $identifier.ToUpperInvariant()
-            if ($keyword -eq 'AND') {
-                $tokens.Add((New-FVToken -Kind 'LogicalOperator' -Value 'AND' -Position $start -Length ($index - $start)))
-                continue
-            }
-
-            if ($keyword -eq 'OR') {
-                $tokens.Add((New-FVToken -Kind 'LogicalOperator' -Value 'OR' -Position $start -Length ($index - $start)))
-                continue
-            }
-
-            if ($keyword -eq 'NOT') {
-                $tokens.Add((New-FVToken -Kind 'Not' -Value 'NOT' -Position $start -Length ($index - $start)))
-                continue
-            }
-
-            if ($keyword -eq 'IN') {
-                $tokens.Add((New-FVToken -Kind 'Comparator' -Value 'in' -Position $start -Length ($index - $start)))
-                continue
-            }
-
-            if ($keyword -eq 'TRUE') {
-                $tokens.Add((New-FVToken -Kind 'Boolean' -Value $true -Position $start -Length ($index - $start)))
-                continue
-            }
-
-            if ($keyword -eq 'FALSE') {
-                $tokens.Add((New-FVToken -Kind 'Boolean' -Value $false -Position $start -Length ($index - $start)))
-                continue
-            }
-
-            $tokens.Add((New-FVToken -Kind 'Identifier' -Value $identifier -Position $start -Length ($index - $start)))
+            $tokens.Add($readResult.Value)
+            $index = $readResult.NextIndex
             continue
         }
 
