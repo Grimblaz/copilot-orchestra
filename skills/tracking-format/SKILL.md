@@ -25,7 +25,6 @@ This document defines the standard YAML frontmatter format for tracking files st
   - `review-data.json` — JSON calibration data (schema: `{ calibration_version: 1, entries: [{ pr_number, created_at, findings[], summary }] }`)
 
 > **Note**: `.copilot-tracking/` stores research notes, archived tracking files, and persistent calibration data. Plans are now stored in session memory at `/memories/session/plan-issue-{ID}.md`, not as local files.
-
 > **Survival**: `.copilot-tracking/` artifacts are `within-worktree` state under `SMC-13`; they survive in the current checkout and machine, but are not durable cross-agent handoffs unless copied to GitHub issues or committed docs.
 
 ## YAML Frontmatter Format
@@ -174,7 +173,9 @@ Plans saved to session memory (`/memories/session/plan-issue-{ID}.md`) do not ne
 
 ## Cloud Agent Handoff Protocol
 
-This section is retired as a plan/design/session-memory handoff source of truth and delegated to the canonical contract at `skills/session-memory-contract/SKILL.md` (`SMC-01`, `SMC-03`, `SMC-08`, `SMC-13`). Tracking-format only governs `.copilot-tracking/` file frontmatter and local tracking-file structure.
+This section is retired as a plan/design/session-memory handoff source of truth and delegated to the canonical contract at `skills/session-memory-contract/SKILL.md` (`SMC-01`, `SMC-03`, `SMC-08`, `SMC-13`); that delegation retires the old cloud handoff table here. Tracking-format only governs `.copilot-tracking/` file frontmatter and local tracking-file structure.
+
+Code-Conductor/D9 owns durable handoff persistence. Continue implementation stays same-session and session-memory-only, with no redundant GitHub issue comments. Stop, Pause, resume later, or switch models paths persist or append durable GitHub issue comments for `<!-- plan-issue-{ID} -->` and `<!-- design-issue-{ID} -->` when those artifacts are needed.
 
 `.copilot-tracking/` files are local scaffolding for research notes, prompt output, archived tracking, and calibration artifacts in the same worktree. They are not suitable for durable cross-agent or cloud-agent handoffs where a new branch or fresh checkout is created. Use the session-memory contract for plan/design/session-memory handoff rules, and use GitHub issues, GitHub comments, or committed docs when a handoff must be durable.
 

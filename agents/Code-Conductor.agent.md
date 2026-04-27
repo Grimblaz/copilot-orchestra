@@ -138,7 +138,6 @@ For terminal and validation execution guardrails, load `skills/terminal-hygiene/
 Any future pre-response trigger step runs **before** the Core Workflow, stays outside the numbered workflow list, and does not renumber, replace, or subsume Step 0. Issue Transition remains Step 0 and the first numbered workflow step after any pre-response trigger handling completes.
 
 <!-- markdownlint-disable-next-line MD029 -->
-
 0. **Issue Transition (Step 0, before implementation)**:
    - Cleanup note: The `session-startup` skill (loaded by pipeline-entry agents) detects stale tracking files from merged branches and prompts you at the start of your next conversation — cleanup requires one confirmation. If stale artifacts persist, run `pwsh "skills/session-startup/scripts/post-merge-cleanup.ps1" -IssueNumber {N} -FeatureBranch feature/issue-{N}-description` directly (path is relative to the agent-orchestra plugin or repo clone).
    - Optional planning lane: If scope/acceptance criteria changed or are ambiguous, call Issue-Planner to confirm whether plan updates are needed before execution.
@@ -190,6 +189,7 @@ Before any editing delegation or file mutation in hub mode, run a pre-edit owner
 - If the needed change is `upstream shared-workflow mutation`, fail closed immediately with `requires upstream issue` instead of starting mixed-repo implementation.
 - Reuse the existing upstream-routing conventions instead of inventing a second escalation path: if an upstream issue already exists, link it and stop; otherwise, when the upstream repo can be resolved and upstream access is available, follow the existing safe-operations rules for dedup search, priority-labeled `gh issue create`, and output capture. If the upstream repo cannot be resolved or upstream access is unavailable, create a local fallback artifact labeled `process-gap-upstream` and stop with an explicit manual upstream handoff path.
 - Safe-operations retains ownership of deduplication, priority-label, and output-capture rules for any upstream issue creation.
+- **Auto-Tracking**: Before creating any DEFERRED-SIGNIFICANT tracking issue that proposes a new rule or directive, apply the prevention-analysis advisory from `skills/safe-operations/SKILL.md` §2d before deduplication and issue creation.
 - The local `process-gap-upstream` fallback is distinct from Process-Review's gotcha-specific `upstream-gotcha` flow.
 
 **Mid-run fail-closed rule**:
@@ -377,7 +377,15 @@ Load and follow these references:
 - `skills/customer-experience/references/orchestration-protocol.md`
 - `skills/customer-experience/references/defect-response.md`
 
+BDD pre-flight: read scenario IDs from the issue body using the `### S\d+` scenario ID pattern. Scope extraction to content between `## Scenarios` and the next H2. If coverage is missing, recovery labels are `Re-exercise missing scenario`, `Waive with documented reason`, and `Abort CE Gate`; the pre-flight cycle budget is independent from the Track 1 budget.
+
+Phase 2 runner dispatch activates only when `bdd: {framework}` is a recognized framework value. If all `[auto]` runners pass, delegate only `[manual]` scenarios to Experience-Owner. If any `[auto]` runner fails, add failed `[auto]` scenarios to the EO delegation list. If the runner pre-check fails, emit/log a warning and fall back to Phase 1 behavior: all scenarios to EO.
+
+PR-body per-scenario coverage table header: `| ID | Type | Class | Result | Evidence | Source |`.
+
 Code-Conductor keeps only the shell responsibilities here: identify the surface, delegate scenario evidence capture to Experience-Owner, preserve CE sequencing through prosecution/defense/judgment, and emit the documented PR-body outputs.
+
+When CE Gate Track 2 systemic analysis creates a systemic follow-up issue, Code-Conductor applies the prevention-analysis advisory from `skills/safe-operations/SKILL.md` §2d before issue creation.
 
 1. CE Gate result markers (emitted by the judge in conjunction with Code-Conductor's read of the verdict):
    - `✅ CE Gate passed — intent match: strong` — all scenarios passed, no defects found, design intent fully achieved

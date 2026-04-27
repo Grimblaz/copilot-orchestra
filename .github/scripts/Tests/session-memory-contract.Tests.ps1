@@ -183,6 +183,13 @@ Describe 'session-memory contract structural surface' {
         }
     }
 
+    It 'labels pre-PR review-state as session-scoped instead of worktree-scoped' {
+        $segment = & $script:GetContractRowSegment -RowId 'SMC-05'
+
+        $segment | Should -Match '`within-conversation`' -Because 'pre-PR review-state is stored under /memories/session and survives only with the active session memory surface'
+        $segment | Should -Not -Match '`within-worktree`' -Because 'the SMC-05 storage path is not a worktree-backed .copilot-tracking artifact'
+    }
+
     It 'requires every SMC row to carry a citation or explicit delegated/informational note' {
         foreach ($row in $script:ContractRows) {
             $segment = & $script:GetContractRowSegment -RowId $row.Id
@@ -237,9 +244,9 @@ Describe 'session-memory contract structural surface' {
         $config = (& $script:ReadContent -Path $script:RoutingConfigPath) | ConvertFrom-Json -AsHashtable
         $planEntries = @(
             $config.specialist_dispatch.entries |
-                Where-Object {
-                    ([string]($_.file_type_or_task)) -match '/memories/session/plan-issue-\{ID\}\.md|plan-issue-\{ID\}'
-                }
+            Where-Object {
+                ([string]($_.file_type_or_task)) -match '/memories/session/plan-issue-\{ID\}\.md|plan-issue-\{ID\}'
+            }
         )
 
         $planEntries | Should -HaveCount 1 -Because 'the specialist dispatch table should have exactly one plan-path routing entry'

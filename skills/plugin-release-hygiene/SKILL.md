@@ -125,8 +125,8 @@ When a drift-check or maintainer flow needs one of these commands, attempt the c
 | ---------------------------------------------- | -------------------------------------------- | -------------------------------------------------------------------------------------- |
 | Multiple entry-point edits in one conversation | Repeated prompts turn a guardrail into noise | Record the first proposal in `.claude/.state/` and silently append later touched files |
 
-| Trigger                                         | Gotcha                                                                 | Fix                                                                                                 |
-| ----------------------------------------------- | ---------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| Trigger                                         | Gotcha                                                                | Fix                                                                                                |
+| ----------------------------------------------- | --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
 | `session_id` is missing or payload shape drifts | A branch-scoped fallback can look like a silent regression in reviews | Persist `keying_strategy` so tests and future reviews can observe which keying path actually fired |
 
 | Trigger                                        | Gotcha                                                             | Fix                                                                      |

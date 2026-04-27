@@ -86,9 +86,11 @@ Load `skills/safe-operations/SKILL.md` §2 when creating a GitHub issue (dedup, 
 
 Load `skills/customer-experience/SKILL.md`. If `## BDD Framework` is enabled in `copilot-instructions.md`, also load `skills/bdd-scenarios/SKILL.md`.
 
+When `## BDD Framework` is present, author structured G/W/T / Given-When-Then scenarios; when absent, use the natural-language fallback. Use the heading convention `### SN — {title} (Type)` or `### S1 — {title} (Functional|Intent)`. Customer language and customer terms are required for every G/W/T scenario clause; avoid technical jargon and implementation details.
+
 ## Update Issue with Customer Framing
 
-Update the GitHub issue body per `skills/customer-experience/SKILL.md` (use `## Scenarios` H2 heading for scenario section — Code-Conductor's pre-flight extraction anchors to it), then post:
+Update the GitHub issue body per `skills/customer-experience/SKILL.md` (use `## Scenarios` (H2) for the scenario section — Code-Conductor's pre-flight extraction anchors to it), then post:
 
 ```markdown
 <!-- experience-owner-complete-{ISSUE_NUMBER} -->

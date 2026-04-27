@@ -83,7 +83,7 @@ The full tool-agnostic methodology for this role lives at `agents/Process-Review
 
 **Precondition (load this before shared-body role work):** after the session-startup protocol completes and after the one-time Step 0 environment handshake verification runs, but before producing any substantive user-facing text, making any other role-work tool call, or dispatching a subagent, load `agents/Process-Review.agent.md` with the `Read` tool. The only exceptions to this ordering are session-startup's required actions and the Step 0 live-git verification/tooling explicitly required above. The shared body is the contract for this role — acting without it means the shell is diverging from Copilot behavior. If the read fails, stop and surface the failure rather than guessing at the methodology.
 
-After loading, follow everything under its `## Core Principles`, `## Overview`, `## 🚨 File Modification Restrictions 🚨`, `## Core Responsibilities`, `## When to Use This Agent`, `## Analysis Framework`, `## CE Gate Defect Analysis`, `## Calibration Analysis - Actionable Signals ({N} issues, effective n={X:.1f})`, `## Calibration Analysis - No Actionable Signals ({N} issues, effective n={X:.1f})`, `## Upstream Gotcha Summary`, `## Root Cause Analysis & Guardrail Proposals ({N} patterns analyzed)`, and `## Skills Reference` sections.
+After loading, follow everything under its `## Core Principles`, `## Overview`, `## 🚨 File Modification Restrictions 🚨`, `## Core Responsibilities`, `## When to Use This Agent`, `## Analysis Framework`, and `## Skills Reference` sections.
 
 The Copilot-specific tool names in that file map to Claude Code equivalents below.
 

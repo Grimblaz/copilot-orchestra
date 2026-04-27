@@ -79,9 +79,9 @@ Only the `plans/` subdirectory was removed. The `research/` subdirectory and any
 
 ## Related Files
 
-- `.github/agents/Issue-Planner.agent.md` — Section 6: plan persistence
-- `.github/agents/Code-Conductor.agent.md` — Step 1: plan retrieval
-- `.github/skills/tracking-format/SKILL.md` — YAML frontmatter spec for `.copilot-tracking/` research files (does not cover session-memory plan YAML; see Issue-Planner Section 6 above)
+- `agents/Issue-Planner.agent.md` — Section 6: plan persistence
+- `agents/Code-Conductor.agent.md` — Step 1: plan retrieval
+- `skills/tracking-format/SKILL.md` — YAML frontmatter spec for `.copilot-tracking/` research files (does not cover session-memory plan YAML; see Issue-Planner Section 6 above)
 
 ---
 
@@ -147,13 +147,13 @@ Issue-Planner should check for `/memories/session/design-issue-{ID}.md` before c
 
 ### Design Cache Related Files
 
-- `.github/agents/Issue-Planner.agent.md` — Section 6: design cache creation
-- `.github/agents/Code-Conductor.agent.md` — Step 1: lookup chain; Step 3: alignment check; CE Gate: design intent reads
-- `.github/agents/Code-Smith.agent.md` — Plan Tracking: design cache read
-- `.github/agents/Test-Writer.agent.md` — Plan Tracking: design cache read
-- `.github/agents/Refactor-Specialist.agent.md` — Plan Tracking: design cache read
-- `.github/agents/Doc-Keeper.agent.md` — Plan Tracking: design cache read
-- `.github/agents/Code-Critic.agent.md` — Plan Tracking: design cache read
+- `agents/Issue-Planner.agent.md` — Section 6: design cache creation
+- `agents/Code-Conductor.agent.md` — Step 1: lookup chain; Step 3: alignment check; CE Gate: design intent reads
+- `agents/Code-Smith.agent.md` — Plan Tracking: design cache read
+- `agents/Test-Writer.agent.md` — Plan Tracking: design cache read
+- `agents/Refactor-Specialist.agent.md` — Plan Tracking: design cache read
+- `agents/Doc-Keeper.agent.md` — Plan Tracking: design cache read
+- `agents/Code-Critic.agent.md` — Plan Tracking: design cache read
 
 ---
 
@@ -185,8 +185,8 @@ Code-Conductor now maintains progress annotations in the session memory plan fil
 
 VS Code 1.110 allows agents to supply custom instructions to the compaction summarizer via `/compact focus on: ...`. This feature complements session memory by ensuring the auto-generated summary retains orchestration-critical context (issue ID, step progress, design intent, open decisions) alongside the durable plan file.
 
-- **Code-Conductor** template: preserves issue number, step progress, branch name, design intent summary, and open blockers (see `.github/agents/Code-Conductor.agent.md`)
-- **Issue-Planner** template: preserves design decisions, rejected alternatives with rationale, acceptance criteria, open questions, CE Gate assessment (see `.github/agents/Issue-Planner.agent.md`)
+- **Code-Conductor** template: preserves issue number, step progress, branch name, design intent summary, and open blockers (see `agents/Code-Conductor.agent.md`)
+- **Issue-Planner** template: preserves design decisions, rejected alternatives with rationale, acceptance criteria, open questions, CE Gate assessment (see `agents/Issue-Planner.agent.md`)
 
 These templates use bracket-token substitution so each invocation carries session-specific values, not static categories.
 

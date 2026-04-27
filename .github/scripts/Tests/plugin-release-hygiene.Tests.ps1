@@ -10,6 +10,7 @@ Describe 'plugin release hygiene hook contract' -Tag 'unit' {
         $script:ClaudeGuide = Join-Path $script:RepoRoot 'CLAUDE.md'
         $script:Readme = Join-Path $script:RepoRoot 'README.md'
         $script:FixtureRoots = [System.Collections.Generic.List[string]]::new()
+        . $script:HookScript
         $script:CliCommands = @(
             'claude plugin list',
             'claude plugin marketplace list',
@@ -100,7 +101,7 @@ Describe 'plugin release hygiene hook contract' -Tag 'unit' {
 
             Push-Location $FixtureRoot
             try {
-                return ($payload | & pwsh -NoProfile -NonInteractive -File $script:HookScript)
+                return (Invoke-PRHHook -PayloadJson $payload)
             }
             finally {
                 Pop-Location
