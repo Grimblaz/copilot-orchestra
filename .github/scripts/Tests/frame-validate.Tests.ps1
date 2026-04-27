@@ -12,7 +12,7 @@
 
             Test-FVPredicateParse verifies applies-when predicates are parseable.
             Invoke-FrameValidate contract tests exercise aggregate behavior across
-            the checks. Quick-validate integration tests belong to a later plan step.
+            the checks. Quick-validate integration tests exercise the CI aggregate wire.
 #>
 
 Describe 'Frame validator check functions' -Tag 'unit' {
@@ -20,7 +20,9 @@ Describe 'Frame validator check functions' -Tag 'unit' {
     BeforeAll {
         $script:RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '../../..')).Path
         $script:LibFile = Join-Path $script:RepoRoot '.github\scripts\lib\frame-validate-core.ps1'
+        $script:QuickValidateLibFile = Join-Path $script:RepoRoot '.github\scripts\lib\quick-validate-core.ps1'
         . $script:LibFile
+        . $script:QuickValidateLibFile
 
         $script:AssertCheckResult = {
             param(
@@ -128,6 +130,25 @@ None.
 
             Set-Content -Path $path -Value ($lines.ToArray() -join [Environment]::NewLine) -Encoding utf8NoBOM
             return $path
+        }
+
+        $script:NewQuickValidateSupportFixture = {
+            param([Parameter(Mandatory)][string]$Root)
+
+            $configDir = Join-Path $Root '.github\config'
+            New-Item -ItemType Directory -Path $configDir -Force | Out-Null
+
+            $complexityScriptPath = Join-Path $Root 'mock-measure-guidance-complexity.ps1'
+            Set-Content -Path $complexityScriptPath -Value 'Write-Output ''{"agents_over_ceiling":[]}''' -Encoding utf8NoBOM
+
+            $settingsPath = Join-Path $configDir 'PSScriptAnalyzerSettings.psd1'
+            Set-Content -Path $settingsPath -Value '@{ IncludeRules = @() }' -Encoding utf8NoBOM
+
+            return [PSCustomObject]@{
+                GuidanceComplexityScriptPath  = $complexityScriptPath
+                PSScriptAnalyzerSettingsPath = $settingsPath
+                ScriptsPath                  = Join-Path $Root '.github\scripts'
+            }
         }
     }
 
@@ -312,6 +333,40 @@ None.
             $predicate.Detail | Should -Match '1 applies-when parse error'
             $predicate.Detail | Should -Match 'agents/missing-catalog\.agent\.md'
             $predicate.Detail | Should -Match ([regex]::Escape("port == 'experience' AND"))
+        }
+    }
+
+    Context 'Invoke-QuickValidate integration' {
+
+        It 'surfaces frame validator failure through quick-validate aggregation' {
+            Mock Get-Module { return @{ Name = 'PSScriptAnalyzer'; Version = '1.22.0' } } -ParameterFilter { $Name -eq 'PSScriptAnalyzer' -and $ListAvailable }
+
+            $root = & $script:NewFrameValidateFixture -Ports @('experience')
+            & $script:AddFrameAdapter -Root $root -RelativePath 'agents\typo-provides.agent.md' -Provides @('experiense') -AppliesWhen @("port == 'experience'") | Out-Null
+            $support = & $script:NewQuickValidateSupportFixture -Root $root
+
+            $result = Invoke-QuickValidate `
+                -RootPath $root `
+                -GuidanceComplexityScriptPath $support.GuidanceComplexityScriptPath `
+                -PSScriptAnalyzerSettingsPath $support.PSScriptAnalyzerSettingsPath `
+                -ScriptsPath $support.ScriptsPath
+
+            $frameValidator = @($result.Results | Where-Object { $_.Name -eq 'FrameValidator' })
+            $frameValidator | Should -HaveCount 1
+            $frameValidator[0].Passed | Should -BeFalse
+            $frameValidator[0].Detail | Should -Match 'AdapterSymmetry'
+            $frameValidator[0].Detail | Should -Match '1 invalid provides declaration'
+            $frameValidator[0].Detail | Should -Match 'agents/typo-provides\.agent\.md'
+            $frameValidator[0].Detail | Should -Match "provides 'experiense'"
+
+            $psAnalyzer = $result.Results | Where-Object { $_.Name -eq 'PSScriptAnalyzer' }
+            $psAnalyzer.Passed | Should -BeTrue
+            @($result.Results | Where-Object { $_.Passed -eq $false } | Select-Object -ExpandProperty Name) | Should -Be @('FrameValidator')
+            $result.ExitCode | Should -Be 1
+            $result.FailCount | Should -Be 1
+            $result.SkipCount | Should -Be 0
+            $result.TotalCount | Should -Be @($result.Results).Count
+            $result.PassCount | Should -Be ($result.TotalCount - 1)
         }
     }
 }
