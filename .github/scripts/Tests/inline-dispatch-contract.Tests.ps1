@@ -192,12 +192,24 @@ Describe 'inline dispatch contract' {
                     '<!-- first-contact-assessed-',
                     '<!-- D6 (issue #412):',
                     'Read agents/Issue-Planner.agent.md',
-                    '## Inline adversarial-pipeline dispatch'
+                    '## Inline adversarial-pipeline dispatch',
+                    'subagent_type: code-critic',
+                    'Review mode selector: "Use design review perspectives"',
+                    'Review mode selector: "Use product-alignment perspectives"',
+                    'Review mode selector: "Use defense review perspectives"',
+                    'subagent_type: code-review-response',
+                    'pipeline-degraded',
+                    'contextual metadata only',
+                    'Dispatching prosecution x3 in parallel...',
+                    'Merged prosecution ledger: {count} finding(s).'
                 )
                 RequiredSessionKeys          = @('cleanup_yes', 'cleanup_no', 'drift_stop', 'drift_continue')
                 RequiredProvenanceStage1Keys = @(0, 1, 2)
                 RequiredProvenanceStage2Keys = @(0, 1, 2)
-                ForbiddenStatic              = @()
+                ForbiddenStatic              = @(
+                    'subagent_type: issue-planner',
+                    'Step 9 + provenance-gate deferral note'
+                )
                 OrderedMarkers               = @(
                     '### Step 4 — Run-once marker',
                     '### Step 6 — Cleanup confirmation',
