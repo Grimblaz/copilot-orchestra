@@ -108,7 +108,6 @@ function Invoke-SCDNonInteractiveGit {
         $processStartInfo.UseShellExecute = $false
         $processStartInfo.CreateNoWindow = $true
         $processStartInfo.RedirectStandardOutput = $true
-        $processStartInfo.RedirectStandardError = $true
         $processStartInfo.WorkingDirectory = (Get-Location).Path
         foreach ($argument in $Arguments) {
             $processStartInfo.ArgumentList.Add($argument) | Out-Null
@@ -174,25 +173,7 @@ function ConvertTo-SCDNormalizedPath {
     }
 }
 
-function Test-SCDNoUpstreamBranchCandidate {
-    param(
-        [Parameter(Mandatory)]
-        [string]$BranchName,
-
-        [Parameter(Mandatory)]
-        [string[]]$Prefixes
-    )
-
-    foreach ($branchPrefix in $Prefixes) {
-        if ($BranchName.StartsWith($branchPrefix, [System.StringComparison]::Ordinal)) {
-            return $true
-        }
-    }
-
-    return $false
-}
-
-function Test-SCDUpstreamDeletedBranchCandidate {
+function Test-SCDBranchMatchesPrefixes {
     param(
         [Parameter(Mandatory)]
         [string]$BranchName,
@@ -393,7 +374,10 @@ function Get-SCDSiblingWorktreeCleanups {
         [string[]]$UpstreamDeletedBranchPrefixes = @('feature/issue-'),
 
         [AllowNull()]
-        [System.Collections.Generic.IDictionary[string, bool]]$FetchLookup = $null
+        [System.Collections.Generic.IDictionary[string, bool]]$FetchLookup = $null,
+
+        [AllowNull()]
+        [array]$WorktreeRecords = $null
     )
 
     $cleanups = @()
@@ -403,12 +387,36 @@ function Get-SCDSiblingWorktreeCleanups {
     }
 
     try {
-        $worktreePorcelain = @(git worktree list --porcelain 2>$null)
-        if ($LASTEXITCODE -ne 0) {
-            return @()
+        if ($null -eq $WorktreeRecords) {
+            $worktreePorcelain = @(git worktree list --porcelain 2>$null)
+            if ($LASTEXITCODE -ne 0) {
+                return @()
+            }
+            $records = @(Get-SCDWorktreeRecords -PorcelainLines $worktreePorcelain)
+        }
+        else {
+            $records = $WorktreeRecords
         }
 
-        $records = @(Get-SCDWorktreeRecords -PorcelainLines $worktreePorcelain)
+        $remoteDefault = $null
+        $hasNoUpstreamCandidates = $false
+        foreach ($record in $records) {
+            if (-not $record.IsBare -and -not $record.IsDetached -and -not [string]::IsNullOrWhiteSpace($record.BranchName)) {
+                $normalizedPath = ConvertTo-SCDNormalizedPath -Path $record.WorktreePath
+                if ($normalizedPath -and -not $normalizedPath.Equals($currentNormalizedPath, [System.StringComparison]::OrdinalIgnoreCase)) {
+                    if ($record.BranchName -ne $DefaultBranch -and (Test-SCDBranchMatchesPrefixes -BranchName $record.BranchName -Prefixes $NoUpstreamBranchPrefixes)) {
+                        $hasNoUpstreamCandidates = $true
+                        break
+                    }
+                }
+            }
+        }
+
+        if ($hasNoUpstreamCandidates) {
+            $remoteDefault = Get-SCDRemoteDefaultRef -DefaultBranch $DefaultBranch
+            Invoke-SCDNonInteractiveFetchOnce -RemoteName $remoteDefault.RemoteName -CacheKey $remoteDefault.RefName -FetchLookup $FetchLookup
+        }
+
         foreach ($record in $records) {
             try {
                 if ($record.IsBare -or $record.IsDetached -or [string]::IsNullOrWhiteSpace($record.BranchName)) {
@@ -441,7 +449,7 @@ function Get-SCDSiblingWorktreeCleanups {
                 }
 
                 if ($null -ne $upstreamBranch) {
-                    if (-not (Test-SCDUpstreamDeletedBranchCandidate -BranchName $branchName -Prefixes $UpstreamDeletedBranchPrefixes)) {
+                    if (-not (Test-SCDBranchMatchesPrefixes -BranchName $branchName -Prefixes $UpstreamDeletedBranchPrefixes)) {
                         continue
                     }
 
@@ -458,12 +466,13 @@ function Get-SCDSiblingWorktreeCleanups {
                     continue
                 }
 
-                if (-not (Test-SCDNoUpstreamBranchCandidate -BranchName $branchName -Prefixes $NoUpstreamBranchPrefixes)) {
+                if (-not (Test-SCDBranchMatchesPrefixes -BranchName $branchName -Prefixes $NoUpstreamBranchPrefixes)) {
                     continue
                 }
 
-                $remoteDefault = Get-SCDRemoteDefaultRef -DefaultBranch $DefaultBranch
-                Invoke-SCDNonInteractiveFetchOnce -RemoteName $remoteDefault.RemoteName -CacheKey $remoteDefault.RefName -FetchLookup $FetchLookup
+                if ($null -eq $remoteDefault) {
+                    continue
+                }
 
                 if (-not (Test-SCDGitRefExists -RefName $remoteDefault.RefName)) {
                     continue
@@ -599,18 +608,28 @@ function Get-SCDConfiguredUpstreamBranch {
 }
 
 function Get-SCDAttachedBranchLookup {
-    param([string]$CurrentBranch)
+    param(
+        [string]$CurrentBranch,
+
+        [AllowNull()]
+        [array]$WorktreeRecords = $null
+    )
 
     $attachedBranches = New-SCDStringLookup
     Add-SCDLookupValue -Lookup $attachedBranches -Value $CurrentBranch
 
     try {
-        $worktreePorcelain = @(git worktree list --porcelain 2>$null)
-        if ($LASTEXITCODE -ne 0) {
-            return $null
+        if ($null -eq $WorktreeRecords) {
+            $worktreePorcelain = @(git worktree list --porcelain 2>$null)
+            if ($LASTEXITCODE -ne 0) {
+                return $null
+            }
+            $records = @(Get-SCDWorktreeRecords -PorcelainLines $worktreePorcelain)
+        }
+        else {
+            $records = $WorktreeRecords
         }
 
-        $records = @(Get-SCDWorktreeRecords -PorcelainLines $worktreePorcelain)
         foreach ($record in $records) {
             Add-SCDLookupValue -Lookup $attachedBranches -Value $record.BranchName
         }
@@ -656,11 +675,14 @@ function Get-SCDOrphanBranchCleanups {
         [string[]]$UpstreamDeletedBranchPrefixes = @('feature/issue-'),
 
         [AllowNull()]
-        [System.Collections.Generic.IDictionary[string, bool]]$FetchLookup = $null
+        [System.Collections.Generic.IDictionary[string, bool]]$FetchLookup = $null,
+
+        [AllowNull()]
+        [array]$WorktreeRecords = $null
     )
 
     $cleanups = @()
-    $attachedBranchLookup = Get-SCDAttachedBranchLookup -CurrentBranch $CurrentBranch
+    $attachedBranchLookup = Get-SCDAttachedBranchLookup -CurrentBranch $CurrentBranch -WorktreeRecords $WorktreeRecords
     if ($null -eq $attachedBranchLookup) {
         return @()
     }
@@ -717,7 +739,7 @@ function Get-SCDOrphanBranchCleanups {
             continue
         }
 
-        if (-not (Test-SCDUpstreamDeletedBranchCandidate -BranchName $branchName -Prefixes $UpstreamDeletedBranchPrefixes)) {
+        if (-not (Test-SCDBranchMatchesPrefixes -BranchName $branchName -Prefixes $UpstreamDeletedBranchPrefixes)) {
             continue
         }
 
@@ -799,7 +821,7 @@ function Invoke-SessionCleanupDetector {
                 }
             }
             else {
-                $isNoUpstreamCandidate = Test-SCDNoUpstreamBranchCandidate -BranchName $currentBranch -Prefixes $noUpstreamBranchPrefixes
+                $isNoUpstreamCandidate = Test-SCDBranchMatchesPrefixes -BranchName $currentBranch -Prefixes $noUpstreamBranchPrefixes
 
                 if ($isNoUpstreamCandidate) {
                     $remoteDefault = Get-SCDRemoteDefaultRef -DefaultBranch $defaultBranch
@@ -819,8 +841,19 @@ function Invoke-SessionCleanupDetector {
         }
     }
 
-    $siblingWorktreeCleanups = @(Get-SCDSiblingWorktreeCleanups -CurrentWorktreePath (Get-Location).Path -DefaultBranch $defaultBranch -NoUpstreamBranchPrefixes $noUpstreamBranchPrefixes -UpstreamDeletedBranchPrefixes $upstreamDeletedBranchPrefixes -FetchLookup $fetchLookup)
-    $orphanBranchCleanups = @(Get-SCDOrphanBranchCleanups -CurrentBranch $currentBranch -DefaultBranch $defaultBranch -NoUpstreamBranchPrefixes $noUpstreamBranchPrefixes -UpstreamDeletedBranchPrefixes $upstreamDeletedBranchPrefixes -FetchLookup $fetchLookup)
+    $worktreeRecords = $null
+    try {
+        $worktreePorcelain = @(git worktree list --porcelain 2>$null)
+        if ($LASTEXITCODE -eq 0) {
+            $worktreeRecords = @(Get-SCDWorktreeRecords -PorcelainLines $worktreePorcelain)
+        }
+    }
+    catch {
+        $null = $_
+    }
+
+    $siblingWorktreeCleanups = @(Get-SCDSiblingWorktreeCleanups -CurrentWorktreePath (Get-Location).Path -DefaultBranch $defaultBranch -NoUpstreamBranchPrefixes $noUpstreamBranchPrefixes -UpstreamDeletedBranchPrefixes $upstreamDeletedBranchPrefixes -FetchLookup $fetchLookup -WorktreeRecords $worktreeRecords)
+    $orphanBranchCleanups = @(Get-SCDOrphanBranchCleanups -CurrentBranch $currentBranch -DefaultBranch $defaultBranch -NoUpstreamBranchPrefixes $noUpstreamBranchPrefixes -UpstreamDeletedBranchPrefixes $upstreamDeletedBranchPrefixes -FetchLookup $fetchLookup -WorktreeRecords $worktreeRecords)
 
     # ============================================================
     # STEP 2: TRACKING FILE CHECK (existing logic, intact)
@@ -919,7 +952,7 @@ function Invoke-SessionCleanupDetector {
         $out = @()
         $out += "- Current Claude worktree branch ``$($Item.BranchName)`` is reachable from ``$($Item.RemoteDefaultRef)``."
         $out += ''
-        $out += "Current-worktree cleanup must be run from another checkout: `git worktree remove '$safeWorktreePath'` followed by `git branch -D '$safeBranch'`."
+        $out += "Current-worktree cleanup must be run from another checkout: ``git worktree remove '$safeWorktreePath'`` followed by ``git branch -D '$safeBranch'``."
         return $out
     }
 
@@ -1030,17 +1063,17 @@ function Invoke-SessionCleanupDetector {
     $claudeCleanupKeys = @()
     if (
         $null -ne $currentNoUpstreamWorktree -and
-        (Test-SCDNoUpstreamBranchCandidate -BranchName $currentNoUpstreamWorktree.BranchName -Prefixes $noUpstreamBranchPrefixes)
+        (Test-SCDBranchMatchesPrefixes -BranchName $currentNoUpstreamWorktree.BranchName -Prefixes $noUpstreamBranchPrefixes)
     ) {
         $claudeCleanupKeys += "current|$($currentNoUpstreamWorktree.BranchName)"
     }
     foreach ($item in $siblingWorktreeCleanups) {
-        if (Test-SCDNoUpstreamBranchCandidate -BranchName $item.BranchName -Prefixes $noUpstreamBranchPrefixes) {
+        if (Test-SCDBranchMatchesPrefixes -BranchName $item.BranchName -Prefixes $noUpstreamBranchPrefixes) {
             $claudeCleanupKeys += (Get-ClaudeCleanupKey -Kind 'sibling' -Item $item)
         }
     }
     foreach ($item in $orphanBranchCleanups) {
-        if (Test-SCDNoUpstreamBranchCandidate -BranchName $item.BranchName -Prefixes $noUpstreamBranchPrefixes) {
+        if (Test-SCDBranchMatchesPrefixes -BranchName $item.BranchName -Prefixes $noUpstreamBranchPrefixes) {
             $claudeCleanupKeys += (Get-ClaudeCleanupKey -Kind 'orphan' -Item $item)
         }
     }
@@ -1056,11 +1089,11 @@ function Invoke-SessionCleanupDetector {
         }
 
         $visibleSiblingWorktreeCleanups = @($siblingWorktreeCleanups | Where-Object {
-                -not (Test-SCDNoUpstreamBranchCandidate -BranchName $_.BranchName -Prefixes $noUpstreamBranchPrefixes) -or
+                -not (Test-SCDBranchMatchesPrefixes -BranchName $_.BranchName -Prefixes $noUpstreamBranchPrefixes) -or
                 $visibleClaudeCleanupLookup.ContainsKey((Get-ClaudeCleanupKey -Kind 'sibling' -Item $_))
             })
         $visibleOrphanBranchCleanups = @($orphanBranchCleanups | Where-Object {
-                -not (Test-SCDNoUpstreamBranchCandidate -BranchName $_.BranchName -Prefixes $noUpstreamBranchPrefixes) -or
+                -not (Test-SCDBranchMatchesPrefixes -BranchName $_.BranchName -Prefixes $noUpstreamBranchPrefixes) -or
                 $visibleClaudeCleanupLookup.ContainsKey((Get-ClaudeCleanupKey -Kind 'orphan' -Item $_))
             })
     }
