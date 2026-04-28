@@ -70,6 +70,80 @@ function Get-SCDRemoteDefaultRef {
     }
 }
 
+function Get-SCDGitCommandPath {
+    try {
+        $command = Get-Command git -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
+        if ($null -ne $command -and -not [string]::IsNullOrWhiteSpace($command.Source)) {
+            return $command.Source
+        }
+    }
+    catch {
+        $null = $_
+    }
+
+    return 'git'
+}
+
+function Invoke-SCDNonInteractiveGit {
+    param(
+        [Parameter(Mandatory)]
+        [string[]]$Arguments,
+
+        [int]$TimeoutSeconds = 5
+    )
+
+    $result = @{
+        ExitCode = $null
+        Output   = ''
+        TimedOut = $false
+    }
+
+    if ($null -eq $Arguments -or $Arguments.Count -eq 0) {
+        return $result
+    }
+
+    try {
+        $processStartInfo = [System.Diagnostics.ProcessStartInfo]::new()
+        $processStartInfo.FileName = Get-SCDGitCommandPath
+        $processStartInfo.UseShellExecute = $false
+        $processStartInfo.CreateNoWindow = $true
+        $processStartInfo.RedirectStandardOutput = $true
+        $processStartInfo.RedirectStandardError = $true
+        $processStartInfo.WorkingDirectory = (Get-Location).Path
+        foreach ($argument in $Arguments) {
+            $processStartInfo.ArgumentList.Add($argument) | Out-Null
+        }
+        $processStartInfo.Environment['GIT_TERMINAL_PROMPT'] = '0'
+        $processStartInfo.Environment['GCM_INTERACTIVE'] = 'Never'
+        $processStartInfo.Environment['GIT_ASKPASS'] = 'echo'
+
+        $process = [System.Diagnostics.Process]::Start($processStartInfo)
+        if ($null -eq $process) {
+            return $result
+        }
+
+        try {
+            $timeoutMilliseconds = [System.Math]::Max(1, $TimeoutSeconds) * 1000
+            if (-not $process.WaitForExit($timeoutMilliseconds)) {
+                $result.TimedOut = $true
+                try { $process.Kill($true) } catch { $null = $_ }
+                return $result
+            }
+
+            $result.ExitCode = $process.ExitCode
+            $result.Output = $process.StandardOutput.ReadToEnd()
+        }
+        finally {
+            $process.Dispose()
+        }
+    }
+    catch {
+        $null = $_
+    }
+
+    return $result
+}
+
 function Invoke-SCDNonInteractiveFetch {
     param(
         [Parameter(Mandatory)]
@@ -82,40 +156,7 @@ function Invoke-SCDNonInteractiveFetch {
         return
     }
 
-    try {
-        $processStartInfo = [System.Diagnostics.ProcessStartInfo]::new()
-        $processStartInfo.FileName = 'git'
-        $processStartInfo.UseShellExecute = $false
-        $processStartInfo.CreateNoWindow = $true
-        $processStartInfo.RedirectStandardOutput = $true
-        $processStartInfo.RedirectStandardError = $true
-        $processStartInfo.WorkingDirectory = (Get-Location).Path
-        $processStartInfo.ArgumentList.Add('fetch') | Out-Null
-        $processStartInfo.ArgumentList.Add('--quiet') | Out-Null
-        $processStartInfo.ArgumentList.Add('--prune') | Out-Null
-        $processStartInfo.ArgumentList.Add($RemoteName) | Out-Null
-        $processStartInfo.Environment['GIT_TERMINAL_PROMPT'] = '0'
-        $processStartInfo.Environment['GCM_INTERACTIVE'] = 'Never'
-        $processStartInfo.Environment['GIT_ASKPASS'] = 'echo'
-
-        $process = [System.Diagnostics.Process]::Start($processStartInfo)
-        if ($null -eq $process) {
-            return
-        }
-
-        try {
-            $timeoutMilliseconds = [System.Math]::Max(1, $TimeoutSeconds) * 1000
-            if (-not $process.WaitForExit($timeoutMilliseconds)) {
-                try { $process.Kill($true) } catch { $null = $_ }
-            }
-        }
-        finally {
-            $process.Dispose()
-        }
-    }
-    catch {
-        $null = $_
-    }
+    $null = Invoke-SCDNonInteractiveGit -Arguments @('fetch', '--quiet', '--prune', $RemoteName) -TimeoutSeconds $TimeoutSeconds
 }
 
 function ConvertTo-SCDNormalizedPath {
@@ -134,6 +175,24 @@ function ConvertTo-SCDNormalizedPath {
 }
 
 function Test-SCDNoUpstreamBranchCandidate {
+    param(
+        [Parameter(Mandatory)]
+        [string]$BranchName,
+
+        [Parameter(Mandatory)]
+        [string[]]$Prefixes
+    )
+
+    foreach ($branchPrefix in $Prefixes) {
+        if ($BranchName.StartsWith($branchPrefix, [System.StringComparison]::Ordinal)) {
+            return $true
+        }
+    }
+
+    return $false
+}
+
+function Test-SCDUpstreamDeletedBranchCandidate {
     param(
         [Parameter(Mandatory)]
         [string]$BranchName,
@@ -205,8 +264,8 @@ function Test-SCDRemoteHeadMissing {
     }
 
     try {
-        $remoteHeads = (git ls-remote --heads $RemoteName $BranchPattern 2>$null)
-        return ($LASTEXITCODE -eq 0 -and [string]::IsNullOrWhiteSpace($remoteHeads))
+        $remoteResult = Invoke-SCDNonInteractiveGit -Arguments @('ls-remote', '--heads', $RemoteName, $BranchPattern)
+        return ($remoteResult.ExitCode -eq 0 -and [string]::IsNullOrWhiteSpace($remoteResult.Output))
     }
     catch {
         return $false
@@ -329,7 +388,12 @@ function Get-SCDSiblingWorktreeCleanups {
         [string]$DefaultBranch,
 
         [Parameter(Mandatory)]
-        [string[]]$NoUpstreamBranchPrefixes
+        [string[]]$NoUpstreamBranchPrefixes,
+
+        [string[]]$UpstreamDeletedBranchPrefixes = @('feature/issue-'),
+
+        [AllowNull()]
+        [System.Collections.Generic.IDictionary[string, bool]]$FetchLookup = $null
     )
 
     $cleanups = @()
@@ -365,11 +429,21 @@ function Get-SCDSiblingWorktreeCleanups {
                     continue
                 }
 
-                $upstreamRef = (git -C $record.WorktreePath rev-parse --abbrev-ref '@{u}' 2>$null)
-                $upstreamExitCode = $LASTEXITCODE
-                if ($upstreamExitCode -eq 0) {
-                    $upstreamBranch = ConvertFrom-SCDUpstreamRef -UpstreamRef $upstreamRef -FallbackBranchName $branchName
-                    if ($null -eq $upstreamBranch) { continue }
+                $upstreamBranch = $null
+                if ($record.IsPrunable) {
+                    $upstreamBranch = Get-SCDConfiguredUpstreamBranch -BranchName $branchName
+                }
+                else {
+                    $upstreamRef = (git -C $record.WorktreePath rev-parse --abbrev-ref '@{u}' 2>$null)
+                    if ($LASTEXITCODE -eq 0) {
+                        $upstreamBranch = ConvertFrom-SCDUpstreamRef -UpstreamRef $upstreamRef -FallbackBranchName $branchName
+                    }
+                }
+
+                if ($null -ne $upstreamBranch) {
+                    if (-not (Test-SCDUpstreamDeletedBranchCandidate -BranchName $branchName -Prefixes $UpstreamDeletedBranchPrefixes)) {
+                        continue
+                    }
 
                     if (Test-SCDRemoteHeadMissing -RemoteName $upstreamBranch.RemoteName -BranchPattern $upstreamBranch.BranchName) {
                         $cleanups += @{
@@ -389,7 +463,7 @@ function Get-SCDSiblingWorktreeCleanups {
                 }
 
                 $remoteDefault = Get-SCDRemoteDefaultRef -DefaultBranch $DefaultBranch
-                Invoke-SCDNonInteractiveFetch -RemoteName $remoteDefault.RemoteName
+                Invoke-SCDNonInteractiveFetchOnce -RemoteName $remoteDefault.RemoteName -CacheKey $remoteDefault.RefName -FetchLookup $FetchLookup
 
                 if (-not (Test-SCDGitRefExists -RefName $remoteDefault.RefName)) {
                     continue
@@ -440,6 +514,35 @@ function Add-SCDLookupValue {
     }
 }
 
+function Invoke-SCDNonInteractiveFetchOnce {
+    param(
+        [Parameter(Mandatory)]
+        [string]$RemoteName,
+
+        [string]$CacheKey = '',
+
+        [AllowNull()]
+        [System.Collections.Generic.IDictionary[string, bool]]$FetchLookup = $null
+    )
+
+    if ([string]::IsNullOrWhiteSpace($RemoteName)) {
+        return
+    }
+
+    if ($null -eq $FetchLookup) {
+        Invoke-SCDNonInteractiveFetch -RemoteName $RemoteName
+        return
+    }
+
+    $resolvedCacheKey = if ([string]::IsNullOrWhiteSpace($CacheKey)) { $RemoteName } else { $CacheKey }
+    if ($FetchLookup.ContainsKey($resolvedCacheKey)) {
+        return
+    }
+
+    Add-SCDLookupValue -Lookup $FetchLookup -Value $resolvedCacheKey
+    Invoke-SCDNonInteractiveFetch -RemoteName $RemoteName
+}
+
 function Get-SCDBranchConfigValue {
     param(
         [Parameter(Mandatory)]
@@ -467,6 +570,32 @@ function Get-SCDBranchConfigValue {
     }
 
     return ''
+}
+
+function Get-SCDConfiguredUpstreamBranch {
+    param(
+        [Parameter(Mandatory)]
+        [string]$BranchName
+    )
+
+    $remoteName = Get-SCDBranchConfigValue -BranchName $BranchName -Name 'remote'
+    $mergeRef = Get-SCDBranchConfigValue -BranchName $BranchName -Name 'merge'
+    if ([string]::IsNullOrWhiteSpace($remoteName) -or [string]::IsNullOrWhiteSpace($mergeRef)) {
+        return $null
+    }
+
+    $remoteBranchName = $mergeRef
+    if ($mergeRef -match '^refs/heads/(.+)$') {
+        $remoteBranchName = $Matches[1]
+    }
+    if ([string]::IsNullOrWhiteSpace($remoteBranchName)) {
+        return $null
+    }
+
+    return @{
+        RemoteName = $remoteName
+        BranchName = $remoteBranchName
+    }
 }
 
 function Get-SCDAttachedBranchLookup {
@@ -522,7 +651,12 @@ function Get-SCDOrphanBranchCleanups {
         [string]$DefaultBranch,
 
         [Parameter(Mandatory)]
-        [string[]]$NoUpstreamBranchPrefixes
+        [string[]]$NoUpstreamBranchPrefixes,
+
+        [string[]]$UpstreamDeletedBranchPrefixes = @('feature/issue-'),
+
+        [AllowNull()]
+        [System.Collections.Generic.IDictionary[string, bool]]$FetchLookup = $null
     )
 
     $cleanups = @()
@@ -558,7 +692,7 @@ function Get-SCDOrphanBranchCleanups {
 
     if ($noUpstreamCandidates.Count -gt 0) {
         $remoteDefault = Get-SCDRemoteDefaultRef -DefaultBranch $DefaultBranch
-        Invoke-SCDNonInteractiveFetch -RemoteName $remoteDefault.RemoteName
+        Invoke-SCDNonInteractiveFetchOnce -RemoteName $remoteDefault.RemoteName -CacheKey $remoteDefault.RefName -FetchLookup $FetchLookup
 
         if (Test-SCDGitRefExists -RefName $remoteDefault.RefName) {
             foreach ($branchName in $noUpstreamCandidates) {
@@ -583,21 +717,16 @@ function Get-SCDOrphanBranchCleanups {
             continue
         }
 
-        $remoteName = Get-SCDBranchConfigValue -BranchName $branchName -Name 'remote'
-        $mergeRef = Get-SCDBranchConfigValue -BranchName $branchName -Name 'merge'
-        if ([string]::IsNullOrWhiteSpace($remoteName) -or [string]::IsNullOrWhiteSpace($mergeRef)) {
+        if (-not (Test-SCDUpstreamDeletedBranchCandidate -BranchName $branchName -Prefixes $UpstreamDeletedBranchPrefixes)) {
             continue
         }
 
-        $remoteBranchName = $mergeRef
-        if ($mergeRef -match '^refs/heads/(.+)$') {
-            $remoteBranchName = $Matches[1]
-        }
-        if ([string]::IsNullOrWhiteSpace($remoteBranchName)) {
+        $upstreamBranch = Get-SCDConfiguredUpstreamBranch -BranchName $branchName
+        if ($null -eq $upstreamBranch) {
             continue
         }
 
-        if (Test-SCDRemoteHeadMissing -RemoteName $remoteName -BranchPattern $remoteBranchName) {
+        if (Test-SCDRemoteHeadMissing -RemoteName $upstreamBranch.RemoteName -BranchPattern $upstreamBranch.BranchName) {
             $cleanups += @{
                 BranchName = $branchName
                 Reason     = 'remote branch merged/deleted'
@@ -632,6 +761,8 @@ function Invoke-SessionCleanupDetector {
         'calibration'
     )
     $noUpstreamBranchPrefixes = @('claude/')
+    $upstreamDeletedBranchPrefixes = @('feature/issue-')
+    $fetchLookup = New-SCDStringLookup
 
     # ============================================================
     # STEP 1: BRANCH CHECK (runs before tracking-file gate)
@@ -672,7 +803,7 @@ function Invoke-SessionCleanupDetector {
 
                 if ($isNoUpstreamCandidate) {
                     $remoteDefault = Get-SCDRemoteDefaultRef -DefaultBranch $defaultBranch
-                    Invoke-SCDNonInteractiveFetch -RemoteName $remoteDefault.RemoteName
+                    Invoke-SCDNonInteractiveFetchOnce -RemoteName $remoteDefault.RemoteName -CacheKey $remoteDefault.RefName -FetchLookup $fetchLookup
 
                     if (Test-SCDGitRefExists -RefName $remoteDefault.RefName) {
                         if (Test-SCDMergeBaseAncestor -BranchName $currentBranch -TargetRef $remoteDefault.RefName) {
@@ -688,8 +819,8 @@ function Invoke-SessionCleanupDetector {
         }
     }
 
-    $siblingWorktreeCleanups = @(Get-SCDSiblingWorktreeCleanups -CurrentWorktreePath (Get-Location).Path -DefaultBranch $defaultBranch -NoUpstreamBranchPrefixes $noUpstreamBranchPrefixes)
-    $orphanBranchCleanups = @(Get-SCDOrphanBranchCleanups -CurrentBranch $currentBranch -DefaultBranch $defaultBranch -NoUpstreamBranchPrefixes $noUpstreamBranchPrefixes)
+    $siblingWorktreeCleanups = @(Get-SCDSiblingWorktreeCleanups -CurrentWorktreePath (Get-Location).Path -DefaultBranch $defaultBranch -NoUpstreamBranchPrefixes $noUpstreamBranchPrefixes -UpstreamDeletedBranchPrefixes $upstreamDeletedBranchPrefixes -FetchLookup $fetchLookup)
+    $orphanBranchCleanups = @(Get-SCDOrphanBranchCleanups -CurrentBranch $currentBranch -DefaultBranch $defaultBranch -NoUpstreamBranchPrefixes $noUpstreamBranchPrefixes -UpstreamDeletedBranchPrefixes $upstreamDeletedBranchPrefixes -FetchLookup $fetchLookup)
 
     # ============================================================
     # STEP 2: TRACKING FILE CHECK (existing logic, intact)

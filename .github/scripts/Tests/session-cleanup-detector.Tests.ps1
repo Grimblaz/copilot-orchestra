@@ -227,22 +227,34 @@ if ($a.Count -ge 3 -and $a[0] -eq 'rev-parse' -and $a[1] -eq '--abbrev-ref' -and
     exit $upstreamExit
 }
 
-if ($a.Count -ge 4 -and $a[0] -eq 'ls-remote' -and $a[1] -eq '--heads' -and $a[2] -eq 'origin') {
+if ($a.Count -ge 4 -and $a[0] -eq 'ls-remote' -and $a[1] -eq '--heads') {
+    if ((Get-MockConfigValue 'log-ls-remote-env') -eq $true) {
+        "ls-remote-env`t$env:GIT_TERMINAL_PROMPT`t$env:GCM_INTERACTIVE`t$env:GIT_ASKPASS" | Add-Content -Path $callLogPath -Encoding UTF8
+    }
+
+    if ((Get-MockConfigValue 'ls-remote-mode') -eq 'timeout') {
+        exit 124
+    }
+
     $pattern = $a[3]
+    $exitValue = Get-MockConfigValue "ls-remote-exit-$pattern"
+    if ($null -eq $exitValue) { $exitValue = Get-MockConfigValue 'ls-remote-default-exit' }
+    if ($null -eq $exitValue) { $exitValue = 0 }
+
     $exactKey = "ls-remote-$pattern"
     $exactValue = Get-MockConfigValue $exactKey
-    if ($null -ne $exactValue) { Write-Output $exactValue; exit 0 }
+    if ($null -ne $exactValue) { Write-Output $exactValue; exit ([int]$exitValue) }
     foreach ($prop in $config.PSObject.Properties) {
-        if ($prop.Name -like 'ls-remote-*') {
+        if ($prop.Name -like 'ls-remote-*' -and $prop.Name -notlike 'ls-remote-exit-*') {
             $keyPattern = $prop.Name.Substring('ls-remote-'.Length)
             if ($pattern -like $keyPattern) {
                 Write-Output $prop.Value
-                exit 0
+                exit ([int]$exitValue)
             }
         }
     }
     if ($null -ne $config.'ls-remote-default') { Write-Output $config.'ls-remote-default' }
-    exit 0
+    exit ([int]$exitValue)
 }
 
 if ($a.Count -ge 1 -and $a[0] -eq 'fetch') {
@@ -448,11 +460,11 @@ exit $LASTEXITCODE
         New-Item -ItemType Directory -Path $workDir -Force | Out-Null
 
         $result = & $script:InvokeDetectorInWorkDir -WorkDir $workDir -RepoRoot 'C:/agent-orchestra' -GitConfig @{
-            'branch--show-current'                                       = 'feature/issue-452-cleanup-detector-worktrees'
-            'symbolic-ref-origin-HEAD'                                   = 'refs/remotes/origin/main'
-            'rev-parse-exit'                                             = 0
-            'rev-parse-upstream'                                         = 'origin/feature/issue-452-cleanup-detector-worktrees'
-            'ls-remote-feature/issue-452-cleanup-detector-worktrees'     = ''
+            'branch--show-current'                                   = 'feature/issue-452-cleanup-detector-worktrees'
+            'symbolic-ref-origin-HEAD'                               = 'refs/remotes/origin/main'
+            'rev-parse-exit'                                         = 0
+            'rev-parse-upstream'                                     = 'origin/feature/issue-452-cleanup-detector-worktrees'
+            'ls-remote-feature/issue-452-cleanup-detector-worktrees' = ''
         }
         $context = & $script:GetAdditionalContext -Output $result.Output
         $expectedBytes = [System.IO.File]::ReadAllBytes($script:CopilotBaselineFixturePath)
@@ -464,6 +476,41 @@ exit $LASTEXITCODE
             -Because 'the current-branch Copilot cleanup message is a compatibility contract for SessionStart additionalContext'
     }
 
+    It 'F2 fails open and uses noninteractive environment for timeout-sentinel remote-head checks' {
+        $workDir = Join-Path $TestDrive 'remote-head-timeout-sentinel'
+        New-Item -ItemType Directory -Path $workDir -Force | Out-Null
+        $branch = 'feature/issue-452-remote-timeout'
+
+        $savedGitTerminalPrompt = $env:GIT_TERMINAL_PROMPT
+        $savedGcmInteractive = $env:GCM_INTERACTIVE
+        $savedGitAskPass = $env:GIT_ASKPASS
+        try {
+            $env:GIT_TERMINAL_PROMPT = 'interactive'
+            $env:GCM_INTERACTIVE = 'Always'
+            $env:GIT_ASKPASS = 'askpass-tool'
+
+            $result = & $script:InvokeDetectorInWorkDir -WorkDir $workDir -IncludeGitCalls -GitConfig @{
+                'branch--show-current'     = $branch
+                'symbolic-ref-origin-HEAD' = 'refs/remotes/origin/main'
+                'rev-parse-exit'           = 0
+                'rev-parse-upstream'       = "origin/$branch"
+                'log-ls-remote-env'        = $true
+                'ls-remote-mode'           = 'timeout'
+            }
+        }
+        finally {
+            $env:GIT_TERMINAL_PROMPT = $savedGitTerminalPrompt
+            $env:GCM_INTERACTIVE = $savedGcmInteractive
+            $env:GIT_ASKPASS = $savedGitAskPass
+        }
+        $lsRemoteEnvCalls = @($result['GitCalls'] | Where-Object { $_ -match '^ls-remote-env\t' })
+
+        $result.ExitCode | Should -Be 0
+        $result.Output | Should -Match '^\{\s*\}$'
+        $lsRemoteEnvCalls | Should -Contain "ls-remote-env`t0`tNever`techo" `
+            -Because 'remote-head probes must not inherit interactive credential prompting settings'
+    }
+
     Context 'current no-upstream Claude worktree detection' {
         It 'T2 AC1 AC8 surfaces a merged current claude worktree with inline cleanup outside the fenced block' {
             $workDir = Join-Path $TestDrive 'current-claude-merged'
@@ -471,12 +518,12 @@ exit $LASTEXITCODE
             $branch = 'claude/widget-fixer-abcde'
 
             $result = & $script:InvokeDetectorInWorkDir -WorkDir $workDir -RepoRoot 'C:/agent-orchestra' -GitConfig @{
-                'branch--show-current'             = $branch
-                'symbolic-ref-origin-HEAD'         = 'refs/remotes/origin/main'
-                'rev-parse-exit'                   = 128
+                'branch--show-current'              = $branch
+                'symbolic-ref-origin-HEAD'          = 'refs/remotes/origin/main'
+                'rev-parse-exit'                    = 128
                 'show-ref-refs/remotes/origin/main' = 0
-                'fetch-exit'                       = 0
-                'merge-base-exit'                  = 0
+                'fetch-exit'                        = 0
+                'merge-base-exit'                   = 0
             }
             $context = & $script:GetAdditionalContext -Output $result.Output
             $outsideFence = & $script:RemoveFencedPowerShellBlocks -Context $context
@@ -497,14 +544,14 @@ exit $LASTEXITCODE
             $branch = 'claude/upstream-default-abcde'
 
             $result = & $script:InvokeDetectorInWorkDir -WorkDir $workDir -RepoRoot 'C:/agent-orchestra' -IncludeGitCalls -GitConfig @{
-                'branch--show-current'                 = $branch
-                'symbolic-ref-HEAD'                    = 'refs/heads/main'
-                'rev-parse-exit'                       = 128
-                'config-branch.main.remote'            = 'upstream'
-                'show-ref-refs/remotes/origin/main'    = 1
-                'show-ref-refs/remotes/origin/master'  = 1
-                'show-ref-refs/remotes/upstream/main'  = 0
-                'fetch-exit'                           = 0
+                'branch--show-current'                          = $branch
+                'symbolic-ref-HEAD'                             = 'refs/heads/main'
+                'rev-parse-exit'                                = 128
+                'config-branch.main.remote'                     = 'upstream'
+                'show-ref-refs/remotes/origin/main'             = 1
+                'show-ref-refs/remotes/origin/master'           = 1
+                'show-ref-refs/remotes/upstream/main'           = 0
+                'fetch-exit'                                    = 0
                 "merge-base-$branch-refs/remotes/upstream/main" = 0
                 "merge-base-$branch-refs/remotes/origin/main"   = 1
             }
@@ -526,12 +573,12 @@ exit $LASTEXITCODE
             New-Item -ItemType Directory -Path $workDir -Force | Out-Null
 
             $result = & $script:InvokeDetectorInWorkDir -WorkDir $workDir -GitConfig @{
-                'branch--show-current'             = 'claude/in-flight-zyxwv'
-                'symbolic-ref-origin-HEAD'         = 'refs/remotes/origin/main'
-                'rev-parse-exit'                   = 128
+                'branch--show-current'              = 'claude/in-flight-zyxwv'
+                'symbolic-ref-origin-HEAD'          = 'refs/remotes/origin/main'
+                'rev-parse-exit'                    = 128
                 'show-ref-refs/remotes/origin/main' = 0
-                'fetch-exit'                       = 0
-                'merge-base-exit'                  = 1
+                'fetch-exit'                        = 0
+                'merge-base-exit'                   = 1
             }
 
             $result.ExitCode | Should -Be 0
@@ -560,12 +607,12 @@ exit $LASTEXITCODE
             New-Item -ItemType Directory -Path $workDir -Force | Out-Null
 
             $result = & $script:InvokeDetectorInWorkDir -WorkDir $workDir -GitConfig @{
-                'branch--show-current'             = 'claude/merge-base-error-abcde'
-                'symbolic-ref-origin-HEAD'         = 'refs/remotes/origin/main'
-                'rev-parse-exit'                   = 128
+                'branch--show-current'              = 'claude/merge-base-error-abcde'
+                'symbolic-ref-origin-HEAD'          = 'refs/remotes/origin/main'
+                'rev-parse-exit'                    = 128
                 'show-ref-refs/remotes/origin/main' = 0
-                'fetch-exit'                       = 0
-                'merge-base-exit'                  = 2
+                'fetch-exit'                        = 0
+                'merge-base-exit'                   = 2
             }
 
             $result.ExitCode | Should -Be 0
@@ -578,12 +625,12 @@ exit $LASTEXITCODE
             $branch = 'claude/fetch-failure-abcde'
 
             $result = & $script:InvokeDetectorInWorkDir -WorkDir $workDir -GitConfig @{
-                'branch--show-current'             = $branch
-                'symbolic-ref-origin-HEAD'         = 'refs/remotes/origin/main'
-                'rev-parse-exit'                   = 128
+                'branch--show-current'              = $branch
+                'symbolic-ref-origin-HEAD'          = 'refs/remotes/origin/main'
+                'rev-parse-exit'                    = 128
                 'show-ref-refs/remotes/origin/main' = 0
-                'fetch-exit'                       = 128
-                'merge-base-exit'                  = 0
+                'fetch-exit'                        = 128
+                'merge-base-exit'                   = 0
             }
             $context = & $script:GetAdditionalContext -Output $result.Output
 
@@ -599,12 +646,12 @@ exit $LASTEXITCODE
             $branch = 'claude/fetch-timeout-abcde'
 
             $result = & $script:InvokeDetectorInWorkDir -WorkDir $workDir -GitConfig @{
-                'branch--show-current'             = $branch
-                'symbolic-ref-origin-HEAD'         = 'refs/remotes/origin/main'
-                'rev-parse-exit'                   = 128
+                'branch--show-current'              = $branch
+                'symbolic-ref-origin-HEAD'          = 'refs/remotes/origin/main'
+                'rev-parse-exit'                    = 128
                 'show-ref-refs/remotes/origin/main' = 0
-                'fetch-mode'                       = 'timeout'
-                'merge-base-exit'                  = 0
+                'fetch-mode'                        = 'timeout'
+                'merge-base-exit'                   = 0
             }
             $context = & $script:GetAdditionalContext -Output $result.Output
 
@@ -619,11 +666,11 @@ exit $LASTEXITCODE
             New-Item -ItemType Directory -Path $workDir -Force | Out-Null
 
             $result = & $script:InvokeDetectorInWorkDir -WorkDir $workDir -IncludeGitCalls -GitConfig @{
-                'branch--show-current'             = 'scratch/local-only'
-                'symbolic-ref-origin-HEAD'         = 'refs/remotes/origin/main'
-                'rev-parse-exit'                   = 128
+                'branch--show-current'              = 'scratch/local-only'
+                'symbolic-ref-origin-HEAD'          = 'refs/remotes/origin/main'
+                'rev-parse-exit'                    = 128
                 'show-ref-refs/remotes/origin/main' = 0
-                'fetch-exit'                       = 99
+                'fetch-exit'                        = 99
             }
             $fetchCalls = @($result['GitCalls'] | Where-Object { $_ -match '^fetch(\t|$)' })
 
@@ -647,13 +694,13 @@ exit $LASTEXITCODE
             ) -join "`n`n"
 
             $result = & $script:InvokeDetectorInWorkDir -WorkDir $workDir -GitConfig @{
-                'branch--show-current'                 = 'main'
-                'symbolic-ref-origin-HEAD'             = 'refs/remotes/origin/main'
-                'worktree-list-porcelain'              = $worktreeList
-                'show-ref-refs/remotes/origin/main'    = 0
-                'fetch-exit'                           = 0
+                'branch--show-current'                        = 'main'
+                'symbolic-ref-origin-HEAD'                    = 'refs/remotes/origin/main'
+                'worktree-list-porcelain'                     = $worktreeList
+                'show-ref-refs/remotes/origin/main'           = 0
+                'fetch-exit'                                  = 0
                 "merge-base-$branch-refs/remotes/origin/main" = 0
-                'path-configs'                         = @{
+                'path-configs'                                = @{
                     "$siblingPath" = @{
                         'branch--show-current' = $branch
                         'rev-parse-exit'       = 128
@@ -671,6 +718,50 @@ exit $LASTEXITCODE
             $insideFence | Should -Match ([regex]::Escape("git branch -D '$branch'"))
         }
 
+        It 'F2 fetches the remote default once while evaluating multiple sibling no-upstream candidates' {
+            $workDir = Join-Path $TestDrive 'sibling-claude-fetch-once-current'
+            $firstSiblingDir = Join-Path $TestDrive 'sibling-claude-fetch-once-first'
+            $secondSiblingDir = Join-Path $TestDrive 'sibling-claude-fetch-once-second'
+            New-Item -ItemType Directory -Path $workDir, $firstSiblingDir, $secondSiblingDir -Force | Out-Null
+            $currentPath = & $script:ToPorcelainPath -Path $workDir
+            $firstSiblingPath = & $script:ToPorcelainPath -Path $firstSiblingDir
+            $secondSiblingPath = & $script:ToPorcelainPath -Path $secondSiblingDir
+            $firstBranch = 'claude/fetch-once-first-abcde'
+            $secondBranch = 'claude/fetch-once-second-abcde'
+            $worktreeList = @(
+                (& $script:NewWorktreeRecord -Path $currentPath -Branch 'main'),
+                (& $script:NewWorktreeRecord -Path $firstSiblingPath -Branch $firstBranch),
+                (& $script:NewWorktreeRecord -Path $secondSiblingPath -Branch $secondBranch)
+            ) -join "`n`n"
+
+            $result = & $script:InvokeDetectorInWorkDir -WorkDir $workDir -IncludeGitCalls -GitConfig @{
+                'branch--show-current'                              = 'main'
+                'symbolic-ref-origin-HEAD'                          = 'refs/remotes/origin/main'
+                'worktree-list-porcelain'                           = $worktreeList
+                'show-ref-refs/remotes/origin/main'                 = 0
+                'fetch-exit'                                        = 0
+                "merge-base-$firstBranch-refs/remotes/origin/main"  = 0
+                "merge-base-$secondBranch-refs/remotes/origin/main" = 0
+                'path-configs'                                      = @{
+                    "$firstSiblingPath"  = @{
+                        'branch--show-current' = $firstBranch
+                        'rev-parse-exit'       = 128
+                    }
+                    "$secondSiblingPath" = @{
+                        'branch--show-current' = $secondBranch
+                        'rev-parse-exit'       = 128
+                    }
+                }
+            }
+            $context = & $script:GetAdditionalContext -Output $result.Output
+            $fetchCalls = @($result['GitCalls'] | Where-Object { $_ -match '^fetch(\t|$)' })
+
+            $result.ExitCode | Should -Be 0
+            $context | Should -Match ([regex]::Escape($firstBranch))
+            $context | Should -Match ([regex]::Escape($secondBranch))
+            $fetchCalls.Count | Should -Be 1 -Because 'one remote/default refresh is enough for all sibling no-upstream candidates in the run'
+        }
+
         It 'T3 AC3 leaves an unmerged sibling claude worktree unflagged' {
             $workDir = Join-Path $TestDrive 'sibling-claude-unmerged-current'
             $siblingDir = Join-Path $TestDrive 'sibling-claude-unmerged-other'
@@ -684,13 +775,13 @@ exit $LASTEXITCODE
             ) -join "`n`n"
 
             $result = & $script:InvokeDetectorInWorkDir -WorkDir $workDir -GitConfig @{
-                'branch--show-current'                 = 'main'
-                'symbolic-ref-origin-HEAD'             = 'refs/remotes/origin/main'
-                'worktree-list-porcelain'              = $worktreeList
-                'show-ref-refs/remotes/origin/main'    = 0
-                'fetch-exit'                           = 0
+                'branch--show-current'                        = 'main'
+                'symbolic-ref-origin-HEAD'                    = 'refs/remotes/origin/main'
+                'worktree-list-porcelain'                     = $worktreeList
+                'show-ref-refs/remotes/origin/main'           = 0
+                'fetch-exit'                                  = 0
                 "merge-base-$branch-refs/remotes/origin/main" = 1
-                'path-configs'                         = @{
+                'path-configs'                                = @{
                     "$siblingPath" = @{
                         'branch--show-current' = $branch
                         'rev-parse-exit'       = 128
@@ -759,15 +850,15 @@ exit $LASTEXITCODE
             ) -join "`n`n"
 
             $result = & $script:InvokeDetectorInWorkDir -WorkDir $workDir -GitConfig @{
-                'branch--show-current'                 = $currentBranch
-                'symbolic-ref-origin-HEAD'             = 'refs/remotes/origin/main'
-                'rev-parse-exit'                       = 128
-                'worktree-list-porcelain'              = $worktreeList
-                'show-ref-refs/remotes/origin/main'    = 0
-                'fetch-exit'                           = 0
+                'branch--show-current'                               = $currentBranch
+                'symbolic-ref-origin-HEAD'                           = 'refs/remotes/origin/main'
+                'rev-parse-exit'                                     = 128
+                'worktree-list-porcelain'                            = $worktreeList
+                'show-ref-refs/remotes/origin/main'                  = 0
+                'fetch-exit'                                         = 0
                 "merge-base-$currentBranch-refs/remotes/origin/main" = 0
                 "merge-base-$siblingBranch-refs/remotes/origin/main" = 0
-                'path-configs'                         = @{
+                'path-configs'                                       = @{
                     "$siblingPath" = @{
                         'branch--show-current' = $siblingBranch
                         'rev-parse-exit'       = 128
@@ -812,14 +903,14 @@ exit $LASTEXITCODE
             ) -join "`n`n"
 
             $result = & $script:InvokeDetectorInWorkDir -WorkDir $workDir -GitConfig @{
-                'branch--show-current'                 = 'main'
-                'symbolic-ref-origin-HEAD'             = 'refs/remotes/origin/main'
-                'worktree-list-porcelain'              = $worktreeList
-                'show-ref-refs/remotes/origin/main'    = 0
-                'fetch-exit'                           = 0
-                'merge-base-exit'                      = 0
-                'path-configs'                         = @{
-                    "$lockedPath" = @{
+                'branch--show-current'              = 'main'
+                'symbolic-ref-origin-HEAD'          = 'refs/remotes/origin/main'
+                'worktree-list-porcelain'           = $worktreeList
+                'show-ref-refs/remotes/origin/main' = 0
+                'fetch-exit'                        = 0
+                'merge-base-exit'                   = 0
+                'path-configs'                      = @{
+                    "$lockedPath"   = @{
                         'branch--show-current' = $lockedBranch
                         'rev-parse-exit'       = 128
                     }
@@ -827,7 +918,7 @@ exit $LASTEXITCODE
                         'branch--show-current' = $prunableBranch
                         'rev-parse-exit'       = 128
                     }
-                    "$barePath" = @{
+                    "$barePath"     = @{
                         'branch--show-current' = $bareBranch
                         'rev-parse-exit'       = 128
                     }
@@ -871,15 +962,15 @@ exit $LASTEXITCODE
             ) -join "`n`n"
 
             $result = & $script:InvokeDetectorInWorkDir -WorkDir $workDir -GitConfig @{
-                'branch--show-current'                 = $currentBranch
-                'symbolic-ref-origin-HEAD'             = 'refs/remotes/origin/main'
-                'rev-parse-exit'                       = 128
-                'worktree-list-porcelain'              = $worktreeList
-                'show-ref-refs/remotes/origin/main'    = 0
-                'fetch-exit'                           = 0
+                'branch--show-current'                               = $currentBranch
+                'symbolic-ref-origin-HEAD'                           = 'refs/remotes/origin/main'
+                'rev-parse-exit'                                     = 128
+                'worktree-list-porcelain'                            = $worktreeList
+                'show-ref-refs/remotes/origin/main'                  = 0
+                'fetch-exit'                                         = 0
                 "merge-base-$currentBranch-refs/remotes/origin/main" = 0
                 "merge-base-$siblingBranch-refs/remotes/origin/main" = 0
-                'path-configs'                         = @{
+                'path-configs'                                       = @{
                     "$siblingPath" = @{
                         'branch--show-current' = $siblingBranch
                         'rev-parse-exit'       = 128
@@ -909,19 +1000,19 @@ exit $LASTEXITCODE
             ) -join "`n`n"
 
             $result = & $script:InvokeDetectorInWorkDir -WorkDir $workDir -GitConfig @{
-                'branch--show-current'                 = $currentBranch
-                'symbolic-ref-origin-HEAD'             = 'refs/remotes/origin/main'
-                'rev-parse-exit'                       = 128
-                'worktree-list-porcelain'              = $worktreeList
-                'show-ref-refs/remotes/origin/main'    = 0
-                'fetch-exit'                           = 0
+                'branch--show-current'                               = $currentBranch
+                'symbolic-ref-origin-HEAD'                           = 'refs/remotes/origin/main'
+                'rev-parse-exit'                                     = 128
+                'worktree-list-porcelain'                            = $worktreeList
+                'show-ref-refs/remotes/origin/main'                  = 0
+                'fetch-exit'                                         = 0
                 "merge-base-$currentBranch-refs/remotes/origin/main" = 1
-                "ls-remote-$siblingBranch"             = ''
-                'path-configs'                         = @{
+                "ls-remote-$siblingBranch"                           = ''
+                'path-configs'                                       = @{
                     "$siblingPath" = @{
-                        'branch--show-current'                 = $siblingBranch
-                        'rev-parse-exit'                       = 0
-                        'rev-parse-upstream'                   = "origin/$siblingBranch"
+                        'branch--show-current'                = $siblingBranch
+                        'rev-parse-exit'                      = 0
+                        'rev-parse-upstream'                  = "origin/$siblingBranch"
                         "config-branch.$siblingBranch.remote" = 'origin'
                         "config-branch.$siblingBranch.merge"  = "refs/heads/$siblingBranch"
                     }
@@ -935,6 +1026,82 @@ exit $LASTEXITCODE
             $context | Should -Not -Match ([regex]::Escape($currentBranch))
             $insideFence | Should -Match ([regex]::Escape("git worktree remove '$siblingPath'"))
             $insideFence | Should -Match ([regex]::Escape("git branch -D '$siblingBranch'"))
+        }
+
+        It 'F1 ignores non-issue upstream-deleted sibling branches while preserving feature issue positives' {
+            $workDir = Join-Path $TestDrive 'sibling-upstream-scope-current'
+            $featureDir = Join-Path $TestDrive 'sibling-upstream-scope-feature'
+            $releaseDir = Join-Path $TestDrive 'sibling-upstream-scope-release'
+            New-Item -ItemType Directory -Path $workDir, $featureDir, $releaseDir -Force | Out-Null
+            $currentPath = & $script:ToPorcelainPath -Path $workDir
+            $featurePath = & $script:ToPorcelainPath -Path $featureDir
+            $releasePath = & $script:ToPorcelainPath -Path $releaseDir
+            $featureBranch = 'feature/issue-452-sibling-upstream-deleted'
+            $releaseBranch = 'release/2026-04-cleanup'
+            $worktreeList = @(
+                (& $script:NewWorktreeRecord -Path $currentPath -Branch 'main'),
+                (& $script:NewWorktreeRecord -Path $featurePath -Branch $featureBranch),
+                (& $script:NewWorktreeRecord -Path $releasePath -Branch $releaseBranch)
+            ) -join "`n`n"
+
+            $result = & $script:InvokeDetectorInWorkDir -WorkDir $workDir -IncludeGitCalls -GitConfig @{
+                'branch--show-current'     = 'main'
+                'symbolic-ref-origin-HEAD' = 'refs/remotes/origin/main'
+                'worktree-list-porcelain'  = $worktreeList
+                "ls-remote-$featureBranch" = ''
+                "ls-remote-$releaseBranch" = ''
+                'path-configs'             = @{
+                    "$featurePath" = @{
+                        'branch--show-current' = $featureBranch
+                        'rev-parse-exit'       = 0
+                        'rev-parse-upstream'   = "origin/$featureBranch"
+                    }
+                    "$releasePath" = @{
+                        'branch--show-current' = $releaseBranch
+                        'rev-parse-exit'       = 0
+                        'rev-parse-upstream'   = "origin/$releaseBranch"
+                    }
+                }
+            }
+            $context = & $script:GetAdditionalContext -Output $result.Output
+            $insideFence = (& $script:GetFencedPowerShellBlocks -Context $context) -join "`n"
+            $releaseRemoteCalls = @($result['GitCalls'] | Where-Object { $_ -eq "ls-remote`t--heads`torigin`t$releaseBranch" })
+
+            $result.ExitCode | Should -Be 0
+            $context | Should -Match ([regex]::Escape($featureBranch))
+            $insideFence | Should -Match ([regex]::Escape("git branch -D '$featureBranch'"))
+            $context | Should -Not -Match ([regex]::Escape($releaseBranch))
+            $insideFence | Should -Not -Match ([regex]::Escape("git branch -D '$releaseBranch'"))
+            $releaseRemoteCalls.Count | Should -Be 0 -Because 'remote-deleted sibling cleanup is documented as feature/issue-* scoped'
+        }
+
+        It 'F3 reports a prunable missing-path feature issue sibling from main-repo branch config' {
+            $workDir = Join-Path $TestDrive 'sibling-prunable-missing-current'
+            New-Item -ItemType Directory -Path $workDir -Force | Out-Null
+            $currentPath = & $script:ToPorcelainPath -Path $workDir
+            $missingPath = & $script:ToPorcelainPath -Path (Join-Path $TestDrive 'sibling-prunable-missing-other')
+            $branch = 'feature/issue-452-prunable-upstream-deleted'
+            $worktreeList = @(
+                (& $script:NewWorktreeRecord -Path $currentPath -Branch 'main'),
+                (& $script:NewWorktreeRecord -Path $missingPath -Branch $branch -States @('prunable gitdir file points to missing checkout'))
+            ) -join "`n`n"
+
+            $result = & $script:InvokeDetectorInWorkDir -WorkDir $workDir -GitConfig @{
+                'branch--show-current'         = 'main'
+                'symbolic-ref-origin-HEAD'     = 'refs/remotes/origin/main'
+                'worktree-list-porcelain'      = $worktreeList
+                "config-branch.$branch.remote" = 'origin'
+                "config-branch.$branch.merge"  = "refs/heads/$branch"
+                "ls-remote-$branch"            = ''
+            }
+            $context = & $script:GetAdditionalContext -Output $result.Output
+            $insideFence = (& $script:GetFencedPowerShellBlocks -Context $context) -join "`n"
+
+            $result.ExitCode | Should -Be 0
+            $context | Should -Match ([regex]::Escape($branch))
+            $context | Should -Match 'prunable'
+            $insideFence | Should -Match ([regex]::Escape("git worktree remove '$missingPath'"))
+            $insideFence | Should -Match ([regex]::Escape("git branch -D '$branch'"))
         }
     }
 
@@ -955,18 +1122,18 @@ exit $LASTEXITCODE
             ) -join "`n`n"
 
             $result = & $script:InvokeDetectorInWorkDir -WorkDir $workDir -GitConfig @{
-                'branch--show-current'                 = $currentBranch
-                'symbolic-ref-origin-HEAD'             = 'refs/remotes/origin/main'
-                'rev-parse-exit'                       = 0
-                'rev-parse-upstream'                   = "origin/$currentBranch"
-                "ls-remote-$currentBranch"             = 'abc refs/heads/claude/current-attached-abcde'
-                'worktree-list-porcelain'              = $worktreeList
-                'show-ref-refs/remotes/origin/main'    = 0
-                'fetch-exit'                           = 0
-                'for-each-ref-refs/heads/claude/'      = @($currentBranch, $attachedBranch, $mergedOrphan, $unmergedOrphan)
-                "merge-base-$mergedOrphan-refs/remotes/origin/main" = 0
+                'branch--show-current'                                = $currentBranch
+                'symbolic-ref-origin-HEAD'                            = 'refs/remotes/origin/main'
+                'rev-parse-exit'                                      = 0
+                'rev-parse-upstream'                                  = "origin/$currentBranch"
+                "ls-remote-$currentBranch"                            = 'abc refs/heads/claude/current-attached-abcde'
+                'worktree-list-porcelain'                             = $worktreeList
+                'show-ref-refs/remotes/origin/main'                   = 0
+                'fetch-exit'                                          = 0
+                'for-each-ref-refs/heads/claude/'                     = @($currentBranch, $attachedBranch, $mergedOrphan, $unmergedOrphan)
+                "merge-base-$mergedOrphan-refs/remotes/origin/main"   = 0
                 "merge-base-$unmergedOrphan-refs/remotes/origin/main" = 1
-                'path-configs'                         = @{
+                'path-configs'                                        = @{
                     "$siblingPath" = @{
                         'branch--show-current' = $attachedBranch
                         'rev-parse-exit'       = 128
@@ -996,15 +1163,15 @@ exit $LASTEXITCODE
             $expectedCopilotBullet = @($baselineText -split "`r?`n" | Where-Object { $_ -like '- Current branch *' } | Select-Object -First 1)[0]
 
             $result = & $script:InvokeDetectorInWorkDir -WorkDir $workDir -RepoRoot 'C:/agent-orchestra' -GitConfig @{
-                'branch--show-current'                 = $copilotBranch
-                'symbolic-ref-origin-HEAD'             = 'refs/remotes/origin/main'
-                'rev-parse-exit'                       = 0
-                'rev-parse-upstream'                   = "origin/$copilotBranch"
-                "ls-remote-$copilotBranch"             = ''
-                'worktree-list-porcelain'              = (& $script:NewWorktreeRecord -Path (& $script:ToPorcelainPath -Path $workDir) -Branch $copilotBranch)
-                'show-ref-refs/remotes/origin/main'    = 0
-                'fetch-exit'                           = 0
-                'for-each-ref-refs/heads/claude/'      = @($orphanBranch)
+                'branch--show-current'                              = $copilotBranch
+                'symbolic-ref-origin-HEAD'                          = 'refs/remotes/origin/main'
+                'rev-parse-exit'                                    = 0
+                'rev-parse-upstream'                                = "origin/$copilotBranch"
+                "ls-remote-$copilotBranch"                          = ''
+                'worktree-list-porcelain'                           = (& $script:NewWorktreeRecord -Path (& $script:ToPorcelainPath -Path $workDir) -Branch $copilotBranch)
+                'show-ref-refs/remotes/origin/main'                 = 0
+                'fetch-exit'                                        = 0
+                'for-each-ref-refs/heads/claude/'                   = @($orphanBranch)
                 "merge-base-$orphanBranch-refs/remotes/origin/main" = 0
             }
             $context = & $script:GetAdditionalContext -Output $result.Output
@@ -1027,12 +1194,12 @@ exit $LASTEXITCODE
             New-Item -ItemType Directory -Path $workDir -Force | Out-Null
             $branches = 1..12 | ForEach-Object { 'claude/reclaimable-{0:d2}-abcde' -f $_ }
             $gitConfig = @{
-                'branch--show-current'                 = 'main'
-                'symbolic-ref-origin-HEAD'             = 'refs/remotes/origin/main'
-                'worktree-list-porcelain'              = (& $script:NewWorktreeRecord -Path (& $script:ToPorcelainPath -Path $workDir) -Branch 'main')
-                'show-ref-refs/remotes/origin/main'    = 0
-                'fetch-exit'                           = 0
-                'for-each-ref-refs/heads/claude/'      = $branches
+                'branch--show-current'              = 'main'
+                'symbolic-ref-origin-HEAD'          = 'refs/remotes/origin/main'
+                'worktree-list-porcelain'           = (& $script:NewWorktreeRecord -Path (& $script:ToPorcelainPath -Path $workDir) -Branch 'main')
+                'show-ref-refs/remotes/origin/main' = 0
+                'fetch-exit'                        = 0
+                'for-each-ref-refs/heads/claude/'   = $branches
             }
             foreach ($branch in $branches) {
                 $gitConfig["merge-base-$branch-refs/remotes/origin/main"] = 0
@@ -1101,16 +1268,16 @@ exit $LASTEXITCODE
             $branch = 'feature/issue-452-orphan-upstream-deleted'
 
             $result = & $script:InvokeDetectorInWorkDir -WorkDir $workDir -GitConfig @{
-                'branch--show-current'                     = 'main'
-                'symbolic-ref-origin-HEAD'                 = 'refs/remotes/origin/main'
-                'worktree-list-porcelain'                  = (& $script:NewWorktreeRecord -Path (& $script:ToPorcelainPath -Path $workDir) -Branch 'main')
-                'fetch-exit'                               = 0
-                'for-each-ref-refs/heads/feature/issue-*'  = @($branch)
-                'for-each-ref-refs/heads/feature/'         = @($branch)
-                'for-each-ref-refs/heads/'                 = @($branch)
-                "config-branch.$branch.remote"             = 'origin'
-                "config-branch.$branch.merge"              = "refs/heads/$branch"
-                "ls-remote-$branch"                        = ''
+                'branch--show-current'                    = 'main'
+                'symbolic-ref-origin-HEAD'                = 'refs/remotes/origin/main'
+                'worktree-list-porcelain'                 = (& $script:NewWorktreeRecord -Path (& $script:ToPorcelainPath -Path $workDir) -Branch 'main')
+                'fetch-exit'                              = 0
+                'for-each-ref-refs/heads/feature/issue-*' = @($branch)
+                'for-each-ref-refs/heads/feature/'        = @($branch)
+                'for-each-ref-refs/heads/'                = @($branch)
+                "config-branch.$branch.remote"            = 'origin'
+                "config-branch.$branch.merge"             = "refs/heads/$branch"
+                "ls-remote-$branch"                       = ''
             }
             $context = & $script:GetAdditionalContext -Output $result.Output
             $insideFence = (& $script:GetFencedPowerShellBlocks -Context $context) -join "`n"
@@ -1118,6 +1285,36 @@ exit $LASTEXITCODE
             $result.ExitCode | Should -Be 0
             $context | Should -Match ([regex]::Escape($branch))
             $insideFence | Should -Match ([regex]::Escape("git branch -D '$branch'"))
+        }
+
+        It 'F1 ignores orphan upstream-deleted branches outside feature issue scope while preserving feature issue positives' {
+            $workDir = Join-Path $TestDrive 'orphan-upstream-scope'
+            New-Item -ItemType Directory -Path $workDir -Force | Out-Null
+            $featureBranch = 'feature/issue-452-orphan-upstream-deleted'
+            $scratchBranch = 'scratch/orphan-upstream-deleted'
+
+            $result = & $script:InvokeDetectorInWorkDir -WorkDir $workDir -IncludeGitCalls -GitConfig @{
+                'branch--show-current'                = 'main'
+                'symbolic-ref-origin-HEAD'            = 'refs/remotes/origin/main'
+                'worktree-list-porcelain'             = (& $script:NewWorktreeRecord -Path (& $script:ToPorcelainPath -Path $workDir) -Branch 'main')
+                'for-each-ref-refs/heads/'            = @($featureBranch, $scratchBranch)
+                "config-branch.$featureBranch.remote" = 'origin'
+                "config-branch.$featureBranch.merge"  = "refs/heads/$featureBranch"
+                "config-branch.$scratchBranch.remote" = 'origin'
+                "config-branch.$scratchBranch.merge"  = "refs/heads/$scratchBranch"
+                "ls-remote-$featureBranch"            = ''
+                "ls-remote-$scratchBranch"            = ''
+            }
+            $context = & $script:GetAdditionalContext -Output $result.Output
+            $insideFence = (& $script:GetFencedPowerShellBlocks -Context $context) -join "`n"
+            $scratchRemoteCalls = @($result['GitCalls'] | Where-Object { $_ -eq "ls-remote`t--heads`torigin`t$scratchBranch" })
+
+            $result.ExitCode | Should -Be 0
+            $context | Should -Match ([regex]::Escape($featureBranch))
+            $insideFence | Should -Match ([regex]::Escape("git branch -D '$featureBranch'"))
+            $context | Should -Not -Match ([regex]::Escape($scratchBranch))
+            $insideFence | Should -Not -Match ([regex]::Escape("git branch -D '$scratchBranch'"))
+            $scratchRemoteCalls.Count | Should -Be 0 -Because 'remote-deleted orphan cleanup is documented as feature/issue-* scoped'
         }
     }
 
