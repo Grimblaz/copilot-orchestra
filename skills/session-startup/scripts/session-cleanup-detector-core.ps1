@@ -149,6 +149,117 @@ function Test-SCDNoUpstreamBranchCandidate {
     return $false
 }
 
+function ConvertTo-SCDPowerShellSingleQuoteEscapedText {
+    param([AllowNull()][string]$Value)
+
+    if ($null -eq $Value) {
+        return ''
+    }
+
+    return $Value -replace "'", "''"
+}
+
+function ConvertFrom-SCDUpstreamRef {
+    param(
+        [AllowNull()][object]$UpstreamRef,
+
+        [Parameter(Mandatory)]
+        [string]$FallbackBranchName
+    )
+
+    $upstreamText = (($UpstreamRef | Select-Object -First 1) -as [string])
+    if ([string]::IsNullOrWhiteSpace($upstreamText)) {
+        return $null
+    }
+
+    $upstreamParts = $upstreamText.Trim() -split '/', 2
+    $remoteName = $upstreamParts[0]
+    $remoteBranchName = if ($upstreamParts.Count -gt 1) { $upstreamParts[1] } else { $FallbackBranchName }
+
+    if ([string]::IsNullOrWhiteSpace($remoteName)) {
+        return $null
+    }
+    if ([string]::IsNullOrWhiteSpace($remoteBranchName)) {
+        $remoteBranchName = $FallbackBranchName
+    }
+
+    return @{
+        RemoteName = $remoteName
+        BranchName = $remoteBranchName
+    }
+}
+
+function Test-SCDRemoteHeadMissing {
+    param(
+        [Parameter(Mandatory)]
+        [string]$RemoteName,
+
+        [Parameter(Mandatory)]
+        [string]$BranchPattern
+    )
+
+    if ([string]::IsNullOrWhiteSpace($RemoteName) -or [string]::IsNullOrWhiteSpace($BranchPattern)) {
+        return $false
+    }
+
+    try {
+        $remoteHeads = (git ls-remote --heads $RemoteName $BranchPattern 2>$null)
+        return ($LASTEXITCODE -eq 0 -and [string]::IsNullOrWhiteSpace($remoteHeads))
+    }
+    catch {
+        return $false
+    }
+}
+
+function Test-SCDGitRefExists {
+    param(
+        [Parameter(Mandatory)]
+        [string]$RefName
+    )
+
+    if ([string]::IsNullOrWhiteSpace($RefName)) {
+        return $false
+    }
+
+    try {
+        git show-ref --verify --quiet $RefName 2>$null
+        return ($LASTEXITCODE -eq 0)
+    }
+    catch {
+        return $false
+    }
+}
+
+function Test-SCDMergeBaseAncestor {
+    param(
+        [Parameter(Mandatory)]
+        [string]$BranchName,
+
+        [Parameter(Mandatory)]
+        [string]$TargetRef,
+
+        [string]$WorktreePath = ''
+    )
+
+    if ([string]::IsNullOrWhiteSpace($BranchName) -or [string]::IsNullOrWhiteSpace($TargetRef)) {
+        return $false
+    }
+
+    try {
+        if ([string]::IsNullOrWhiteSpace($WorktreePath)) {
+            git merge-base --is-ancestor $BranchName $TargetRef 2>$null
+        }
+        else {
+            git -C $WorktreePath merge-base --is-ancestor $BranchName $TargetRef 2>$null
+        }
+
+        return ($LASTEXITCODE -eq 0)
+    }
+    catch {
+        return $false
+    }
+}
+
 function Get-SCDWorktreeRecords {
     param([string[]]$PorcelainLines)
 
@@ -253,23 +364,10 @@ function Get-SCDSiblingWorktreeCleanups {
                 $upstreamRef = (git -C $record.WorktreePath rev-parse --abbrev-ref '@{u}' 2>$null)
                 $upstreamExitCode = $LASTEXITCODE
                 if ($upstreamExitCode -eq 0) {
-                    $upstreamText = (($upstreamRef | Select-Object -First 1) -as [string]).Trim()
-                    if ([string]::IsNullOrWhiteSpace($upstreamText)) {
-                        continue
-                    }
+                    $upstreamBranch = ConvertFrom-SCDUpstreamRef -UpstreamRef $upstreamRef -FallbackBranchName $branchName
+                    if ($null -eq $upstreamBranch) { continue }
 
-                    $upstreamParts = $upstreamText -split '/', 2
-                    $remoteName = $upstreamParts[0]
-                    $remoteBranchName = if ($upstreamParts.Count -gt 1) { $upstreamParts[1] } else { $branchName }
-                    if ([string]::IsNullOrWhiteSpace($remoteName)) {
-                        continue
-                    }
-                    if ([string]::IsNullOrWhiteSpace($remoteBranchName)) {
-                        $remoteBranchName = $branchName
-                    }
-
-                    $remoteHeads = (git ls-remote --heads $remoteName $remoteBranchName 2>$null)
-                    if ($LASTEXITCODE -eq 0 -and [string]::IsNullOrWhiteSpace($remoteHeads)) {
+                    if (Test-SCDRemoteHeadMissing -RemoteName $upstreamBranch.RemoteName -BranchPattern $upstreamBranch.BranchName) {
                         $cleanups += @{
                             BranchName   = $branchName
                             WorktreePath = $normalizedPath
@@ -289,13 +387,11 @@ function Get-SCDSiblingWorktreeCleanups {
                 $remoteDefault = Get-SCDRemoteDefaultRef -DefaultBranch $DefaultBranch
                 Invoke-SCDNonInteractiveFetch -RemoteName $remoteDefault.RemoteName
 
-                git show-ref --verify --quiet $remoteDefault.RefName 2>$null
-                if ($LASTEXITCODE -ne 0) {
+                if (-not (Test-SCDGitRefExists -RefName $remoteDefault.RefName)) {
                     continue
                 }
 
-                git -C $record.WorktreePath merge-base --is-ancestor $branchName $remoteDefault.RefName 2>$null
-                if ($LASTEXITCODE -eq 0) {
+                if (Test-SCDMergeBaseAncestor -BranchName $branchName -TargetRef $remoteDefault.RefName -WorktreePath $record.WorktreePath) {
                     $cleanups += @{
                         BranchName       = $branchName
                         WorktreePath     = $normalizedPath
@@ -454,11 +550,9 @@ function Get-SCDOrphanBranchCleanups {
         $remoteDefault = Get-SCDRemoteDefaultRef -DefaultBranch $DefaultBranch
         Invoke-SCDNonInteractiveFetch -RemoteName $remoteDefault.RemoteName
 
-        git show-ref --verify --quiet $remoteDefault.RefName 2>$null
-        if ($LASTEXITCODE -eq 0) {
+        if (Test-SCDGitRefExists -RefName $remoteDefault.RefName) {
             foreach ($branchName in $noUpstreamCandidates) {
-                git merge-base --is-ancestor $branchName $remoteDefault.RefName 2>$null
-                if ($LASTEXITCODE -eq 0) {
+                if (Test-SCDMergeBaseAncestor -BranchName $branchName -TargetRef $remoteDefault.RefName) {
                     $cleanups += @{
                         BranchName       = $branchName
                         Reason           = "reachable from ``$($remoteDefault.RefName)``"
@@ -493,8 +587,7 @@ function Get-SCDOrphanBranchCleanups {
             continue
         }
 
-        $remoteHeads = (git ls-remote --heads $remoteName $remoteBranchName 2>$null)
-        if ($LASTEXITCODE -eq 0 -and [string]::IsNullOrWhiteSpace($remoteHeads)) {
+        if (Test-SCDRemoteHeadMissing -RemoteName $remoteName -BranchPattern $remoteBranchName) {
             $cleanups += @{
                 BranchName = $branchName
                 Reason     = 'remote branch merged/deleted'
@@ -551,21 +644,16 @@ function Invoke-SessionCleanupDetector {
             $upstreamExitCode = $LASTEXITCODE
             if ($upstreamExitCode -eq 0) {
                 # Has upstream — check whether the remote branch still exists
-                $remoteName = ($upstreamRef -split '/', 2)[0]
-                $remoteBranchName = ($upstreamRef -split '/', 2)[1]
-                if ([string]::IsNullOrWhiteSpace($remoteBranchName)) { $remoteBranchName = $currentBranch }
-                $remoteHeads = (git ls-remote --heads $remoteName $remoteBranchName 2>$null)
-                if ($LASTEXITCODE -eq 0) {
-                    if ([string]::IsNullOrWhiteSpace($remoteHeads)) {
-                        # Remote branch is gone — stale branch detected
-                        $branchIssueId = $null
-                        if ($currentBranch -match 'issue-(\d+)') {
-                            $branchIssueId = $Matches[1]
-                        }
-                        $staleBranch = @{
-                            BranchName = $currentBranch
-                            IssueId    = $branchIssueId
-                        }
+                $upstreamBranch = ConvertFrom-SCDUpstreamRef -UpstreamRef $upstreamRef -FallbackBranchName $currentBranch
+                if ($null -ne $upstreamBranch -and (Test-SCDRemoteHeadMissing -RemoteName $upstreamBranch.RemoteName -BranchPattern $upstreamBranch.BranchName)) {
+                    # Remote branch is gone — stale branch detected
+                    $branchIssueId = $null
+                    if ($currentBranch -match 'issue-(\d+)') {
+                        $branchIssueId = $Matches[1]
+                    }
+                    $staleBranch = @{
+                        BranchName = $currentBranch
+                        IssueId    = $branchIssueId
                     }
                 }
             }
@@ -576,11 +664,8 @@ function Invoke-SessionCleanupDetector {
                     $remoteDefault = Get-SCDRemoteDefaultRef -DefaultBranch $defaultBranch
                     Invoke-SCDNonInteractiveFetch -RemoteName $remoteDefault.RemoteName
 
-                    git show-ref --verify --quiet $remoteDefault.RefName 2>$null
-                    if ($LASTEXITCODE -eq 0) {
-                        git merge-base --is-ancestor $currentBranch $remoteDefault.RefName 2>$null
-                        $ancestorExitCode = $LASTEXITCODE
-                        if ($ancestorExitCode -eq 0) {
+                    if (Test-SCDGitRefExists -RefName $remoteDefault.RefName) {
+                        if (Test-SCDMergeBaseAncestor -BranchName $currentBranch -TargetRef $remoteDefault.RefName) {
                             $currentNoUpstreamWorktree = @{
                                 BranchName       = $currentBranch
                                 RemoteDefaultRef = $remoteDefault.RefName
@@ -642,16 +727,14 @@ function Invoke-SessionCleanupDetector {
                 }
 
                 # Check for remote branches matching feature/issue-{id}-*
-                $remoteCheck = git ls-remote --heads origin "feature/issue-$id-*" 2>$null
-                # Guard: git failure (network error, etc.) → skip to avoid false positives
-                if ($LASTEXITCODE -ne 0) { continue }
+                $remoteHeadMissing = Test-SCDRemoteHeadMissing -RemoteName 'origin' -BranchPattern "feature/issue-$id-*"
                 $localBranches = @(git branch --list "feature/issue-$id-*" 2>$null |
                         ForEach-Object { ($_ -replace '^\* ', '').Trim() } |
                         Where-Object { $_ })
                 $localBranch = $localBranches | Select-Object -First 1
                 if ($LASTEXITCODE -ne 0) { $localBranches = @(); $localBranch = $null }
 
-                if ([string]::IsNullOrWhiteSpace($remoteCheck)) {
+                if ($remoteHeadMissing) {
                     $cleanupNeeded += @{ IssueId = $id; BranchName = $localBranch; AllBranches = $localBranches }
                 }
             }
@@ -690,8 +773,8 @@ function Invoke-SessionCleanupDetector {
     function Get-CurrentNoUpstreamWorktreeLines {
         param([hashtable]$Item)
 
-        $safeWorktreePath = $Item.WorktreePath -replace "'", "''"
-        $safeBranch = $Item.BranchName -replace "'", "''"
+        $safeWorktreePath = ConvertTo-SCDPowerShellSingleQuoteEscapedText -Value $Item.WorktreePath
+        $safeBranch = ConvertTo-SCDPowerShellSingleQuoteEscapedText -Value $Item.BranchName
         $out = @()
         $out += "- Current Claude worktree branch ``$($Item.BranchName)`` is reachable from ``$($Item.RemoteDefaultRef)``."
         $out += ''
@@ -718,7 +801,7 @@ function Invoke-SessionCleanupDetector {
     }
 
     # Safe root: single-quoted in emitted commands handles $ and " characters in the path
-    $safeRoot = $RepoRoot -replace "'", "''"
+    $safeRoot = ConvertTo-SCDPowerShellSingleQuoteEscapedText -Value $RepoRoot
 
     # Helper: emit cleanup command lines for tracking-file items
     function Get-TrackingCommands {
@@ -729,7 +812,7 @@ function Invoke-SessionCleanupDetector {
             if ($item.IssueId -ne 'unknown') {
                 if ($item.BranchName) {
                     foreach ($b in $item.AllBranches) {
-                        $safeB = $b -replace "'", "''"
+                        $safeB = ConvertTo-SCDPowerShellSingleQuoteEscapedText -Value $b
                         $out += "pwsh '$safeRoot/skills/session-startup/scripts/post-merge-cleanup.ps1' -IssueNumber $($item.IssueId) -FeatureBranch '$safeB'"
                     }
                 }
@@ -749,8 +832,8 @@ function Invoke-SessionCleanupDetector {
 
         $out = @()
         foreach ($item in $Items) {
-            $safeWorktreePath = $item.WorktreePath -replace "'", "''"
-            $safeBranch = $item.BranchName -replace "'", "''"
+            $safeWorktreePath = ConvertTo-SCDPowerShellSingleQuoteEscapedText -Value $item.WorktreePath
+            $safeBranch = ConvertTo-SCDPowerShellSingleQuoteEscapedText -Value $item.BranchName
             if ($item.IsLocked) {
                 $out += "git worktree remove --force '$safeWorktreePath'"
             }
@@ -777,7 +860,7 @@ function Invoke-SessionCleanupDetector {
 
         $out = @()
         foreach ($item in $Items) {
-            $safeBranch = $item.BranchName -replace "'", "''"
+            $safeBranch = ConvertTo-SCDPowerShellSingleQuoteEscapedText -Value $item.BranchName
             $out += "git branch -D '$safeBranch'"
         }
         return $out
@@ -799,8 +882,8 @@ function Invoke-SessionCleanupDetector {
         return "orphan|$($Item.BranchName)"
     }
 
-    $escaped = if ($null -ne $staleBranch) { $staleBranch.BranchName -replace "'", "''" } else { $null }
-    $escapedDefault = $defaultBranch -replace "'", "''"
+    $escaped = if ($null -ne $staleBranch) { ConvertTo-SCDPowerShellSingleQuoteEscapedText -Value $staleBranch.BranchName } else { $null }
+    $escapedDefault = ConvertTo-SCDPowerShellSingleQuoteEscapedText -Value $defaultBranch
 
     $claudeCleanupLimit = 10
     $claudeCleanupKeys = @()
