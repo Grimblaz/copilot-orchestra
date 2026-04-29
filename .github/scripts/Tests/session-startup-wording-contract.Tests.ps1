@@ -128,7 +128,7 @@ Describe 'session startup wording contract' {
         $script:GetStepSection = {
             param(
                 [string]$Content,
-                [Parameter(Mandatory=$true)]
+                [Parameter(Mandatory = $true)]
                 [ValidateNotNullOrEmpty()]
                 [object]$StepId
             )
@@ -302,7 +302,23 @@ Describe 'session startup wording contract' {
         # Headless fail-open emission behavior + fail-open mention
         $step7b | Should -Match '(?is)headless' -Because 'Step 7b must document headless failure behavior'
         $step7b | Should -Match '(?is)(fail open|fail-open)' -Because 'Step 7b must describe fail-open emission behavior'
-        $step7b | Should -Match '(?is)emit' -Because 'Step 7b must describe an emit action for fail-open cases'
+
+        # Ensure an `emit` instruction appears close to the exact freshness-failed phrase
+        $freshnessPhraseExact = 'marketplace freshness check failed — using cached view'
+        $freshnessIndex = $step7b.IndexOf($freshnessPhraseExact, [System.StringComparison]::Ordinal)
+        ($freshnessIndex -ge 0) | Should -BeTrue -Because 'Step 7b must contain the exact freshness-failed phrase'
+
+        $emitNearby = $false
+        if ($freshnessIndex -ge 0) {
+            $start = [Math]::Max(0, $freshnessIndex - 80)
+            $len = [Math]::Min(160, $step7b.Length - $start)
+            $snippet = $step7b.Substring($start, $len)
+            $emitNearby = ($snippet -match '(?is)\bemit\b')
+        }
+        $emitNearby | Should -BeTrue -Because 'Step 7b must include an emit instruction near the freshness failure phrase'
+
+        # Cached-view continuation wording must be present
+        $step7b | Should -Match '(?is)cached( marketplace)? view' -Because 'Step 7b must include a cached-view continuation wording (cached view or cached marketplace view)'
 
         # Verified-current / silence only on freshness-success branch
         $step7b | Should -Match '(?is)verified-?current' -Because 'Step 7b must mention verified-current semantics'
@@ -332,12 +348,50 @@ Describe 'session startup wording contract' {
     }
 
     It 'verifies Step 7b drift wording exists in the six active command/skill files' {
+        $freshnessPhraseExact = 'marketplace freshness check failed — using cached view'
+        $stopLabel = [regex]::Escape("Stop — I'll restart now")
+        $continueLabel = [regex]::Escape('Continue — run under old code')
+
         foreach ($document in $script:Step7bFreshnessDocuments) {
             $doc = & $script:GetDocumentState -Path $document.Path
             $sec = & $script:GetStep7bDriftRegion -Path $document.Path -Content $doc.Content
 
             ($sec -ne '') | Should -BeTrue -Because "$($document.Name) must contain a Step 7b/drift region"
+
+            # Core required fragments for every active region
             $sec | Should -Match ([regex]::Escape('claude plugin marketplace update')) -Because "$($document.Name) Step 7b must mention 'claude plugin marketplace update'"
+            $sec | Should -Match '5-second' -Because "$($document.Name) Step 7b must reference a 5-second freshness window/backoff detail"
+            $sec | Should -Match ([regex]::Escape($freshnessPhraseExact)) -Because "$($document.Name) Step 7b must include the exact marketplace freshness failed phrase"
+            $sec | Should -Match '(?is)cached( marketplace)? view' -Because "$($document.Name) Step 7b must include cached-view continuation wording (cached view or cached marketplace view)"
+
+            # Ensure `emit` appears near the freshness-failed phrase (within ~80 chars)
+            $freshnessIndex = $sec.IndexOf($freshnessPhraseExact, [System.StringComparison]::Ordinal)
+            ($freshnessIndex -ge 0) | Should -BeTrue -Because "$($document.Name) Step 7b must contain the freshness-failed phrase"
+            $emitNearby = $false
+            if ($freshnessIndex -ge 0) {
+                $start = [Math]::Max(0, $freshnessIndex - 80)
+                $len = [Math]::Min(160, $sec.Length - $start)
+                $snippet = $sec.Substring($start, $len)
+                $emitNearby = ($snippet -match '(?is)\bemit\w*\b')
+            }
+            $emitNearby | Should -BeTrue -Because "$($document.Name) Step 7b must include an emit instruction near the freshness failure phrase"
+
+            # Additional checks for the four command mirrors (commands: experience/design/plan/polish)
+            if ($document.Path -like '*\\commands\\*') {
+                $sec | Should -Match '(?i)non-git' -Because "$($document.Name) must mention non-git local-path carve-out"
+                $sec | Should -Match '(?i)dirty' -Because "$($document.Name) must mention dirty working-tree local-path carve-out"
+                $sec | Should -Match '(?i)detached' -Because "$($document.Name) must mention detached HEAD local-path carve-out"
+                $sec | Should -Match '(?i)suppress' -Because "$($document.Name) must mention suppress/suppression local-path carve-out"
+
+                $sec | Should -Match $stopLabel -Because "$($document.Name) must preserve the 'Stop — I'll restart now' option label"
+                $sec | Should -Match $continueLabel -Because "$($document.Name) must preserve the 'Continue — run under old code' option label"
+            }
+
+            # For the Claude platform companion, assert headless prompt-suppression wording in addition to fail-open phrase
+            if ($document.Path -eq $script:SessionStartupClaudePlatform) {
+                $sec | Should -Match ([regex]::Escape($freshnessPhraseExact)) -Because 'Claude companion region must contain the exact freshness-failed phrase'
+                $sec | Should -Match '(?is)headless.*suppress|suppress.*prompt' -Because 'Claude companion region must include headless prompt-suppression wording'
+            }
         }
     }
 
