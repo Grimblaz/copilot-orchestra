@@ -29,7 +29,7 @@ Describe 'session startup wording contract' {
         $script:DetectorCommandPattern = '(?ms)^pwsh -NoProfile -NonInteractive -File "[^"]*skills/session-startup/scripts/session-cleanup-detector\.ps1"\s*$'
         $script:ContractHeadingPattern = '(?m)^### Canonical Automatic Startup Guard Contract\s*$'
         $script:ClaudeDriftRegionStartMarker = 'For the Claude-only drift-check sub-step'
-        $script:ClaudeDriftRegionEndMarker = 'D3b soft exemption'
+        $script:ClaudeDriftRegionEndMarker = 'D3b exemption'
         $script:PipelineEntryAgents = @(
             @{
                 Name = 'Experience-Owner'
@@ -380,7 +380,7 @@ Describe 'session startup wording contract' {
 
             # Additional checks for the four command mirrors (commands: experience/design/plan/polish)
             # Use a robust detection that tolerates both backslashes and forward-slashes
-            $docPathNormalized = $document.Path -replace '\\','/'
+            $docPathNormalized = $document.Path -replace '\\', '/'
             if ($docPathNormalized -match '/commands/') {
                 $script:Step7bFreshnessCommandDocsFound = $script:Step7bFreshnessCommandDocsFound + 1
                 $sec | Should -Match '(?i)non-git' -Because "$($document.Name) must mention non-git local-path carve-out"
