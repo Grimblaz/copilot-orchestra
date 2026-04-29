@@ -501,7 +501,20 @@ function Invoke-AggregateReviewScores {
     $consolidationEvents = @()
     $complexityHistoryChanged = $false
 
+    # Resolve guidance-complexity config path and persistent_threshold default (Phase 2 D7)
+    $persistentThreshold = 3  # default when config is absent or unreadable
+    $hasExplicitComplexityConfigPath = -not [string]::IsNullOrWhiteSpace($ComplexityCeilingConfigPath)
+    $complexityConfigPath = if ($hasExplicitComplexityConfigPath) {
+        $ComplexityCeilingConfigPath
+    }
+    else {
+        Join-Path $script:_ARSCoreLibDir '../assets/guidance-complexity.json'
+    }
+
     if ($null -eq $mergedPRs -or $mergedPRs.Count -eq 0) {
+        if ($hasExplicitComplexityConfigPath -and -not (Test-Path -LiteralPath $complexityConfigPath)) {
+            Write-Warning "Complexity ceiling config path '$ComplexityCeilingConfigPath' was not found; using default persistent_threshold $persistentThreshold"
+        }
         [void]$out.AppendLine("data_source: $dataSource")
         [void]$out.AppendLine("insufficient_data: true")
         [void]$out.AppendLine("effective_sample_size: 0")
@@ -575,18 +588,9 @@ function Invoke-AggregateReviewScores {
         }
     }
 
-    # Read persistent_threshold from guidance-complexity config (Phase 2 D7)
-    $persistentThreshold = 3  # default when config is absent or unreadable
-    $hasExplicitComplexityConfigPath = -not [string]::IsNullOrWhiteSpace($ComplexityCeilingConfigPath)
-    $complexityConfigPath = if ($hasExplicitComplexityConfigPath) {
-        $ComplexityCeilingConfigPath
-    }
-    else {
-        Join-Path $script:_ARSCoreLibDir '../assets/guidance-complexity.json'
-    }
-    if (Test-Path $complexityConfigPath) {
+    if (Test-Path -LiteralPath $complexityConfigPath) {
         try {
-            $complexityCfg = Get-Content $complexityConfigPath -Raw | ConvertFrom-Json
+            $complexityCfg = Get-Content -LiteralPath $complexityConfigPath -Raw | ConvertFrom-Json
             if ($null -ne $complexityCfg.persistent_threshold -and [int]$complexityCfg.persistent_threshold -gt 0) {
                 $persistentThreshold = [int]$complexityCfg.persistent_threshold
             }

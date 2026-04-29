@@ -37,6 +37,13 @@
     Path to a measure-guidance-complexity.ps1 JSON output file. When provided,
     increments consecutive_count for over-ceiling agents and logs consolidation events.
 
+.PARAMETER ComplexityCeilingConfigPath
+    Optional path to a guidance-complexity config JSON file that overrides the
+    committed canonical default used for persistent_threshold. When omitted, the
+    script reads skills/calibration-pipeline/assets/guidance-complexity.json.
+    When an explicit path is supplied but not found, the script emits a warning
+    and uses the default persistent_threshold.
+
 .PARAMETER GhCliPath
     Path to the gh CLI executable. Defaults to 'gh'. Override for testing.
 

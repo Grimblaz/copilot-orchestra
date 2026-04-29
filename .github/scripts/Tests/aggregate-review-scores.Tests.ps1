@@ -554,6 +554,22 @@ exit 0
         }
 
         # ------------------------------------------------------------------
+        # Helper: write a simple mock gh.ps1 that returns a fixed PR list.
+        # ------------------------------------------------------------------
+        $script:WriteAggregateMockGh = {
+            param([string]$WorkDir, [string]$JsonOutput)
+            $dataFile = Join-Path $WorkDir 'gh-response.json'
+            $mockPath = Join-Path $WorkDir 'gh.ps1'
+            $JsonOutput | Set-Content -Path $dataFile -Encoding UTF8
+            @"
+# Mock gh CLI — outputs pre-defined JSON regardless of arguments
+Get-Content -Raw -Path '$($dataFile -replace "'", "''")'
+exit 0
+"@ | Set-Content -Path $mockPath -Encoding UTF8
+            return $mockPath
+        }
+
+        # ------------------------------------------------------------------
         # Helper: load NonMetricsPrNumbers from fixture (fixture mode) or via
         # live gh CLI (live mode), with @(9901) fallback on gh failure.
         # ------------------------------------------------------------------
@@ -2534,6 +2550,53 @@ exit 0
                 -Because 'a missing explicit complexity ceiling config path should warn without failing aggregation'
             ($result.Warnings -join "`n") | Should -Match ([regex]::Escape($missingConfigPath)) `
                 -Because 'the warning must include the literal missing explicit config path'
+        }
+
+        It 'warns with the missing explicit complexity ceiling config path when the merged PR list is empty' -Tag 'no-gh' {
+            $workDir = & $script:NewWorkDir
+            $mockGhPath = & $script:WriteAggregateMockGh -WorkDir $workDir -JsonOutput '[]'
+            $missingConfigPath = Join-Path $workDir 'missing-guidance-complexity.json'
+
+            $invokeRecords = @(Invoke-AggregateReviewScores `
+                    -GhCliPath $mockGhPath `
+                    -Repo 'test/repo' `
+                    -ComplexityCeilingConfigPath $missingConfigPath `
+                    3>&1)
+            $result = $invokeRecords | Where-Object { $_ -is [hashtable] } | Select-Object -First 1
+            $warnings = @($invokeRecords |
+                    Where-Object { $_ -is [System.Management.Automation.WarningRecord] } |
+                    ForEach-Object { $_.Message })
+
+            $result.ExitCode | Should -Be 0 `
+                -Because 'an empty merged PR list remains a successful insufficient-data run'
+            ($warnings -join "`n") | Should -Match ([regex]::Escape($missingConfigPath)) `
+                -Because 'the explicit missing config-path warning must be emitted before the empty-PR early return'
+        }
+
+        It 'warns with the literal wildcard-like complexity ceiling config path instead of expanding it' -Tag 'no-gh' {
+            $workDir = & $script:NewWorkDir
+            $mockGhPath = & $script:WriteAggregateMockGh -WorkDir $workDir -JsonOutput '[]'
+            $wildcardConfigPath = Join-Path $script:RepoRoot 'skills/calibration-pipeline/assets/guidance-complexity.jso?'
+
+            (Test-Path -Path $wildcardConfigPath) | Should -BeTrue `
+                -Because 'the wildcard-like path must match the canonical JSON if wildcard semantics are used'
+            (Get-Item -LiteralPath $wildcardConfigPath -ErrorAction SilentlyContinue) | Should -BeNullOrEmpty `
+                -Because 'the wildcard-like path must not exist as a literal file'
+
+            $invokeRecords = @(Invoke-AggregateReviewScores `
+                    -GhCliPath $mockGhPath `
+                    -Repo 'test/repo' `
+                    -ComplexityCeilingConfigPath $wildcardConfigPath `
+                    3>&1)
+            $result = $invokeRecords | Where-Object { $_ -is [hashtable] } | Select-Object -First 1
+            $warnings = @($invokeRecords |
+                    Where-Object { $_ -is [System.Management.Automation.WarningRecord] } |
+                    ForEach-Object { $_.Message })
+
+            $result.ExitCode | Should -Be 0 `
+                -Because 'a missing explicit wildcard-like config path should warn without failing aggregation'
+            ($warnings -join "`n") | Should -Match ([regex]::Escape($wildcardConfigPath)) `
+                -Because 'the warning must contain the literal supplied wildcard string rather than reading through wildcard expansion'
         }
 
         It 'omits the complexity ceiling config path in a fresh wrapper runspace without StrictMode failure' -Tag 'requires-gh' {

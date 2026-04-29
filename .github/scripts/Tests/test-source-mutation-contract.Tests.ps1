@@ -17,14 +17,14 @@ Describe 'test source mutation contract' -Tag 'no-gh' {
         $script:RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '../../..')).Path
         $script:TestsRoot = Join-Path $script:RepoRoot '.github\scripts\Tests'
         $script:ThisFile = (Resolve-Path $PSCommandPath).Path
-        $script:AssetPathPattern = 'skills[/\\][^/\\]+[/\\]assets[/\\]'
+        $script:AssetPathPattern = 'skills[/\\][^/\\]+[/\\]assets(?:[/\\]|$)'
 
         $script:WriteCommandPathParameters = @{
             'Set-Content' = @('Path', 'LiteralPath')
             'Out-File'    = @('FilePath', 'LiteralPath')
             'Add-Content' = @('Path', 'LiteralPath')
             'Move-Item'   = @('Path', 'LiteralPath', 'Destination')
-            'Copy-Item'   = @('Path', 'LiteralPath', 'Destination')
+            'Copy-Item'   = @('Destination')
             'Rename-Item' = @('Path', 'LiteralPath', 'NewName')
         }
 
@@ -52,7 +52,75 @@ Describe 'test source mutation contract' -Tag 'no-gh' {
             return ($VariableAst.VariablePath.UserPath -replace '^(global|local|private|script|using):', '')
         }
 
-        $script:GetAssetPathMatchesFromAst = {
+        $script:JoinStaticPath = {
+            param([string]$Parent, [string]$Child)
+
+            if ([string]::IsNullOrWhiteSpace($Parent)) {
+                return $Child
+            }
+            if ([string]::IsNullOrWhiteSpace($Child)) {
+                return $Parent
+            }
+
+            return (($Parent.TrimEnd('/\')) + '/' + ($Child.TrimStart('/\')))
+        }
+
+        $script:GetJoinPathArgumentAsts = {
+            param([System.Management.Automation.Language.CommandAst]$CommandAst)
+
+            $pathParameterNames = @('Path', 'LiteralPath', 'ChildPath', 'AdditionalChildPath')
+            $argumentAsts = [System.Collections.Generic.List[System.Management.Automation.Language.Ast]]::new()
+            $pendingPathParameter = $false
+            $pendingNonPathParameter = $false
+
+            for ($index = 1; $index -lt $CommandAst.CommandElements.Count; $index++) {
+                $element = $CommandAst.CommandElements[$index]
+
+                if ($element -is [System.Management.Automation.Language.CommandParameterAst]) {
+                    $parameterName = $element.ParameterName
+                    $pendingPathParameter = $false
+                    $pendingNonPathParameter = $false
+
+                    if ($pathParameterNames -contains $parameterName) {
+                        if ($null -ne $element.Argument) {
+                            [void]$argumentAsts.Add($element.Argument)
+                        }
+                        else {
+                            $pendingPathParameter = $true
+                        }
+
+                        continue
+                    }
+
+                    if (($script:SwitchOnlyParameterNames -notcontains $parameterName) -and $null -eq $element.Argument) {
+                        $pendingNonPathParameter = $true
+                    }
+
+                    continue
+                }
+
+                if ($element -isnot [System.Management.Automation.Language.ExpressionAst]) {
+                    continue
+                }
+
+                if ($pendingPathParameter) {
+                    [void]$argumentAsts.Add($element)
+                    $pendingPathParameter = $false
+                    continue
+                }
+
+                if ($pendingNonPathParameter) {
+                    $pendingNonPathParameter = $false
+                    continue
+                }
+
+                [void]$argumentAsts.Add($element)
+            }
+
+            return @($argumentAsts)
+        }
+
+        $script:GetStaticPathValuesFromAst = {
             param(
                 [System.Management.Automation.Language.Ast]$Ast,
                 [hashtable]$VariableValues
@@ -63,6 +131,56 @@ Describe 'test source mutation contract' -Tag 'no-gh' {
             }
 
             $candidateValues = [System.Collections.Generic.List[string]]::new()
+
+            if ($Ast -is [System.Management.Automation.Language.StringConstantExpressionAst]) {
+                [void]$candidateValues.Add($Ast.Value)
+            }
+
+            if ($Ast -is [System.Management.Automation.Language.ExpandableStringExpressionAst]) {
+                [void]$candidateValues.Add($Ast.Value)
+                [void]$candidateValues.Add($Ast.Extent.Text)
+            }
+
+            if ($Ast -is [System.Management.Automation.Language.VariableExpressionAst]) {
+                $name = & $script:NormalizeVariableName -VariableAst $Ast
+                if ($VariableValues.ContainsKey($name)) {
+                    [void]$candidateValues.Add($VariableValues[$name])
+                }
+            }
+
+            $joinPathCommands = @($Ast.FindAll({
+                        param($Node)
+                        $Node -is [System.Management.Automation.Language.CommandAst] -and
+                        $Node.GetCommandName() -eq 'Join-Path'
+                    }, $true))
+
+            foreach ($joinPathCommand in $joinPathCommands) {
+                $composedValues = @('')
+                $argumentAsts = @(& $script:GetJoinPathArgumentAsts -CommandAst $joinPathCommand)
+
+                foreach ($argumentAst in $argumentAsts) {
+                    $argumentValues = @(
+                        & $script:GetStaticPathValuesFromAst -Ast $argumentAst -VariableValues $VariableValues |
+                            Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
+                    )
+                    if ($argumentValues.Count -eq 0) {
+                        continue
+                    }
+
+                    $nextValues = [System.Collections.Generic.List[string]]::new()
+                    foreach ($parentValue in $composedValues) {
+                        foreach ($childValue in $argumentValues) {
+                            [void]$nextValues.Add((& $script:JoinStaticPath -Parent $parentValue -Child $childValue))
+                        }
+                    }
+                    $composedValues = @($nextValues)
+                }
+
+                foreach ($composedValue in $composedValues) {
+                    [void]$candidateValues.Add($composedValue)
+                }
+            }
+
             $nodes = @($Ast.FindAll({
                         param($Node)
                         $Node -is [System.Management.Automation.Language.StringConstantExpressionAst] -or
@@ -98,6 +216,18 @@ Describe 'test source mutation contract' -Tag 'no-gh' {
             return @(
                 $candidateValues |
                     Where-Object { -not [string]::IsNullOrWhiteSpace($_) } |
+                    Select-Object -Unique
+            )
+        }
+
+        $script:GetAssetPathMatchesFromAst = {
+            param(
+                [System.Management.Automation.Language.Ast]$Ast,
+                [hashtable]$VariableValues
+            )
+
+            return @(
+                & $script:GetStaticPathValuesFromAst -Ast $Ast -VariableValues $VariableValues |
                     Where-Object { $_ -match $script:AssetPathPattern } |
                     Select-Object -Unique
             )
@@ -118,36 +248,22 @@ Describe 'test source mutation contract' -Tag 'no-gh' {
                 }
 
                 $variableName = & $script:NormalizeVariableName -VariableAst $assignment.Left
-                $assetMatches = & $script:GetAssetPathMatchesFromAst -Ast $assignment.Right -VariableValues $variableValues
+                $pathCandidates = @(& $script:GetStaticPathValuesFromAst -Ast $assignment.Right -VariableValues $variableValues)
+                $assetMatches = @($pathCandidates | Where-Object { $_ -match $script:AssetPathPattern })
                 if ($assetMatches.Count -gt 0) {
                     $variableValues[$variableName] = $assetMatches[0]
+                    continue
+                }
+
+                $pathLikeCandidates = @($pathCandidates |
+                        Where-Object { -not [string]::IsNullOrWhiteSpace($_) } |
+                        Where-Object { $_ -ne 'Join-Path' })
+                if ($pathLikeCandidates.Count -gt 0) {
+                    $variableValues[$variableName] = $pathLikeCandidates[0]
                 }
             }
 
             return $variableValues
-        }
-
-        $script:CommandHasForce = {
-            param([System.Management.Automation.Language.CommandAst]$CommandAst)
-
-            foreach ($element in $CommandAst.CommandElements) {
-                if ($element -isnot [System.Management.Automation.Language.CommandParameterAst]) {
-                    continue
-                }
-
-                if ($element.ParameterName -ne 'Force') {
-                    continue
-                }
-
-                if ($element.Argument -is [System.Management.Automation.Language.ConstantExpressionAst] -and
-                    $element.Argument.Value -eq $false) {
-                    continue
-                }
-
-                return $true
-            }
-
-            return $false
         }
 
         $script:GetCommandPathArgumentAsts = {
@@ -160,7 +276,10 @@ Describe 'test source mutation contract' -Tag 'no-gh' {
             $positionalLimit = [int]$script:PositionalPathArgumentCounts[$CommandName]
             $pathArguments = [System.Collections.Generic.List[System.Management.Automation.Language.Ast]]::new()
             $pendingPathParameter = $false
+            $pendingCopyItemSourceParameter = $false
             $pendingNonPathParameter = $false
+            $copyItemNamedSourceBound = $false
+            $copyItemNamedDestinationBound = $false
             $positionalIndex = 0
 
             for ($index = 1; $index -lt $CommandAst.CommandElements.Count; $index++) {
@@ -169,9 +288,23 @@ Describe 'test source mutation contract' -Tag 'no-gh' {
                 if ($element -is [System.Management.Automation.Language.CommandParameterAst]) {
                     $parameterName = $element.ParameterName
                     $pendingPathParameter = $false
+                    $pendingCopyItemSourceParameter = $false
                     $pendingNonPathParameter = $false
 
+                    if ($CommandName -eq 'Copy-Item' -and $parameterName -in @('Path', 'LiteralPath')) {
+                        $copyItemNamedSourceBound = $true
+                        if ($null -eq $element.Argument) {
+                            $pendingCopyItemSourceParameter = $true
+                        }
+
+                        continue
+                    }
+
                     if ($pathParameters -contains $parameterName) {
+                        if ($CommandName -eq 'Copy-Item' -and $parameterName -eq 'Destination') {
+                            $copyItemNamedDestinationBound = $true
+                        }
+
                         if ($null -ne $element.Argument) {
                             [void]$pathArguments.Add($element.Argument)
                         }
@@ -199,12 +332,29 @@ Describe 'test source mutation contract' -Tag 'no-gh' {
                     continue
                 }
 
+                if ($pendingCopyItemSourceParameter) {
+                    $pendingCopyItemSourceParameter = $false
+                    continue
+                }
+
                 if ($pendingNonPathParameter) {
                     $pendingNonPathParameter = $false
                     continue
                 }
 
                 $positionalIndex++
+                if ($CommandName -eq 'Copy-Item') {
+                    if ($copyItemNamedDestinationBound) {
+                        continue
+                    }
+
+                    $destinationPosition = if ($copyItemNamedSourceBound) { 1 } else { 2 }
+                    if ($positionalIndex -eq $destinationPosition) {
+                        [void]$pathArguments.Add($element)
+                    }
+                    continue
+                }
+
                 if ($positionalIndex -le $positionalLimit) {
                     [void]$pathArguments.Add($element)
                 }
@@ -254,10 +404,6 @@ Describe 'test source mutation contract' -Tag 'no-gh' {
                 }
 
                 if (-not $script:WriteCommandPathParameters.ContainsKey($commandName)) {
-                    continue
-                }
-
-                if ($commandName -eq 'Copy-Item' -and -not (& $script:CommandHasForce -CommandAst $commandAst)) {
                     continue
                 }
 
@@ -379,6 +525,88 @@ Set-Content -Path $configPath -Value '{}'
         $violations = & $script:GetAssetWriteViolationsFromContent -Content $fixture
 
         $violations | Should -HaveCount 0 -Because 'temporary fixture paths outside skills/*/assets/ remain valid test setup writes'
+    }
+
+    It 'treats Copy-Item destination as a write target without requiring Force' {
+        $fixture = @'
+$assetPath = Join-Path $script:RepoRoot 'skills/calibration-pipeline/assets/guidance-complexity.json'
+$temp = Join-Path $workDir 'source.json'
+Copy-Item -Path $temp -Destination $assetPath
+'@
+
+        $violations = & $script:GetAssetWriteViolationsFromContent -Content $fixture
+
+        $violations | Should -HaveCount 1 -Because 'Copy-Item writes to its destination even when -Force is omitted'
+        $violations[0].Command | Should -Be 'Copy-Item'
+        $violations[0].PathArgument | Should -Be '$assetPath'
+    }
+
+    It 'detects Copy-Item positional destination when source is bound by named Path' {
+        $fixture = @'
+$assetPath = Join-Path $script:RepoRoot 'skills/calibration-pipeline/assets/guidance-complexity.json'
+$temp = Join-Path $workDir 'source.json'
+Copy-Item -Path $temp $assetPath
+'@
+
+        $violations = & $script:GetAssetWriteViolationsFromContent -Content $fixture
+
+        $violations | Should -HaveCount 1 -Because 'when Copy-Item source is bound by -Path, the next positional argument is the destination write target'
+        $violations[0].Command | Should -Be 'Copy-Item'
+        $violations[0].PathArgument | Should -Be '$assetPath'
+    }
+
+    It 'detects Copy-Item positional destination when source is bound by named LiteralPath' {
+        $fixture = @'
+$assetPath = Join-Path $script:RepoRoot 'skills/calibration-pipeline/assets/guidance-complexity.json'
+$temp = Join-Path $workDir 'source.json'
+Copy-Item -LiteralPath $temp $assetPath
+'@
+
+        $violations = & $script:GetAssetWriteViolationsFromContent -Content $fixture
+
+        $violations | Should -HaveCount 1 -Because 'when Copy-Item source is bound by -LiteralPath, the next positional argument is the destination write target'
+        $violations[0].Command | Should -Be 'Copy-Item'
+        $violations[0].PathArgument | Should -Be '$assetPath'
+    }
+
+    It 'allows Copy-Item to read a committed asset source into a temporary destination' {
+        $fixture = @'
+$assetPath = Join-Path $script:RepoRoot 'skills/calibration-pipeline/assets/guidance-complexity.json'
+$temp = Join-Path $workDir 'copied.json'
+Copy-Item -LiteralPath $assetPath -Destination $temp -Force
+'@
+
+        $violations = & $script:GetAssetWriteViolationsFromContent -Content $fixture
+
+        $violations | Should -HaveCount 0 -Because 'Copy-Item source Path/LiteralPath arguments read assets but do not write them'
+    }
+
+    It 'detects committed asset writes assembled through split Join-Path roots' {
+        $fixture = @'
+$skillsRoot = Join-Path $script:RepoRoot 'skills'
+$skillRoot = Join-Path $skillsRoot 'calibration-pipeline'
+$assetPath = Join-Path (Join-Path $skillRoot 'assets') 'guidance-complexity.json'
+Set-Content -Path $assetPath -Value '{}'
+'@
+
+        $violations = & $script:GetAssetWriteViolationsFromContent -Content $fixture
+
+        $violations | Should -HaveCount 1 -Because 'common Join-Path chains must resolve to skills/*/assets/ write targets'
+        $violations[0].ResolvedPath | Should -Match 'skills[/\\]calibration-pipeline[/\\]assets[/\\]guidance-complexity\.json'
+    }
+
+    It 'detects committed asset writes assembled from an asset directory and file name' {
+        $fixture = @'
+$assetDir = Join-Path $script:RepoRoot 'skills/calibration-pipeline/assets'
+$fileName = 'guidance-complexity.json'
+$assetPath = Join-Path $assetDir $fileName
+Set-Content -Path $assetPath -Value '{}'
+'@
+
+        $violations = & $script:GetAssetWriteViolationsFromContent -Content $fixture
+
+        $violations | Should -HaveCount 1 -Because 'assets as a directory plus a filename must still resolve to a committed asset write'
+        $violations[0].ResolvedPath | Should -Match 'skills[/\\]calibration-pipeline[/\\]assets[/\\]guidance-complexity\.json'
     }
 
     It 'recognizes every prohibited write-call form in inline fixtures' {
