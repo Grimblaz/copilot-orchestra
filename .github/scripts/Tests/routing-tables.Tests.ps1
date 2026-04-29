@@ -22,9 +22,29 @@ Describe 'routing tables deterministic contract' {
     BeforeAll {
         $script:RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '../../..')).Path
         $script:RoutingTablesCore = Join-Path $script:RepoRoot 'skills\routing-tables\scripts\routing-tables-core.ps1'
-        $script:RoutingConfigPath = Join-Path $script:RepoRoot 'skills\routing-tables\assets\routing-config.json'
+        $script:RoutingConfigAssetSourcePath = Join-Path $script:RepoRoot 'skills\routing-tables\assets\routing-config.json'
+        $script:RoutingConfigTempRoot = Join-Path ([System.IO.Path]::GetTempPath()) `
+            "pester-routing-tables-$([System.Guid]::NewGuid().ToString('N'))"
+        New-Item -ItemType Directory -Path $script:RoutingConfigTempRoot -Force | Out-Null
+        $script:RoutingConfigTempPath = Join-Path $script:RoutingConfigTempRoot 'routing-config.json'
+        Copy-Item -LiteralPath $script:RoutingConfigAssetSourcePath -Destination $script:RoutingConfigTempPath
 
         . $script:RoutingTablesCore
+
+        function Get-RTConfigPath {
+            return $script:RoutingConfigTempPath
+        }
+    }
+
+    AfterAll {
+        try {
+            if ($script:RoutingConfigTempRoot -and (Test-Path -LiteralPath $script:RoutingConfigTempRoot)) {
+                Remove-Item -Recurse -Force -LiteralPath $script:RoutingConfigTempRoot
+            }
+        }
+        finally {
+            # Suppress removal errors so AfterAll never throws
+        }
     }
 
     It 'routes src/app/foo.tsx to Code-Smith for specialist dispatch' {
@@ -99,30 +119,24 @@ Describe 'routing tables deterministic contract' {
     }
 
     It 're-reads routing-config.json on each invocation so asset edits take effect immediately' {
-        $originalJson = Get-Content -Path $script:RoutingConfigPath -Raw
+        $originalJson = Get-Content -Path $script:RoutingConfigTempPath -Raw
+        $initial = Invoke-RoutingLookup -Table specialist_dispatch -Key FilePattern -Value '*.ps1'
+        $initial | Should -Be 'Code-Smith'
 
-        try {
-            $initial = Invoke-RoutingLookup -Table specialist_dispatch -Key FilePattern -Value '*.ps1'
-            $initial | Should -Be 'Code-Smith'
+        $updatedConfig = $originalJson | ConvertFrom-Json -AsHashtable
+        $ps1Entry = $updatedConfig.specialist_dispatch.entries |
+            Where-Object { @($_.file_patterns) -contains '*.ps1' } |
+            Select-Object -First 1
 
-            $updatedConfig = $originalJson | ConvertFrom-Json -AsHashtable
-            $ps1Entry = $updatedConfig.specialist_dispatch.entries |
-                Where-Object { @($_.file_patterns) -contains '*.ps1' } |
-                Select-Object -First 1
+        $ps1Entry | Should -Not -BeNullOrEmpty -Because 'the routing asset must explicitly carry the *.ps1 mapping for this contract to stay data-driven'
 
-            $ps1Entry | Should -Not -BeNullOrEmpty -Because 'the routing asset must explicitly carry the *.ps1 mapping for this contract to stay data-driven'
+        $ps1Entry.agent = 'Doc-Keeper'
+        $updatedJson = $updatedConfig | ConvertTo-Json -Depth 20
+        [System.IO.File]::WriteAllText($script:RoutingConfigTempPath, $updatedJson, [System.Text.UTF8Encoding]::new($false))
 
-            $ps1Entry.agent = 'Doc-Keeper'
-            $updatedJson = $updatedConfig | ConvertTo-Json -Depth 20
-            [System.IO.File]::WriteAllText($script:RoutingConfigPath, $updatedJson, [System.Text.UTF8Encoding]::new($false))
+        $updated = Invoke-RoutingLookup -Table specialist_dispatch -Key FilePattern -Value '*.ps1'
 
-            $updated = Invoke-RoutingLookup -Table specialist_dispatch -Key FilePattern -Value '*.ps1'
-
-            $updated | Should -Be 'Doc-Keeper' -Because 'Invoke-RoutingLookup must re-read the routing asset instead of using a hardcoded PowerShell override'
-        }
-        finally {
-            [System.IO.File]::WriteAllText($script:RoutingConfigPath, $originalJson, [System.Text.UTF8Encoding]::new($false))
-        }
+        $updated | Should -Be 'Doc-Keeper' -Because 'Invoke-RoutingLookup must re-read the routing asset instead of using a hardcoded PowerShell override'
     }
 
     It 'throws when table name is missing' {
@@ -148,12 +162,12 @@ Describe 'routing tables asset parity contract' {
 
     BeforeAll {
         $script:RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '../../..')).Path
-        $script:RoutingConfigPath = Join-Path $script:RepoRoot 'skills\routing-tables\assets\routing-config.json'
+        $script:RoutingConfigAssetPath = Join-Path $script:RepoRoot 'skills\routing-tables\assets\routing-config.json'
         $script:ScriptSafetyContract = Join-Path $script:RepoRoot '.github\scripts\Tests\script-safety-contract.Tests.ps1'
     }
 
     It 'keeps routing-config category enums aligned with the script safety contract taxonomy' {
-        $routingConfig = Get-Content -Path $script:RoutingConfigPath -Raw | ConvertFrom-Json -AsHashtable
+        $routingConfig = Get-Content -Path $script:RoutingConfigAssetPath -Raw | ConvertFrom-Json -AsHashtable
         $contractContent = Get-Content -Path $script:ScriptSafetyContract -Raw
 
         $mandatedCategoryMatch = [regex]::Match($contractContent, '(?s)\$script:MandatedCategories\s*=\s*@\((.*?)\)')

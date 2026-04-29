@@ -2768,51 +2768,45 @@ exit 0
             if (-not $script:GhAvailable) { Set-ItResult -Skipped -Because 'gh CLI not found'; return }
 
             $workDir = & $script:NewWorkDir
-            $configPath = Join-Path $script:RepoRoot 'skills/calibration-pipeline/assets/guidance-complexity.json'
-            $configBackup = Get-Content -Path $configPath -AsByteStream -Raw
-            try {
-                # Write custom config with persistent_threshold=2
-                $customConfig = [ordered]@{
-                    version              = 1
-                    ceilings             = [ordered]@{}
-                    default_ceiling      = [ordered]@{ max_directives = 128 }
-                    persistent_threshold = 2
-                }
-                $customConfig | ConvertTo-Json -Depth 5 | Set-Content -Path $configPath -Encoding UTF8
+            $tempConfigPath = Join-Path $workDir 'guidance-complexity.json'
 
-                $preSeededHistory = [ordered]@{
-                    'TestAgent.agent.md' = [ordered]@{
-                        consecutive_count = 1
-                        first_observed_at = '2026-03-01T00:00:00Z'
-                        last_observed_at  = '2026-03-15T00:00:00Z'
-                        last_pr_number    = 1
-                    }
-                }
-                $calib = [ordered]@{
-                    calibration_version             = 1
-                    entries                         = @()
-                    complexity_over_ceiling_history = $preSeededHistory
-                }
-                $calibPath = Join-Path $workDir 'threshold-calib.json'
-                & $script:WriteCalibrationFile -Path $calibPath -Data $calib
-
-                # This run increments TestAgent to consecutive_count=2 -> meets custom threshold of 2
-                $complexityPath = Join-Path $workDir 'complexity-threshold.json'
-                & $script:WriteComplexityFile -Path $complexityPath -AgentsOverCeiling @('TestAgent.agent.md')
-
-                $result = & $script:InvokeAggregate `
-                    -ExtraArgs @('-CalibrationFile', $calibPath, '-ComplexityJsonPath', $complexityPath)
-
-                $result.ExitCode | Should -Be 0
-                $result.Output | Should -Match 'extraction_agents:' `
-                    -Because 'extraction_agents section must appear in YAML output when an agent meets or exceeds the custom persistent_threshold of 2'
-                $result.Output | Should -Match 'TestAgent\.agent\.md' `
-                    -Because 'the agent meeting the threshold must be listed under extraction_agents'
+            # Write custom config with persistent_threshold=2
+            $customConfig = [ordered]@{
+                version              = 1
+                ceilings             = [ordered]@{}
+                default_ceiling      = [ordered]@{ max_directives = 128 }
+                persistent_threshold = 2
             }
-            finally {
-                # Restore the real config regardless of test outcome
-                Set-Content -Path $configPath -AsByteStream -Value $configBackup
+            $customConfig | ConvertTo-Json -Depth 5 | Set-Content -Path $tempConfigPath -Encoding UTF8
+
+            $preSeededHistory = [ordered]@{
+                'TestAgent.agent.md' = [ordered]@{
+                    consecutive_count = 1
+                    first_observed_at = '2026-03-01T00:00:00Z'
+                    last_observed_at  = '2026-03-15T00:00:00Z'
+                    last_pr_number    = 1
+                }
             }
+            $calib = [ordered]@{
+                calibration_version             = 1
+                entries                         = @()
+                complexity_over_ceiling_history = $preSeededHistory
+            }
+            $calibPath = Join-Path $workDir 'threshold-calib.json'
+            & $script:WriteCalibrationFile -Path $calibPath -Data $calib
+
+            # This run increments TestAgent to consecutive_count=2 -> meets custom threshold of 2
+            $complexityPath = Join-Path $workDir 'complexity-threshold.json'
+            & $script:WriteComplexityFile -Path $complexityPath -AgentsOverCeiling @('TestAgent.agent.md')
+
+            $result = & $script:InvokeAggregate `
+                -ExtraArgs @('-CalibrationFile', $calibPath, '-ComplexityJsonPath', $complexityPath, '-ComplexityCeilingConfigPath', $tempConfigPath)
+
+            $result.ExitCode | Should -Be 0
+            $result.Output | Should -Match 'extraction_agents:' `
+                -Because 'extraction_agents section must appear in YAML output when an agent meets or exceeds the custom persistent_threshold of 2'
+            $result.Output | Should -Match 'TestAgent\.agent\.md' `
+                -Because 'the agent meeting the threshold must be listed under extraction_agents'
         }
 
         It 'skips complexity tracking when -ComplexityJsonPath points to a non-existent file' -Tag 'requires-gh' {
