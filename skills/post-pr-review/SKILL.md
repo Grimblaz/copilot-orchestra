@@ -80,7 +80,7 @@ pwsh .github/scripts/bump-version.ps1 -Version X.Y.Z -DryRun  # preview first
 pwsh .github/scripts/bump-version.ps1 -Version X.Y.Z           # apply
 ```
 
-The script updates `plugin.json`, `marketplace.json` (2 occurrences), and `README.md` (badge line) — 4 occurrences total. It validates pre-bump consistency and exits with an error if any file has drifted.
+The script updates `plugin.json`, `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json` (2 occurrences), `.github/plugin/marketplace.json` (2 occurrences), and `README.md` (badge line) — 7 occurrences across 5 files. It validates pre-bump consistency and exits with an error if any file has drifted.
 
 **Plugin-only users** (scripts not distributed via plugin): If you're using this workflow as a plugin install without cloning, use targeted `replace_string_in_file` edits for each file individually, then commit and push.
 
