@@ -572,7 +572,7 @@ exit 0
         # ------------------------------------------------------------------
         # Helper: invoke Invoke-AggregateReviewScores in-process.
         # $ExtraArgs are parsed from '-Key Value' pairs into a params hashtable.
-        # Returns @{ ExitCode; Output (stdout string); Error (stderr string) }
+        # Returns @{ ExitCode; Output (stdout string); Error (stderr string); Warnings (warning strings) }
         # ------------------------------------------------------------------
         $script:InvokeAggregate = {
             param([string[]]$ExtraArgs = @())
@@ -597,7 +597,12 @@ exit 0
                         $i++
                     }
                 }
-                return Invoke-AggregateReviewScores @params
+                $invokeRecords = @(Invoke-AggregateReviewScores @params 3>&1)
+                $result = $invokeRecords | Where-Object { $_ -is [hashtable] } | Select-Object -First 1
+                $result['Warnings'] = @($invokeRecords |
+                    Where-Object { $_ -is [System.Management.Automation.WarningRecord] } |
+                    ForEach-Object { $_.Message })
+                return $result
             }
             finally {
                 Pop-Location
@@ -2505,6 +2510,71 @@ exit 0
                 -Because '-ComplexityCeilingConfigPath must be declared exactly once on Invoke-AggregateReviewScores'
             $paramAst[0].StaticType.Name | Should -Be 'String' `
                 -Because '-ComplexityCeilingConfigPath must be declared as [string] on Invoke-AggregateReviewScores'
+        }
+
+        It 'warns with the missing explicit complexity ceiling config path and still exits cleanly' -Tag 'requires-gh' {
+            if (-not $script:GhAvailable) { Set-ItResult -Skipped -Because 'gh CLI not found'; return }
+
+            $workDir = & $script:NewWorkDir
+            $calibPath = Join-Path $workDir 'missing-config-calib.json'
+            & $script:WriteCalibrationFile -Path $calibPath -Data ([ordered]@{
+                    calibration_version = 1; entries = @()
+                })
+            $missingConfigPath = 'C:\nonexistent\config.json'
+
+            $result = & $script:InvokeAggregate `
+                -ExtraArgs @(
+                    '-CalibrationFile', $calibPath,
+                    '-ComplexityCeilingConfigPath', $missingConfigPath
+                )
+
+            $result.ExitCode | Should -Be 0 `
+                -Because 'a missing explicit complexity ceiling config path should warn without failing aggregation'
+            ($result.Warnings -join "`n") | Should -Match ([regex]::Escape($missingConfigPath)) `
+                -Because 'the warning must include the literal missing explicit config path'
+        }
+
+        It 'omits the complexity ceiling config path in a fresh wrapper runspace without StrictMode failure' -Tag 'requires-gh' {
+            if (-not $script:GhAvailable) { Set-ItResult -Skipped -Because 'gh CLI not found'; return }
+
+            $workDir = & $script:NewWorkDir
+            $calibPath = Join-Path $workDir 'fresh-runspace-omitted-config-calib.json'
+            & $script:WriteCalibrationFile -Path $calibPath -Data ([ordered]@{
+                    calibration_version = 1; entries = @()
+                })
+
+            $ghCliPath = if ($script:FixtureMode) { $script:FixtureGhPath } else { 'gh' }
+            $pwshCommand = Get-Command pwsh -ErrorAction SilentlyContinue
+            if (-not $pwshCommand) { Set-ItResult -Skipped -Because 'pwsh executable not found'; return }
+
+            $startInfo = [System.Diagnostics.ProcessStartInfo]::new()
+            $startInfo.FileName = $pwshCommand.Source
+            $startInfo.WorkingDirectory = $script:RepoRoot
+            $startInfo.UseShellExecute = $false
+            $startInfo.RedirectStandardOutput = $true
+            $startInfo.RedirectStandardError = $true
+            foreach ($argument in @(
+                    '-NoProfile',
+                    '-NonInteractive',
+                    '-File', $script:ScriptFile,
+                    '-CalibrationFile', $calibPath,
+                    '-GhCliPath', $ghCliPath
+                )) {
+                [void]$startInfo.ArgumentList.Add($argument)
+            }
+
+            $process = [System.Diagnostics.Process]::Start($startInfo)
+            $stdoutTask = $process.StandardOutput.ReadToEndAsync()
+            $stderrTask = $process.StandardError.ReadToEndAsync()
+            $process.WaitForExit()
+            $stdout = $stdoutTask.GetAwaiter().GetResult()
+            $stderr = $stderrTask.GetAwaiter().GetResult()
+            $combinedOutput = "$stdout`n$stderr"
+
+            $process.ExitCode | Should -Be 0 `
+                -Because 'omitting -ComplexityCeilingConfigPath should resolve the wrapper default config path in a fresh pwsh process'
+            $combinedOutput | Should -Not -Match 'Set-StrictMode|_ARSCoreLibDir|cannot be retrieved because it has not been set' `
+                -Because 'the omitted-path wrapper invocation must not trip StrictMode on an uninitialized core library directory'
         }
 
         It 'script references guidance-complexity.json for persistent_threshold' -Tag 'no-gh' {

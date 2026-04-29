@@ -577,7 +577,13 @@ function Invoke-AggregateReviewScores {
 
     # Read persistent_threshold from guidance-complexity config (Phase 2 D7)
     $persistentThreshold = 3  # default when config is absent or unreadable
-    $complexityConfigPath = Join-Path $script:_ARSCoreLibDir '../assets/guidance-complexity.json'
+    $hasExplicitComplexityConfigPath = -not [string]::IsNullOrWhiteSpace($ComplexityCeilingConfigPath)
+    $complexityConfigPath = if ($hasExplicitComplexityConfigPath) {
+        $ComplexityCeilingConfigPath
+    }
+    else {
+        Join-Path $script:_ARSCoreLibDir '../assets/guidance-complexity.json'
+    }
     if (Test-Path $complexityConfigPath) {
         try {
             $complexityCfg = Get-Content $complexityConfigPath -Raw | ConvertFrom-Json
@@ -591,6 +597,9 @@ function Invoke-AggregateReviewScores {
         catch {
             Write-Warning "Could not read persistent_threshold from guidance-complexity config: $_ — defaulting to $persistentThreshold"
         }
+    }
+    elseif ($hasExplicitComplexityConfigPath) {
+        Write-Warning "Complexity ceiling config path '$ComplexityCeilingConfigPath' was not found; using default persistent_threshold $persistentThreshold"
     }
 
     # ---------------------------------------------------------------------------
