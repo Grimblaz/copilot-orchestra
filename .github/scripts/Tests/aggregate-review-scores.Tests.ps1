@@ -391,17 +391,54 @@ exit 0
         }
 
         # ------------------------------------------------------------------
-        # Parse script AST for parameter introspection tests (no gh needed)
+        # Parse script ASTs for parameter introspection tests (no gh needed)
         # ------------------------------------------------------------------
-        $scriptContent = Get-Content -Path $script:ScriptFile -Raw
-        $parseErrors = $null
-        $script:ScriptAst = [System.Management.Automation.Language.Parser]::ParseInput(
-            $scriptContent, [ref]$null, [ref]$parseErrors
+        $wrapperScriptContent = Get-Content -Path $script:ScriptFile -Raw
+        $wrapperParseErrors = $null
+        $script:WrapperScriptAst = [System.Management.Automation.Language.Parser]::ParseInput(
+            $wrapperScriptContent, [ref]$null, [ref]$wrapperParseErrors
         )
-        $script:AllParams = $script:ScriptAst.FindAll(
+        $script:WrapperAllParams = $script:WrapperScriptAst.FindAll(
             { $args[0] -is [System.Management.Automation.Language.ParameterAst] }, $true
         )
-        $script:ParamNames = $script:AllParams | ForEach-Object { $_.Name.VariablePath.UserPath }
+        $script:WrapperParamNames = $script:WrapperAllParams | ForEach-Object { $_.Name.VariablePath.UserPath }
+        $script:WrapperParamBlockParams = @(
+            if ($script:WrapperScriptAst.ParamBlock) {
+                $script:WrapperScriptAst.ParamBlock.Parameters
+            }
+        )
+        $script:WrapperParamBlockParamNames = $script:WrapperParamBlockParams |
+            ForEach-Object { $_.Name.VariablePath.UserPath }
+
+        $coreScriptContent = Get-Content -Path $script:LibFile -Raw
+        $coreParseErrors = $null
+        $script:CoreScriptAst = [System.Management.Automation.Language.Parser]::ParseInput(
+            $coreScriptContent, [ref]$null, [ref]$coreParseErrors
+        )
+        $script:CoreAllParams = $script:CoreScriptAst.FindAll(
+            { $args[0] -is [System.Management.Automation.Language.ParameterAst] }, $true
+        )
+        $script:CoreParamNames = $script:CoreAllParams | ForEach-Object { $_.Name.VariablePath.UserPath }
+        $script:CoreInvokeAggregateReviewScoresAst = $script:CoreScriptAst.Find(
+            {
+                $args[0] -is [System.Management.Automation.Language.FunctionDefinitionAst] -and
+                $args[0].Name -eq 'Invoke-AggregateReviewScores'
+            },
+            $true
+        )
+        $script:CoreInvokeAggregateReviewScoresParams = @(
+            if ($script:CoreInvokeAggregateReviewScoresAst -and
+                $script:CoreInvokeAggregateReviewScoresAst.Body.ParamBlock) {
+                $script:CoreInvokeAggregateReviewScoresAst.Body.ParamBlock.Parameters
+            }
+        )
+        $script:CoreInvokeAggregateReviewScoresParamNames = $script:CoreInvokeAggregateReviewScoresParams |
+            ForEach-Object { $_.Name.VariablePath.UserPath }
+
+        # Backward-compatible aliases for existing wrapper-only AST tests.
+        $script:ScriptAst = $script:WrapperScriptAst
+        $script:AllParams = $script:WrapperAllParams
+        $script:ParamNames = $script:WrapperParamNames
 
         # ------------------------------------------------------------------
         # Calibration fixture: one valid local entry for a real merged PR in a repo
@@ -2402,7 +2439,7 @@ exit 0
 
     # ==================================================================
     # Context: complexity_over_ceiling_history
-    # Tests for -ComplexityJsonPath parameter and complexity history
+    # Tests for -ComplexityJsonPath / -ComplexityCeilingConfigPath parameters and complexity history
     # write-back behavior (Phase 2 D7 implementation).
     # AST tests (no-gh): verify parameter declaration and script structure.
     # Execution tests (requires-gh): verify history increment, reset,
@@ -2440,6 +2477,34 @@ exit 0
                 -Because '-ComplexityJsonPath parameter AST node must be found'
             $paramAst.StaticType.Name | Should -Be 'String' `
                 -Because '-ComplexityJsonPath must be declared as [string]'
+        }
+
+        It 'wrapper script declares -ComplexityCeilingConfigPath parameter as [string]' -Tag 'no-gh' {
+            $script:WrapperParamBlockParamNames | Should -Contain 'ComplexityCeilingConfigPath' `
+                -Because 'aggregate-review-scores.ps1 must declare -ComplexityCeilingConfigPath for temp config injection'
+
+            $paramAst = @($script:WrapperParamBlockParams | Where-Object {
+                    $_.Name.VariablePath.UserPath -eq 'ComplexityCeilingConfigPath'
+                })
+            $paramAst.Count | Should -Be 1 `
+                -Because '-ComplexityCeilingConfigPath must be declared exactly once in the wrapper param block'
+            $paramAst[0].StaticType.Name | Should -Be 'String' `
+                -Because '-ComplexityCeilingConfigPath must be declared as [string] in aggregate-review-scores.ps1'
+        }
+
+        It 'core Invoke-AggregateReviewScores declares -ComplexityCeilingConfigPath parameter as [string]' -Tag 'no-gh' {
+            $script:CoreInvokeAggregateReviewScoresAst | Should -Not -BeNullOrEmpty `
+                -Because 'Invoke-AggregateReviewScores must be found before checking its parameters'
+            $script:CoreInvokeAggregateReviewScoresParamNames | Should -Contain 'ComplexityCeilingConfigPath' `
+                -Because 'Invoke-AggregateReviewScores must accept -ComplexityCeilingConfigPath from the wrapper'
+
+            $paramAst = @($script:CoreInvokeAggregateReviewScoresParams | Where-Object {
+                    $_.Name.VariablePath.UserPath -eq 'ComplexityCeilingConfigPath'
+                })
+            $paramAst.Count | Should -Be 1 `
+                -Because '-ComplexityCeilingConfigPath must be declared exactly once on Invoke-AggregateReviewScores'
+            $paramAst[0].StaticType.Name | Should -Be 'String' `
+                -Because '-ComplexityCeilingConfigPath must be declared as [string] on Invoke-AggregateReviewScores'
         }
 
         It 'script references guidance-complexity.json for persistent_threshold' -Tag 'no-gh' {

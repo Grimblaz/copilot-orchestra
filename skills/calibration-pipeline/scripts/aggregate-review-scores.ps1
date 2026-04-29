@@ -57,6 +57,7 @@ param(
     [string]$Repo = '',
     [string]$CalibrationFile = '.copilot-tracking/calibration/review-data.json',
     [string]$ComplexityJsonPath = '',
+    [string]$ComplexityCeilingConfigPath = '',
     [string]$GhCliPath = 'gh',
     [switch]$HealthReport,
     [string]$OutputPath = ''
