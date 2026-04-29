@@ -2579,6 +2579,81 @@ exit 0
                 -Because 'the omitted-path wrapper invocation must not trip StrictMode on an uninitialized core library directory'
         }
 
+        It 'Process-Review 4.7-style wrapper invocation uses the canonical persistent threshold when config path is omitted' -Tag 'requires-gh' {
+            if (-not $script:GhAvailable) { Set-ItResult -Skipped -Because 'gh CLI not found'; return }
+
+            $workDir = & $script:NewWorkDir
+            $complexityPath = Join-Path $workDir 'process-review-complexity.json'
+            & $script:WriteComplexityFile -Path $complexityPath -AgentsOverCeiling @('TestAgent.agent.md')
+
+            $preSeededHistory = [ordered]@{
+                'TestAgent.agent.md' = [ordered]@{
+                    consecutive_count = 2
+                    first_observed_at = '2026-03-01T00:00:00Z'
+                    last_observed_at  = '2026-03-15T00:00:00Z'
+                    last_pr_number    = 1
+                }
+            }
+            $calibPath = Join-Path $workDir 'process-review-calib.json'
+            & $script:WriteCalibrationFile -Path $calibPath -Data ([ordered]@{
+                    calibration_version             = 1
+                    entries                         = @()
+                    complexity_over_ceiling_history = $preSeededHistory
+                })
+
+            $healthReportPath = Join-Path $workDir 'process-review-health-report.md'
+            $guidanceComplexityAsset = Join-Path $script:RepoRoot 'skills/calibration-pipeline/assets/guidance-complexity.json'
+            $startingAssetHash = (Get-FileHash -Path $guidanceComplexityAsset).Hash
+            $ghCliPath = if ($script:FixtureMode) { $script:FixtureGhPath } else { 'gh' }
+            $pwshCommand = Get-Command pwsh -ErrorAction SilentlyContinue
+            if (-not $pwshCommand) { Set-ItResult -Skipped -Because 'pwsh executable not found'; return }
+
+            $arguments = @(
+                '-NoProfile',
+                '-NonInteractive',
+                '-File', $script:ScriptFile,
+                '-CalibrationFile', $calibPath,
+                '-GhCliPath', $ghCliPath,
+                '-ComplexityJsonPath', $complexityPath,
+                '-OutputPath', $healthReportPath
+            )
+            $arguments | Should -Contain '-ComplexityJsonPath' `
+                -Because 'the Process-Review 4.7-style wrapper call must pass the measured complexity JSON path'
+            $arguments | Should -Contain '-OutputPath' `
+                -Because 'the Process-Review 4.7-style wrapper call must pass the health report output path'
+            $arguments | Should -Not -Contain '-ComplexityCeilingConfigPath' `
+                -Because 'Process-Review 4.7 does not pass an explicit complexity ceiling config path'
+
+            $startInfo = [System.Diagnostics.ProcessStartInfo]::new()
+            $startInfo.FileName = $pwshCommand.Source
+            $startInfo.WorkingDirectory = $script:RepoRoot
+            $startInfo.UseShellExecute = $false
+            $startInfo.RedirectStandardOutput = $true
+            $startInfo.RedirectStandardError = $true
+            foreach ($argument in $arguments) {
+                [void]$startInfo.ArgumentList.Add($argument)
+            }
+
+            $process = [System.Diagnostics.Process]::Start($startInfo)
+            $stdoutTask = $process.StandardOutput.ReadToEndAsync()
+            $stderrTask = $process.StandardError.ReadToEndAsync()
+            $process.WaitForExit()
+            $stdout = $stdoutTask.GetAwaiter().GetResult()
+            $stderr = $stderrTask.GetAwaiter().GetResult()
+            $endingAssetHash = (Get-FileHash -Path $guidanceComplexityAsset).Hash
+
+            $process.ExitCode | Should -Be 0 `
+                -Because "the wrapper invocation should succeed without -ComplexityCeilingConfigPath; stderr: $stderr"
+            $stdout | Should -Match 'extraction_agents:' `
+                -Because 'pre-seeded consecutive_count 2 plus the current over-ceiling observation should meet the canonical threshold'
+            $stdout | Should -Match 'TestAgent\.agent\.md' `
+                -Because 'the over-ceiling agent should be listed under extraction_agents'
+            $stdout | Should -Match '(?m)^\s*persistent_threshold:\s*3\s*$' `
+                -Because 'omitting -ComplexityCeilingConfigPath must read the committed canonical guidance-complexity.json threshold'
+            $endingAssetHash | Should -Be $startingAssetHash `
+                -Because 'the production-shape wrapper invocation must not mutate the committed guidance-complexity.json asset'
+        }
+
         It 'script references guidance-complexity.json for persistent_threshold' -Tag 'no-gh' {
             $content = Get-Content -Path $script:LibFile -Raw
             $content | Should -Match 'guidance-complexity\.json' `
