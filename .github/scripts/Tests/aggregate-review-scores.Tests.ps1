@@ -1,4 +1,5 @@
 #Requires -Version 7.0
+# This suite is supported on pwsh 7+; PowerShell 5.1 is out of scope.
 #Requires -Modules @{ ModuleName = 'Pester'; ModuleVersion = '5.0.0' }
 <#
 .SYNOPSIS
@@ -57,6 +58,7 @@ Describe 'aggregate-review-scores.ps1 -CalibrationFile' {
         $script:RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '../../..')).Path
         $script:ScriptFile = Join-Path $script:RepoRoot 'skills\calibration-pipeline\scripts\aggregate-review-scores.ps1'
         $script:LibFile = Join-Path $script:RepoRoot 'skills\calibration-pipeline\scripts\aggregate-review-scores-core.ps1'
+        $script:GuidanceComplexityStartingHash = (Get-FileHash -Path (Join-Path $script:RepoRoot 'skills/calibration-pipeline/assets/guidance-complexity.json')).Hash
         . $script:LibFile
 
         # Master temp root — all per-test dirs live under here
@@ -391,17 +393,54 @@ exit 0
         }
 
         # ------------------------------------------------------------------
-        # Parse script AST for parameter introspection tests (no gh needed)
+        # Parse script ASTs for parameter introspection tests (no gh needed)
         # ------------------------------------------------------------------
-        $scriptContent = Get-Content -Path $script:ScriptFile -Raw
-        $parseErrors = $null
-        $script:ScriptAst = [System.Management.Automation.Language.Parser]::ParseInput(
-            $scriptContent, [ref]$null, [ref]$parseErrors
+        $wrapperScriptContent = Get-Content -Path $script:ScriptFile -Raw
+        $wrapperParseErrors = $null
+        $script:WrapperScriptAst = [System.Management.Automation.Language.Parser]::ParseInput(
+            $wrapperScriptContent, [ref]$null, [ref]$wrapperParseErrors
         )
-        $script:AllParams = $script:ScriptAst.FindAll(
+        $script:WrapperAllParams = $script:WrapperScriptAst.FindAll(
             { $args[0] -is [System.Management.Automation.Language.ParameterAst] }, $true
         )
-        $script:ParamNames = $script:AllParams | ForEach-Object { $_.Name.VariablePath.UserPath }
+        $script:WrapperParamNames = $script:WrapperAllParams | ForEach-Object { $_.Name.VariablePath.UserPath }
+        $script:WrapperParamBlockParams = @(
+            if ($script:WrapperScriptAst.ParamBlock) {
+                $script:WrapperScriptAst.ParamBlock.Parameters
+            }
+        )
+        $script:WrapperParamBlockParamNames = $script:WrapperParamBlockParams |
+            ForEach-Object { $_.Name.VariablePath.UserPath }
+
+        $coreScriptContent = Get-Content -Path $script:LibFile -Raw
+        $coreParseErrors = $null
+        $script:CoreScriptAst = [System.Management.Automation.Language.Parser]::ParseInput(
+            $coreScriptContent, [ref]$null, [ref]$coreParseErrors
+        )
+        $script:CoreAllParams = $script:CoreScriptAst.FindAll(
+            { $args[0] -is [System.Management.Automation.Language.ParameterAst] }, $true
+        )
+        $script:CoreParamNames = $script:CoreAllParams | ForEach-Object { $_.Name.VariablePath.UserPath }
+        $script:CoreInvokeAggregateReviewScoresAst = $script:CoreScriptAst.Find(
+            {
+                $args[0] -is [System.Management.Automation.Language.FunctionDefinitionAst] -and
+                $args[0].Name -eq 'Invoke-AggregateReviewScores'
+            },
+            $true
+        )
+        $script:CoreInvokeAggregateReviewScoresParams = @(
+            if ($script:CoreInvokeAggregateReviewScoresAst -and
+                $script:CoreInvokeAggregateReviewScoresAst.Body.ParamBlock) {
+                $script:CoreInvokeAggregateReviewScoresAst.Body.ParamBlock.Parameters
+            }
+        )
+        $script:CoreInvokeAggregateReviewScoresParamNames = $script:CoreInvokeAggregateReviewScoresParams |
+            ForEach-Object { $_.Name.VariablePath.UserPath }
+
+        # Backward-compatible aliases for existing wrapper-only AST tests.
+        $script:ScriptAst = $script:WrapperScriptAst
+        $script:AllParams = $script:WrapperAllParams
+        $script:ParamNames = $script:WrapperParamNames
 
         # ------------------------------------------------------------------
         # Calibration fixture: one valid local entry for a real merged PR in a repo
@@ -515,6 +554,22 @@ exit 0
         }
 
         # ------------------------------------------------------------------
+        # Helper: write a simple mock gh.ps1 that returns a fixed PR list.
+        # ------------------------------------------------------------------
+        $script:WriteAggregateMockGh = {
+            param([string]$WorkDir, [string]$JsonOutput)
+            $dataFile = Join-Path $WorkDir 'gh-response.json'
+            $mockPath = Join-Path $WorkDir 'gh.ps1'
+            $JsonOutput | Set-Content -Path $dataFile -Encoding UTF8
+            @"
+# Mock gh CLI — outputs pre-defined JSON regardless of arguments
+Get-Content -Raw -Path '$($dataFile -replace "'", "''")'
+exit 0
+"@ | Set-Content -Path $mockPath -Encoding UTF8
+            return $mockPath
+        }
+
+        # ------------------------------------------------------------------
         # Helper: load NonMetricsPrNumbers from fixture (fixture mode) or via
         # live gh CLI (live mode), with @(9901) fallback on gh failure.
         # ------------------------------------------------------------------
@@ -535,7 +590,7 @@ exit 0
         # ------------------------------------------------------------------
         # Helper: invoke Invoke-AggregateReviewScores in-process.
         # $ExtraArgs are parsed from '-Key Value' pairs into a params hashtable.
-        # Returns @{ ExitCode; Output (stdout string); Error (stderr string) }
+        # Returns @{ ExitCode; Output (stdout string); Error (stderr string); Warnings (warning strings) }
         # ------------------------------------------------------------------
         $script:InvokeAggregate = {
             param([string[]]$ExtraArgs = @())
@@ -560,7 +615,12 @@ exit 0
                         $i++
                     }
                 }
-                return Invoke-AggregateReviewScores @params
+                $invokeRecords = @(Invoke-AggregateReviewScores @params 3>&1)
+                $result = $invokeRecords | Where-Object { $_ -is [hashtable] } | Select-Object -First 1
+                $result['Warnings'] = @($invokeRecords |
+                    Where-Object { $_ -is [System.Management.Automation.WarningRecord] } |
+                    ForEach-Object { $_.Message })
+                return $result
             }
             finally {
                 Pop-Location
@@ -2402,7 +2462,7 @@ exit 0
 
     # ==================================================================
     # Context: complexity_over_ceiling_history
-    # Tests for -ComplexityJsonPath parameter and complexity history
+    # Tests for -ComplexityJsonPath / -ComplexityCeilingConfigPath parameters and complexity history
     # write-back behavior (Phase 2 D7 implementation).
     # AST tests (no-gh): verify parameter declaration and script structure.
     # Execution tests (requires-gh): verify history increment, reset,
@@ -2440,6 +2500,221 @@ exit 0
                 -Because '-ComplexityJsonPath parameter AST node must be found'
             $paramAst.StaticType.Name | Should -Be 'String' `
                 -Because '-ComplexityJsonPath must be declared as [string]'
+        }
+
+        It 'wrapper script declares -ComplexityCeilingConfigPath parameter as [string]' -Tag 'no-gh' {
+            $script:WrapperParamBlockParamNames | Should -Contain 'ComplexityCeilingConfigPath' `
+                -Because 'aggregate-review-scores.ps1 must declare -ComplexityCeilingConfigPath for temp config injection'
+
+            $paramAst = @($script:WrapperParamBlockParams | Where-Object {
+                    $_.Name.VariablePath.UserPath -eq 'ComplexityCeilingConfigPath'
+                })
+            $paramAst.Count | Should -Be 1 `
+                -Because '-ComplexityCeilingConfigPath must be declared exactly once in the wrapper param block'
+            $paramAst[0].StaticType.Name | Should -Be 'String' `
+                -Because '-ComplexityCeilingConfigPath must be declared as [string] in aggregate-review-scores.ps1'
+        }
+
+        It 'core Invoke-AggregateReviewScores declares -ComplexityCeilingConfigPath parameter as [string]' -Tag 'no-gh' {
+            $script:CoreInvokeAggregateReviewScoresAst | Should -Not -BeNullOrEmpty `
+                -Because 'Invoke-AggregateReviewScores must be found before checking its parameters'
+            $script:CoreInvokeAggregateReviewScoresParamNames | Should -Contain 'ComplexityCeilingConfigPath' `
+                -Because 'Invoke-AggregateReviewScores must accept -ComplexityCeilingConfigPath from the wrapper'
+
+            $paramAst = @($script:CoreInvokeAggregateReviewScoresParams | Where-Object {
+                    $_.Name.VariablePath.UserPath -eq 'ComplexityCeilingConfigPath'
+                })
+            $paramAst.Count | Should -Be 1 `
+                -Because '-ComplexityCeilingConfigPath must be declared exactly once on Invoke-AggregateReviewScores'
+            $paramAst[0].StaticType.Name | Should -Be 'String' `
+                -Because '-ComplexityCeilingConfigPath must be declared as [string] on Invoke-AggregateReviewScores'
+        }
+
+        It 'warns with the missing explicit complexity ceiling config path and still exits cleanly' -Tag 'requires-gh' {
+            if (-not $script:GhAvailable) { Set-ItResult -Skipped -Because 'gh CLI not found'; return }
+
+            $workDir = & $script:NewWorkDir
+            $calibPath = Join-Path $workDir 'missing-config-calib.json'
+            & $script:WriteCalibrationFile -Path $calibPath -Data ([ordered]@{
+                    calibration_version = 1; entries = @()
+                })
+            $missingConfigPath = 'C:\nonexistent\config.json'
+
+            $result = & $script:InvokeAggregate `
+                -ExtraArgs @(
+                    '-CalibrationFile', $calibPath,
+                    '-ComplexityCeilingConfigPath', $missingConfigPath
+                )
+
+            $result.ExitCode | Should -Be 0 `
+                -Because 'a missing explicit complexity ceiling config path should warn without failing aggregation'
+            ($result.Warnings -join "`n") | Should -Match ([regex]::Escape($missingConfigPath)) `
+                -Because 'the warning must include the literal missing explicit config path'
+        }
+
+        It 'warns with the missing explicit complexity ceiling config path when the merged PR list is empty' -Tag 'no-gh' {
+            $workDir = & $script:NewWorkDir
+            $mockGhPath = & $script:WriteAggregateMockGh -WorkDir $workDir -JsonOutput '[]'
+            $missingConfigPath = Join-Path $workDir 'missing-guidance-complexity.json'
+
+            $invokeRecords = @(Invoke-AggregateReviewScores `
+                    -GhCliPath $mockGhPath `
+                    -Repo 'test/repo' `
+                    -ComplexityCeilingConfigPath $missingConfigPath `
+                    3>&1)
+            $result = $invokeRecords | Where-Object { $_ -is [hashtable] } | Select-Object -First 1
+            $warnings = @($invokeRecords |
+                    Where-Object { $_ -is [System.Management.Automation.WarningRecord] } |
+                    ForEach-Object { $_.Message })
+
+            $result.ExitCode | Should -Be 0 `
+                -Because 'an empty merged PR list remains a successful insufficient-data run'
+            ($warnings -join "`n") | Should -Match ([regex]::Escape($missingConfigPath)) `
+                -Because 'the explicit missing config-path warning must be emitted before the empty-PR early return'
+        }
+
+        It 'warns with the literal wildcard-like complexity ceiling config path instead of expanding it' -Tag 'no-gh' {
+            $workDir = & $script:NewWorkDir
+            $mockGhPath = & $script:WriteAggregateMockGh -WorkDir $workDir -JsonOutput '[]'
+            $wildcardConfigPath = Join-Path $script:RepoRoot 'skills/calibration-pipeline/assets/guidance-complexity.jso?'
+
+            (Test-Path -Path $wildcardConfigPath) | Should -BeTrue `
+                -Because 'the wildcard-like path must match the canonical JSON if wildcard semantics are used'
+            (Get-Item -LiteralPath $wildcardConfigPath -ErrorAction SilentlyContinue) | Should -BeNullOrEmpty `
+                -Because 'the wildcard-like path must not exist as a literal file'
+
+            $invokeRecords = @(Invoke-AggregateReviewScores `
+                    -GhCliPath $mockGhPath `
+                    -Repo 'test/repo' `
+                    -ComplexityCeilingConfigPath $wildcardConfigPath `
+                    3>&1)
+            $result = $invokeRecords | Where-Object { $_ -is [hashtable] } | Select-Object -First 1
+            $warnings = @($invokeRecords |
+                    Where-Object { $_ -is [System.Management.Automation.WarningRecord] } |
+                    ForEach-Object { $_.Message })
+
+            $result.ExitCode | Should -Be 0 `
+                -Because 'a missing explicit wildcard-like config path should warn without failing aggregation'
+            ($warnings -join "`n") | Should -Match ([regex]::Escape($wildcardConfigPath)) `
+                -Because 'the warning must contain the literal supplied wildcard string rather than reading through wildcard expansion'
+        }
+
+        It 'omits the complexity ceiling config path in a fresh wrapper runspace without StrictMode failure' -Tag 'requires-gh' {
+            if (-not $script:GhAvailable) { Set-ItResult -Skipped -Because 'gh CLI not found'; return }
+
+            $workDir = & $script:NewWorkDir
+            $calibPath = Join-Path $workDir 'fresh-runspace-omitted-config-calib.json'
+            & $script:WriteCalibrationFile -Path $calibPath -Data ([ordered]@{
+                    calibration_version = 1; entries = @()
+                })
+
+            $ghCliPath = if ($script:FixtureMode) { $script:FixtureGhPath } else { 'gh' }
+            $pwshCommand = Get-Command pwsh -ErrorAction SilentlyContinue
+            if (-not $pwshCommand) { Set-ItResult -Skipped -Because 'pwsh executable not found'; return }
+
+            $startInfo = [System.Diagnostics.ProcessStartInfo]::new()
+            $startInfo.FileName = $pwshCommand.Source
+            $startInfo.WorkingDirectory = $script:RepoRoot
+            $startInfo.UseShellExecute = $false
+            $startInfo.RedirectStandardOutput = $true
+            $startInfo.RedirectStandardError = $true
+            foreach ($argument in @(
+                    '-NoProfile',
+                    '-NonInteractive',
+                    '-File', $script:ScriptFile,
+                    '-CalibrationFile', $calibPath,
+                    '-GhCliPath', $ghCliPath
+                )) {
+                [void]$startInfo.ArgumentList.Add($argument)
+            }
+
+            $process = [System.Diagnostics.Process]::Start($startInfo)
+            $stdoutTask = $process.StandardOutput.ReadToEndAsync()
+            $stderrTask = $process.StandardError.ReadToEndAsync()
+            $process.WaitForExit()
+            $stdout = $stdoutTask.GetAwaiter().GetResult()
+            $stderr = $stderrTask.GetAwaiter().GetResult()
+            $combinedOutput = "$stdout`n$stderr"
+
+            $process.ExitCode | Should -Be 0 `
+                -Because 'omitting -ComplexityCeilingConfigPath should resolve the wrapper default config path in a fresh pwsh process'
+            $combinedOutput | Should -Not -Match 'Set-StrictMode|_ARSCoreLibDir|cannot be retrieved because it has not been set' `
+                -Because 'the omitted-path wrapper invocation must not trip StrictMode on an uninitialized core library directory'
+        }
+
+        It 'Process-Review 4.7-style wrapper invocation uses the canonical persistent threshold when config path is omitted' -Tag 'requires-gh' {
+            if (-not $script:GhAvailable) { Set-ItResult -Skipped -Because 'gh CLI not found'; return }
+
+            $workDir = & $script:NewWorkDir
+            $complexityPath = Join-Path $workDir 'process-review-complexity.json'
+            & $script:WriteComplexityFile -Path $complexityPath -AgentsOverCeiling @('TestAgent.agent.md')
+
+            $preSeededHistory = [ordered]@{
+                'TestAgent.agent.md' = [ordered]@{
+                    consecutive_count = 2
+                    first_observed_at = '2026-03-01T00:00:00Z'
+                    last_observed_at  = '2026-03-15T00:00:00Z'
+                    last_pr_number    = 1
+                }
+            }
+            $calibPath = Join-Path $workDir 'process-review-calib.json'
+            & $script:WriteCalibrationFile -Path $calibPath -Data ([ordered]@{
+                    calibration_version             = 1
+                    entries                         = @()
+                    complexity_over_ceiling_history = $preSeededHistory
+                })
+
+            $healthReportPath = Join-Path $workDir 'process-review-health-report.md'
+            $guidanceComplexityAsset = Join-Path $script:RepoRoot 'skills/calibration-pipeline/assets/guidance-complexity.json'
+            $startingAssetHash = (Get-FileHash -Path $guidanceComplexityAsset).Hash
+            $ghCliPath = if ($script:FixtureMode) { $script:FixtureGhPath } else { 'gh' }
+            $pwshCommand = Get-Command pwsh -ErrorAction SilentlyContinue
+            if (-not $pwshCommand) { Set-ItResult -Skipped -Because 'pwsh executable not found'; return }
+
+            $arguments = @(
+                '-NoProfile',
+                '-NonInteractive',
+                '-File', $script:ScriptFile,
+                '-CalibrationFile', $calibPath,
+                '-GhCliPath', $ghCliPath,
+                '-ComplexityJsonPath', $complexityPath,
+                '-OutputPath', $healthReportPath
+            )
+            $arguments | Should -Contain '-ComplexityJsonPath' `
+                -Because 'the Process-Review 4.7-style wrapper call must pass the measured complexity JSON path'
+            $arguments | Should -Contain '-OutputPath' `
+                -Because 'the Process-Review 4.7-style wrapper call must pass the health report output path'
+            $arguments | Should -Not -Contain '-ComplexityCeilingConfigPath' `
+                -Because 'Process-Review 4.7 does not pass an explicit complexity ceiling config path'
+
+            $startInfo = [System.Diagnostics.ProcessStartInfo]::new()
+            $startInfo.FileName = $pwshCommand.Source
+            $startInfo.WorkingDirectory = $script:RepoRoot
+            $startInfo.UseShellExecute = $false
+            $startInfo.RedirectStandardOutput = $true
+            $startInfo.RedirectStandardError = $true
+            foreach ($argument in $arguments) {
+                [void]$startInfo.ArgumentList.Add($argument)
+            }
+
+            $process = [System.Diagnostics.Process]::Start($startInfo)
+            $stdoutTask = $process.StandardOutput.ReadToEndAsync()
+            $stderrTask = $process.StandardError.ReadToEndAsync()
+            $process.WaitForExit()
+            $stdout = $stdoutTask.GetAwaiter().GetResult()
+            $stderr = $stderrTask.GetAwaiter().GetResult()
+            $endingAssetHash = (Get-FileHash -Path $guidanceComplexityAsset).Hash
+
+            $process.ExitCode | Should -Be 0 `
+                -Because "the wrapper invocation should succeed without -ComplexityCeilingConfigPath; stderr: $stderr"
+            $stdout | Should -Match 'extraction_agents:' `
+                -Because 'pre-seeded consecutive_count 2 plus the current over-ceiling observation should meet the canonical threshold'
+            $stdout | Should -Match 'TestAgent\.agent\.md' `
+                -Because 'the over-ceiling agent should be listed under extraction_agents'
+            $stdout | Should -Match '(?m)^\s*persistent_threshold:\s*3\s*$' `
+                -Because 'omitting -ComplexityCeilingConfigPath must read the committed canonical guidance-complexity.json threshold'
+            $endingAssetHash | Should -Be $startingAssetHash `
+                -Because 'the production-shape wrapper invocation must not mutate the committed guidance-complexity.json asset'
         }
 
         It 'script references guidance-complexity.json for persistent_threshold' -Tag 'no-gh' {
@@ -2633,51 +2908,45 @@ exit 0
             if (-not $script:GhAvailable) { Set-ItResult -Skipped -Because 'gh CLI not found'; return }
 
             $workDir = & $script:NewWorkDir
-            $configPath = Join-Path $script:RepoRoot 'skills/calibration-pipeline/assets/guidance-complexity.json'
-            $configBackup = Get-Content -Path $configPath -AsByteStream -Raw
-            try {
-                # Write custom config with persistent_threshold=2
-                $customConfig = [ordered]@{
-                    version              = 1
-                    ceilings             = [ordered]@{}
-                    default_ceiling      = [ordered]@{ max_directives = 128 }
-                    persistent_threshold = 2
-                }
-                $customConfig | ConvertTo-Json -Depth 5 | Set-Content -Path $configPath -Encoding UTF8
+            $tempConfigPath = Join-Path $workDir 'guidance-complexity.json'
 
-                $preSeededHistory = [ordered]@{
-                    'TestAgent.agent.md' = [ordered]@{
-                        consecutive_count = 1
-                        first_observed_at = '2026-03-01T00:00:00Z'
-                        last_observed_at  = '2026-03-15T00:00:00Z'
-                        last_pr_number    = 1
-                    }
-                }
-                $calib = [ordered]@{
-                    calibration_version             = 1
-                    entries                         = @()
-                    complexity_over_ceiling_history = $preSeededHistory
-                }
-                $calibPath = Join-Path $workDir 'threshold-calib.json'
-                & $script:WriteCalibrationFile -Path $calibPath -Data $calib
-
-                # This run increments TestAgent to consecutive_count=2 -> meets custom threshold of 2
-                $complexityPath = Join-Path $workDir 'complexity-threshold.json'
-                & $script:WriteComplexityFile -Path $complexityPath -AgentsOverCeiling @('TestAgent.agent.md')
-
-                $result = & $script:InvokeAggregate `
-                    -ExtraArgs @('-CalibrationFile', $calibPath, '-ComplexityJsonPath', $complexityPath)
-
-                $result.ExitCode | Should -Be 0
-                $result.Output | Should -Match 'extraction_agents:' `
-                    -Because 'extraction_agents section must appear in YAML output when an agent meets or exceeds the custom persistent_threshold of 2'
-                $result.Output | Should -Match 'TestAgent\.agent\.md' `
-                    -Because 'the agent meeting the threshold must be listed under extraction_agents'
+            # Write custom config with persistent_threshold=2
+            $customConfig = [ordered]@{
+                version              = 1
+                ceilings             = [ordered]@{}
+                default_ceiling      = [ordered]@{ max_directives = 128 }
+                persistent_threshold = 2
             }
-            finally {
-                # Restore the real config regardless of test outcome
-                Set-Content -Path $configPath -AsByteStream -Value $configBackup
+            $customConfig | ConvertTo-Json -Depth 5 | Set-Content -Path $tempConfigPath -Encoding UTF8
+
+            $preSeededHistory = [ordered]@{
+                'TestAgent.agent.md' = [ordered]@{
+                    consecutive_count = 1
+                    first_observed_at = '2026-03-01T00:00:00Z'
+                    last_observed_at  = '2026-03-15T00:00:00Z'
+                    last_pr_number    = 1
+                }
             }
+            $calib = [ordered]@{
+                calibration_version             = 1
+                entries                         = @()
+                complexity_over_ceiling_history = $preSeededHistory
+            }
+            $calibPath = Join-Path $workDir 'threshold-calib.json'
+            & $script:WriteCalibrationFile -Path $calibPath -Data $calib
+
+            # This run increments TestAgent to consecutive_count=2 -> meets custom threshold of 2
+            $complexityPath = Join-Path $workDir 'complexity-threshold.json'
+            & $script:WriteComplexityFile -Path $complexityPath -AgentsOverCeiling @('TestAgent.agent.md')
+
+            $result = & $script:InvokeAggregate `
+                -ExtraArgs @('-CalibrationFile', $calibPath, '-ComplexityJsonPath', $complexityPath, '-ComplexityCeilingConfigPath', $tempConfigPath)
+
+            $result.ExitCode | Should -Be 0
+            $result.Output | Should -Match 'extraction_agents:' `
+                -Because 'extraction_agents section must appear in YAML output when an agent meets or exceeds the custom persistent_threshold of 2'
+            $result.Output | Should -Match 'TestAgent\.agent\.md' `
+                -Because 'the agent meeting the threshold must be listed under extraction_agents'
         }
 
         It 'skips complexity tracking when -ComplexityJsonPath points to a non-existent file' -Tag 'requires-gh' {
@@ -2745,6 +3014,14 @@ exit 0
             $entry['last_observed_at'] | Should -Not -Be $seedTime `
                 -Because 'last_observed_at must be updated to reflect the new observation time'
         }
+    }
+
+    It 'leaves skills/calibration-pipeline/assets/guidance-complexity.json byte-stable across the suite' -Tag 'no-gh' {
+        # Note: this assertion only fires on suite-completion; interrupted runs are caught structurally by D3 (no mutation in the first place) and forward-protected by the AC6 class-invariant at next suite run.
+        $endingHash = (Get-FileHash -Path (Join-Path $script:RepoRoot 'skills/calibration-pipeline/assets/guidance-complexity.json')).Hash
+
+        $endingHash | Should -Be $script:GuidanceComplexityStartingHash `
+            -Because 'the committed guidance-complexity.json asset must remain byte-stable across this Pester suite'
     }
 }
 
