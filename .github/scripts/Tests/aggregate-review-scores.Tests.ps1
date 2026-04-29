@@ -1,4 +1,5 @@
 #Requires -Version 7.0
+# This suite is supported on pwsh 7+; PowerShell 5.1 is out of scope.
 #Requires -Modules @{ ModuleName = 'Pester'; ModuleVersion = '5.0.0' }
 <#
 .SYNOPSIS
@@ -57,6 +58,7 @@ Describe 'aggregate-review-scores.ps1 -CalibrationFile' {
         $script:RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '../../..')).Path
         $script:ScriptFile = Join-Path $script:RepoRoot 'skills\calibration-pipeline\scripts\aggregate-review-scores.ps1'
         $script:LibFile = Join-Path $script:RepoRoot 'skills\calibration-pipeline\scripts\aggregate-review-scores-core.ps1'
+        $script:GuidanceComplexityStartingHash = (Get-FileHash -Path (Join-Path $script:RepoRoot 'skills/calibration-pipeline/assets/guidance-complexity.json')).Hash
         . $script:LibFile
 
         # Master temp root — all per-test dirs live under here
@@ -2874,6 +2876,14 @@ exit 0
             $entry['last_observed_at'] | Should -Not -Be $seedTime `
                 -Because 'last_observed_at must be updated to reflect the new observation time'
         }
+    }
+
+    It 'leaves skills/calibration-pipeline/assets/guidance-complexity.json byte-stable across the suite' -Tag 'no-gh' {
+        # Note: this assertion only fires on suite-completion; interrupted runs are caught structurally by D3 (no mutation in the first place) and forward-protected by the AC6 class-invariant at next suite run.
+        $endingHash = (Get-FileHash -Path (Join-Path $script:RepoRoot 'skills/calibration-pipeline/assets/guidance-complexity.json')).Hash
+
+        $endingHash | Should -Be $script:GuidanceComplexityStartingHash `
+            -Because 'the committed guidance-complexity.json asset must remain byte-stable across this Pester suite'
     }
 }
 
