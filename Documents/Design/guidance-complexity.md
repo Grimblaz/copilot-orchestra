@@ -106,7 +106,7 @@ Config file at `skills/calibration-pipeline/assets/guidance-complexity.json`. Sc
 
 `skills/calibration-pipeline/scripts/aggregate-review-scores.ps1` and `Invoke-AggregateReviewScores` in `skills/calibration-pipeline/scripts/aggregate-review-scores-core.ps1` accept optional `[string]$ComplexityCeilingConfigPath = ''`.
 
-When the parameter is omitted, the core reads the canonical `skills/calibration-pipeline/assets/guidance-complexity.json` file. If that default file is absent or unreadable, the aggregate path silently uses the fallback persistent threshold of `3` so production and Process-Review invocations remain backward compatible.
+When the parameter is omitted, the core resolves the canonical `skills/calibration-pipeline/assets/guidance-complexity.json` file. If that default file is missing, the aggregate path silently uses the fallback persistent threshold of `3` so production and Process-Review invocations remain backward compatible. If the resolved default file exists but cannot be read or parsed, the aggregate path emits a warning and falls back to `3`.
 
 When the parameter is supplied, the path is treated literally. A missing explicit path emits a warning containing the supplied path and continues with the fallback persistent threshold of `3`.
 
@@ -176,7 +176,7 @@ Implements the data-dependent mechanisms from D7–D9 that require calibration h
 
 **Idempotency**: The `last_pr_number` field prevents re-incrementing `consecutive_count` when the aggregate script is run multiple times with the same calibration state (e.g., on model switch resume). Increment is skipped when `last_pr_number == $maxMergedPrNumber`.
 
-**`persistent_threshold`** (authoritative source: `skills/calibration-pipeline/assets/guidance-complexity.json`): The consecutive-run count at which the extraction advisory fires. Default value: `3`. Read by `Invoke-AggregateReviewScores` from the config file (not from the complexity JSON temp file) to keep the config as the single source of truth. The optional `-ComplexityCeilingConfigPath` parameter exists for tests and controlled runs; omitted calls use the canonical asset path and silently fall back to `3` if the default file is absent or unreadable.
+**`persistent_threshold`** (authoritative source: `skills/calibration-pipeline/assets/guidance-complexity.json`): The consecutive-run count at which the extraction advisory fires. Default value: `3`. Read by `Invoke-AggregateReviewScores` from the config file (not from the complexity JSON temp file) to keep the config as the single source of truth. The optional `-ComplexityCeilingConfigPath` parameter exists for tests and controlled runs; omitted calls resolve the canonical asset path. A missing default file silently falls back to `3`; an existing default file that cannot be read or parsed emits a warning before falling back to `3`. Explicit supplied paths are literal; missing explicit paths warn and fall back to `3`.
 
 **`extraction_agents:` YAML output**: After processing, the aggregate script emits an `extraction_agents:` block listing every agent whose `consecutive_count >= persistent_threshold`:
 
