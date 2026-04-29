@@ -1,6 +1,7 @@
 ---
 name: Solution-Designer
 description: "Technical design exploration and issue documentation — explores architecture options, documents decisions, updates GitHub issues"
+provides: design
 argument-hint: "Start technical design for a GitHub issue"
 tools: [
     "vscode/askQuestions",

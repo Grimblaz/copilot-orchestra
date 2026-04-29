@@ -1,6 +1,8 @@
 ---
 name: Refactor-Specialist
 description: "Proactive code quality hunter - finds and fixes refactoring opportunities"
+provides: implement-refactor
+applies-when: changeset.touchedAreaHasRefactorableDebt()
 argument-hint: "Hunt for refactoring opportunities in modified files and improve code quality"
 user-invocable: false
 tools:

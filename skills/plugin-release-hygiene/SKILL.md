@@ -1,6 +1,8 @@
 ---
 name: plugin-release-hygiene
 description: "Maintainer-side version-bump guardrail and Claude startup drift backstop guidance for plugin entry-point edits. Use when entry-point files change, when choosing patch/minor/major overrides, or when documenting/running the Claude plugin update surface. DO NOT USE FOR: CI release automation, registry publishing, or purely manual non-agent edit flows."
+provides: release-hygiene
+applies-when: changeset.touchesPluginEntryPoint()
 ---
 
 <!-- platform-assumptions: markdown skill guidance for VS Code custom agents in Agent Orchestra; assumes the skill is loaded by the plugin-distributed PostToolUse hook or a Copilot applyTo instruction when entry-point files are edited. -->
@@ -134,6 +136,12 @@ When a drift-check or maintainer flow needs one of these commands, attempt the c
 | Repo version files are already out of lockstep | `bump-version.ps1` refuses to write and the guardrail looks broken | Restore lockstep first, then let the bump script own all version updates |
 
 ---
+
+## Frame Ports Filled By This Skill
+
+| Port | Work adapter | Explicit-skip adapter |
+| --- | --- | --- |
+| `release-hygiene` | This `SKILL.md` frontmatter declares `provides: release-hygiene` and `applies-when: changeset.touchesPluginEntryPoint()` | [adapters/explicit-skip-release-hygiene.md](adapters/explicit-skip-release-hygiene.md) |
 
 ## Platform-specific invocation
 

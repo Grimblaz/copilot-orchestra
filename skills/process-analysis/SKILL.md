@@ -234,3 +234,9 @@ Artifacts:
 | Trigger                                                   | Gotcha                                                               | Fix                                                                  |
 | --------------------------------------------------------- | -------------------------------------------------------------------- | -------------------------------------------------------------------- |
 | Treating a skill gap as proof that the skill was required | The audit becomes a box-checking exercise instead of a judgment call | Compare the missed skill against the actual phase needs and evidence |
+
+## Frame Ports Filled By This Skill
+
+| Port | Work adapter | Explicit-skip adapter |
+| --- | --- | --- |
+| `process-review` | [agents/Process-Review.agent.md](../../agents/Process-Review.agent.md) | [adapters/explicit-skip-process-review.md](adapters/explicit-skip-process-review.md) |

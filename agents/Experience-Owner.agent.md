@@ -1,6 +1,7 @@
 ---
 name: Experience-Owner
 description: "Customer experience bookend — frames features as customer journeys upstream, captures CE Gate evidence downstream"
+provides: experience
 argument-hint: "Frame customer experience for issue #N, or run CE Gate for issue #N on [branch]"
 tools: [
     "vscode/askQuestions",

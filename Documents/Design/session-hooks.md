@@ -10,7 +10,7 @@
 
 ## Summary
 
-The current design uses plugin-distributed hooks to restore deterministic startup automation across both Claude Code and Copilot. Claude-format installs use `hooks/hooks.json`; Copilot-format installs use root `hooks.json`. Both carry `SessionStart` for stale-state cleanup context injection and `PostToolUse` for plugin-release-hygiene version-bump prompting. The `session-startup` skill remains responsible for run-once semantics, detector-output handling, fail-open behavior, opt-in cleanup, manual fallback invocation, and Claude-only marketplace freshness before plugin drift checks, while the plugin manifests declare the appropriate hook file so installs carry the behavior automatically.
+The current design uses plugin-distributed hooks to restore deterministic startup automation across both Claude Code and Copilot. Claude-format installs use the standalone `hooks/hooks.json` bundle/discovery path, while `.claude-plugin/plugin.json` intentionally omits `hooks`; Copilot-format installs use root `hooks.json`, declared by the root `plugin.json`. Both hook files carry `SessionStart` for stale-state cleanup context injection and `PostToolUse` for plugin-release-hygiene version-bump prompting. The `session-startup` skill remains responsible for run-once semantics, detector-output handling, fail-open behavior, opt-in cleanup, manual fallback invocation, and Claude-only marketplace freshness before plugin drift checks.
 
 Code-Critic Perspective 7 (Documentation Script Audit) was added in the same phase to close a gap where shell commands embedded in Markdown documentation went unreviewed for self-consistency. _(Merged into §6 Script & Automation as doc-audit sub-gate in issue #212.)_
 
@@ -33,7 +33,7 @@ Code-Critic Perspective 7 (Documentation Script Audit) was added in the same pha
 | D11 | Calibration cleanup noise | Treat `.copilot-tracking/calibration/**` as persistent data, not cleanup work | Avoids false-positive cleanup prompts for repo-scoped calibration state | Instruction |
 | D12 | Trigger placement within agent files | Put the `session-startup` trigger on the first content line after the role description in each pipeline-entry agent and remove the redundant silent-skip summary from `## Process` | Reduces instruction competition in crowded `## Process` sections, especially for Experience-Owner, while keeping silent-skip and run-once semantics owned by the skill contract and wording test | Skill |
 | D13 | Hook delivery comeback | Return to hook-based delivery via plugin-distributed `hooks/hooks.json` | Avoids the unreliable workspace-discovered hook mechanism from issue #109 while removing LLM-priority dependence from per-agent trigger text | Plugin hook |
-| D14 | Hook declaration path | Declare format-appropriate hook files in each manifest (`hooks/hooks.json` for Claude, `hooks.json` for Copilot) | Keeps hook delivery explicit for both tool formats while accommodating Copilot's missing plugin-root token | Plugin hook |
+| D14 | Hook discovery/declaration path | Use standalone `hooks/hooks.json` for Claude bundle discovery and declare `hooks.json` only in the root Copilot `plugin.json` | Keeps hook delivery explicit while preserving Claude's metadata-only manifest contract and accommodating Copilot's missing plugin-root token | Plugin hook |
 | D15 | Shared hook file scope | Carry both `SessionStart` and `PostToolUse` in the same hook file | Keeps startup hygiene and release hygiene under one plugin-distributed hook surface and reduces drift between tools | Plugin hook |
 | D16 | Release-hygiene hook location | Move `plugin-release-hygiene-hook.ps1` into `skills/plugin-release-hygiene/scripts/` | Co-locates the hook script with its owning skill and removes the old `.claude/settings.json` / `.claude/hooks/` maintainer-only path | Plugin hook |
 | D17 | Claude marketplace freshness | Run `claude plugin marketplace update` before the Step 7b cached version comparison | Prevents stale marketplace clones from creating false-current silence while preserving fail-open startup behavior | Plugin hook |
@@ -82,7 +82,7 @@ Code-Critic Perspective 7 (Documentation Script Audit) was added in the same pha
 
 ## Plugin Distribution Architecture
 
-Hook delivery now ships through the plugin manifests rather than workspace-level `chat.hookFilesLocations` configuration. `.claude-plugin/plugin.json` declares `hooks/hooks.json`, while the root `plugin.json` declares `hooks.json`, so downstream installs receive the startup and release-hygiene hooks automatically in both formats.
+Hook delivery now ships through plugin-distributed hook files rather than workspace-level `chat.hookFilesLocations` configuration. Claude Code loads the standalone `hooks/hooks.json` bundle/discovery path, and `.claude-plugin/plugin.json` intentionally omits a `hooks` field. Copilot loads root `hooks.json` through the root `plugin.json` `hooks` declaration. Downstream installs therefore receive the startup and release-hygiene hooks automatically in both formats without giving Claude a manifest hook declaration.
 
 The detector wrapper at `skills/session-startup/scripts/session-cleanup-detector.ps1` still self-resolves its repo root via `$PSScriptRoot`, which preserves the v2.0.0 removal of `COPILOT_ORCHESTRA_ROOT` / `WORKFLOW_TEMPLATE_ROOT` as runtime requirements. Manual fallback invocation therefore remains path-stable in both repo-clone and plugin-cache contexts.
 
@@ -141,7 +141,7 @@ Cross-tool asymmetry per D6 of #412: Copilot's `.github/prompts/*.prompt.md` fil
 
 ## Requirements
 
-- Plugin manifests must declare their format-appropriate hook file so installs receive the startup and release-hygiene hooks automatically
+- The root Copilot `plugin.json` must declare `hooks.json`; Claude's `.claude-plugin/plugin.json` must omit `hooks` and rely on the bundled `hooks/hooks.json` file
 - The automatic startup check runs at most once per conversation because the session-memory marker `/memories/session/session-startup-check-complete.md` is checked before the detector run and recorded after the first automatic startup check
 - If session-memory read or write fails, the startup flow fails open and still runs the detector rather than suppressing cleanup detection
 - Detector git failures fail open: fetch, worktree-list, for-each-ref, per-candidate merge-base, and ref-lookup failures suppress unverifiable candidates without aborting the session

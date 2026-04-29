@@ -309,3 +309,10 @@ When representing an external review ledger:
 | Trigger                               | Gotcha                                                       | Fix                                                                 |
 | ------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------------- |
 | A finding has a citation but no break | The judge cannot tell whether it is a defect or a preference | State the concrete failure mode or downgrade the item before output |
+
+## Frame Ports Filled By This Skill
+
+| Port | Work adapter | Explicit-skip adapter |
+| --- | --- | --- |
+| `review` | [agents/Code-Review-Response.agent.md](../../agents/Code-Review-Response.agent.md); [adapters/standard.md](adapters/standard.md); [adapters/lite.md](adapters/lite.md); [adapters/judge-only.md](adapters/judge-only.md); [adapters/proxy-github.md](adapters/proxy-github.md) | [adapters/explicit-skip-review.md](adapters/explicit-skip-review.md) |
+| `post-fix-review` | [adapters/post-fix.md](adapters/post-fix.md) | [adapters/explicit-skip-post-fix-review.md](adapters/explicit-skip-post-fix-review.md) |

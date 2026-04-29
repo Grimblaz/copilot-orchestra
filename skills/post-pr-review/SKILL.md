@@ -1,7 +1,10 @@
 ---
 name: post-pr-review
 description: "Post-merge checklist for archiving, documentation, versioning, and release tagging. Use when completing post-merge cleanup, archiving tracking files, updating docs, or running the pre-merge strategic assessment (Step 6). DO NOT USE FOR: pre-PR readiness checks (use verification-before-completion) or processing GitHub review comments (use code-review-intake)."
+provides: post-pr
 ---
+
+# Post-PR Review
 
 ## When to Use
 
@@ -83,7 +86,7 @@ The script updates `plugin.json`, `marketplace.json` (2 occurrences), and `READM
 
 **WRONG** (do not use):
 
-```
+```text
 # mcp_github_create_or_update_file with partial file content
 # This tool REPLACES the entire file. Only use it for net-new files.
 # Using it with partial content silently truncates the rest of the file.
@@ -272,3 +275,9 @@ The work is now fully complete and properly documented.
 | "PR merged — done" without running the cleanup checklist                   | Stale branches persist; related issues stay open; version history unclear              | Run the full post-merge checklist (Steps 1–5) before declaring done                    |
 | Skipping the pre-merge strategic assessment (Step 6 / SAR)                 | Missing the window to catch low-quality patterns before they set precedent             | Complete Step 6 SAR before committing to merge on any >Medium impact PR                |
 | Archiving tracking files before committing documentation                   | PR created without updated design docs and changelog                                   | Follow checklist order: documentation first, then archive                              |
+
+## Frame Ports Filled By This Skill
+
+| Port | Work adapter | Explicit-skip adapter |
+| --- | --- | --- |
+| `post-pr` | This `SKILL.md` frontmatter declares `provides: post-pr` | [adapters/explicit-skip-post-pr.md](adapters/explicit-skip-post-pr.md) |

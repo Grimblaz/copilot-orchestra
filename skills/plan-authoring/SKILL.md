@@ -196,3 +196,9 @@ If discovery becomes long or tool-heavy, compact before drafting. Preserve the k
 | Trigger                                               | Gotcha                                                                     | Fix                                                                          |
 | ----------------------------------------------------- | -------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
 | CE Gate is drafted from mechanics instead of outcomes | The plan exercises the surface but misses design intent and customer value | Reuse Experience-Owner scenarios when present, or derive both scenario types |
+
+## Frame Ports Filled By This Skill
+
+| Port | Work adapter | Auto-N/A adapter | Explicit-skip adapter |
+| --- | --- | --- | --- |
+| `plan` | [agents/Issue-Planner.agent.md](../../agents/Issue-Planner.agent.md) | [adapters/auto-na-plan.md](adapters/auto-na-plan.md) | [adapters/explicit-skip-plan.md](adapters/explicit-skip-plan.md) |

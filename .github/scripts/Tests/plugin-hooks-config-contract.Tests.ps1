@@ -52,7 +52,7 @@ Describe 'plugin hooks config contract' -Tag 'unit' {
         }
     }
 
-    It 'declares both Claude and Copilot hook configs' {
+    It 'keeps both standalone hook config files available' {
         Test-Path $script:ClaudeHooksConfig | Should -BeTrue
         Test-Path $script:CopilotHooksConfig | Should -BeTrue
     }
@@ -119,12 +119,16 @@ Describe 'plugin hooks config contract' -Tag 'unit' {
         }
     }
 
-    It 'declares format-appropriate hooks in both plugin manifests' {
+    It 'declares the Copilot hook config from the root plugin manifest' {
         $rootManifest = Get-JsonFile -Path $script:RootPluginManifest
-        $claudeManifest = Get-JsonFile -Path $script:ClaudePluginManifest
 
         $rootManifest.hooks | Should -Be 'hooks.json'
-        $claudeManifest.hooks | Should -Be './hooks/hooks.json'
+    }
+
+    It 'omits hooks from the Claude plugin manifest because Claude loads hooks from hooks/hooks.json' {
+        $claudeManifest = Get-JsonFile -Path $script:ClaudePluginManifest
+
+        $claudeManifest.PSObject.Properties.Name | Should -Not -Contain 'hooks'
     }
 
     It 'keeps both marketplace manifests valid JSON' {

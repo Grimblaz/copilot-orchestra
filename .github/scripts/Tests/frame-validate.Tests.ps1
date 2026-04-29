@@ -159,6 +159,264 @@ None.
             return $path
         }
 
+        $script:GetFrameValidateLivePortNames = {
+            param([Parameter(Mandatory)][string]$Root)
+
+            $catalog = Get-FVPortCatalog -RootPath $Root
+            $catalog.Exists | Should -BeTrue
+            return [string[]]@($catalog.Names | Where-Object { $_ -ne 'process-retrospective' } | Sort-Object)
+        }
+
+        $script:GetFrameValidateExpectedRolesByPort = {
+            return @{
+                'ce-gate-api'        = [string[]]@('auto-na', 'explicit-skip', 'work')
+                'ce-gate-browser'    = [string[]]@('auto-na', 'explicit-skip', 'work')
+                'ce-gate-canvas'     = [string[]]@('auto-na', 'explicit-skip', 'work')
+                'ce-gate-cli'        = [string[]]@('auto-na', 'explicit-skip', 'work')
+                'design'             = [string[]]@('auto-na', 'explicit-skip', 'work')
+                'experience'         = [string[]]@('auto-na', 'explicit-skip', 'work')
+                'implement-code'     = [string[]]@('auto-na', 'explicit-skip', 'work')
+                'implement-docs'     = [string[]]@('auto-na', 'explicit-skip', 'work')
+                'implement-refactor' = [string[]]@('auto-na', 'explicit-skip', 'work')
+                'implement-test'     = [string[]]@('auto-na', 'explicit-skip', 'work')
+                'plan'               = [string[]]@('auto-na', 'explicit-skip', 'work')
+                'post-fix-review'    = [string[]]@('explicit-skip', 'work')
+                'post-pr'            = [string[]]@('explicit-skip', 'work')
+                'process-review'     = [string[]]@('explicit-skip', 'work')
+                'release-hygiene'    = [string[]]@('explicit-skip', 'work')
+                'review'             = [string[]]@('explicit-skip', 'work')
+            }
+        }
+
+        $script:NewFrameValidateProviderDeclarationKey = {
+            param(
+                [Parameter(Mandatory)][string]$Role,
+                [Parameter(Mandatory)][string]$Path,
+                [Parameter(Mandatory)][string[]]$Provides
+            )
+
+            $providesText = @($Provides | Sort-Object) -join ', '
+            return "$Role|$Path|$providesText"
+        }
+
+        $script:GetFrameValidateExpectedProviderDeclarationKeys = {
+            $expectedDeclarationsByRole = @{
+                'work'          = [ordered]@{
+                    'agents/Code-Review-Response.agent.md'                   = 'review'
+                    'agents/Code-Smith.agent.md'                             = 'implement-code'
+                    'agents/Doc-Keeper.agent.md'                             = 'implement-docs'
+                    'agents/Experience-Owner.agent.md'                       = 'experience'
+                    'agents/Issue-Planner.agent.md'                          = 'plan'
+                    'agents/Process-Review.agent.md'                         = 'process-review'
+                    'agents/Refactor-Specialist.agent.md'                    = 'implement-refactor'
+                    'agents/Solution-Designer.agent.md'                      = 'design'
+                    'agents/Test-Writer.agent.md'                            = 'implement-test'
+                    'skills/adversarial-review/adapters/judge-only.md'       = 'review'
+                    'skills/adversarial-review/adapters/lite.md'             = 'review'
+                    'skills/adversarial-review/adapters/post-fix.md'         = 'post-fix-review'
+                    'skills/adversarial-review/adapters/proxy-github.md'     = 'review'
+                    'skills/adversarial-review/adapters/standard.md'         = 'review'
+                    'skills/customer-experience/adapters/ce-gate-api.md'     = 'ce-gate-api'
+                    'skills/customer-experience/adapters/ce-gate-browser.md' = 'ce-gate-browser'
+                    'skills/customer-experience/adapters/ce-gate-canvas.md'  = 'ce-gate-canvas'
+                    'skills/customer-experience/adapters/ce-gate-cli.md'     = 'ce-gate-cli'
+                    'skills/plugin-release-hygiene/SKILL.md'                 = 'release-hygiene'
+                    'skills/post-pr-review/SKILL.md'                         = 'post-pr'
+                }
+                'auto-na'       = [ordered]@{
+                    'skills/customer-experience/adapters/auto-na-ce-gate-api.md'            = 'ce-gate-api'
+                    'skills/customer-experience/adapters/auto-na-ce-gate-browser.md'        = 'ce-gate-browser'
+                    'skills/customer-experience/adapters/auto-na-ce-gate-canvas.md'         = 'ce-gate-canvas'
+                    'skills/customer-experience/adapters/auto-na-ce-gate-cli.md'            = 'ce-gate-cli'
+                    'skills/customer-experience/adapters/auto-na-experience.md'             = 'experience'
+                    'skills/design-exploration/adapters/auto-na-design.md'                  = 'design'
+                    'skills/documentation-finalization/adapters/auto-na-implement-docs.md'  = 'implement-docs'
+                    'skills/implementation-discipline/adapters/auto-na-implement-code.md'   = 'implement-code'
+                    'skills/plan-authoring/adapters/auto-na-plan.md'                        = 'plan'
+                    'skills/refactoring-methodology/adapters/auto-na-implement-refactor.md' = 'implement-refactor'
+                    'skills/test-driven-development/adapters/auto-na-implement-test.md'     = 'implement-test'
+                }
+                'explicit-skip' = [ordered]@{
+                    'skills/adversarial-review/adapters/explicit-skip-post-fix-review.md'         = 'post-fix-review'
+                    'skills/adversarial-review/adapters/explicit-skip-review.md'                  = 'review'
+                    'skills/customer-experience/adapters/explicit-skip-ce-gate-api.md'            = 'ce-gate-api'
+                    'skills/customer-experience/adapters/explicit-skip-ce-gate-browser.md'        = 'ce-gate-browser'
+                    'skills/customer-experience/adapters/explicit-skip-ce-gate-canvas.md'         = 'ce-gate-canvas'
+                    'skills/customer-experience/adapters/explicit-skip-ce-gate-cli.md'            = 'ce-gate-cli'
+                    'skills/customer-experience/adapters/explicit-skip-experience.md'             = 'experience'
+                    'skills/design-exploration/adapters/explicit-skip-design.md'                  = 'design'
+                    'skills/documentation-finalization/adapters/explicit-skip-implement-docs.md'  = 'implement-docs'
+                    'skills/implementation-discipline/adapters/explicit-skip-implement-code.md'   = 'implement-code'
+                    'skills/plan-authoring/adapters/explicit-skip-plan.md'                        = 'plan'
+                    'skills/plugin-release-hygiene/adapters/explicit-skip-release-hygiene.md'     = 'release-hygiene'
+                    'skills/post-pr-review/adapters/explicit-skip-post-pr.md'                     = 'post-pr'
+                    'skills/process-analysis/adapters/explicit-skip-process-review.md'            = 'process-review'
+                    'skills/refactoring-methodology/adapters/explicit-skip-implement-refactor.md' = 'implement-refactor'
+                    'skills/test-driven-development/adapters/explicit-skip-implement-test.md'     = 'implement-test'
+                }
+            }
+
+            $keys = [System.Collections.Generic.List[string]]::new()
+            foreach ($role in @('work', 'auto-na', 'explicit-skip')) {
+                foreach ($path in @($expectedDeclarationsByRole[$role].Keys)) {
+                    $keys.Add((& $script:NewFrameValidateProviderDeclarationKey -Role $role -Path $path -Provides @($expectedDeclarationsByRole[$role][$path])))
+                }
+            }
+
+            return [string[]]@($keys.ToArray() | Sort-Object)
+        }
+
+        $script:GetFrameValidateActualProviderDeclarationKeys = {
+            param([Parameter(Mandatory)][string]$Root)
+
+            $keys = [System.Collections.Generic.List[string]]::new()
+            foreach ($adapter in @(Get-FVAdapterMetadata -RootPath $Root)) {
+                if (@($adapter.Provides).Count -eq 0) { continue }
+
+                $relativePath = Get-FVRelativePath -RootPath $Root -Path $adapter.File.FullName
+                $role = & $script:GetFrameValidateAdapterRole -File $adapter.File
+                $keys.Add((& $script:NewFrameValidateProviderDeclarationKey -Role $role -Path $relativePath -Provides @($adapter.Provides)))
+            }
+
+            return [string[]]@($keys.ToArray() | Sort-Object)
+        }
+
+        $script:GetFrameValidateAdapterRole = {
+            param([Parameter(Mandatory)][System.IO.FileInfo]$File)
+
+            if ($File.Name -like 'auto-na-*.md') { return 'auto-na' }
+            if ($File.Name -like 'explicit-skip-*.md') { return 'explicit-skip' }
+            return 'work'
+        }
+
+        $script:GetFrameValidateFrontmatterLines = {
+            param([Parameter(Mandatory)][System.IO.FileInfo]$File)
+
+            $content = Get-Content -LiteralPath $File.FullName -Raw
+            $match = [regex]::Match($content, '(?ms)\A---\r?\n(?<yaml>.*?)\r?\n---(?:\r?\n|\z)')
+            if (-not $match.Success) { return [string[]]@() }
+            return [string[]]($match.Groups['yaml'].Value -split "`r?`n")
+        }
+
+        $script:GetFrameValidateExplicitSkipFiles = {
+            param([Parameter(Mandatory)][string]$Root)
+
+            $skillsPath = Join-Path -Path $Root -ChildPath 'skills'
+            if (-not (Test-Path -LiteralPath $skillsPath)) { return [System.IO.FileInfo[]]@() }
+
+            return [System.IO.FileInfo[]]@(
+                Get-ChildItem -LiteralPath $skillsPath -Directory |
+                    ForEach-Object {
+                        $adaptersPath = Join-Path -Path $_.FullName -ChildPath 'adapters'
+                        if (Test-Path -LiteralPath $adaptersPath) {
+                            Get-ChildItem -LiteralPath $adaptersPath -Filter 'explicit-skip-*.md' -File
+                        }
+                    } |
+                    Sort-Object -Property FullName
+            )
+        }
+
+        $script:GetFrameValidateDispatcherFiles = {
+            param([Parameter(Mandatory)][string]$Root)
+
+            $agentsPath = Join-Path -Path $Root -ChildPath 'agents'
+            $commandsPath = Join-Path -Path $Root -ChildPath 'commands'
+            $dispatcherFiles = [System.Collections.Generic.List[System.IO.FileInfo]]::new()
+
+            if (Test-Path -LiteralPath $agentsPath) {
+                foreach ($file in @(Get-ChildItem -LiteralPath $agentsPath -Filter '*.md' -File)) {
+                    if ($file.Name -notlike '*.agent.md' -and $file.Name -cmatch '^[a-z].*\.md$') {
+                        $dispatcherFiles.Add($file)
+                    }
+                }
+            }
+
+            if (Test-Path -LiteralPath $commandsPath) {
+                foreach ($file in @(Get-ChildItem -LiteralPath $commandsPath -Filter '*.md' -File)) {
+                    $dispatcherFiles.Add($file)
+                }
+            }
+
+            return [System.IO.FileInfo[]]@($dispatcherFiles.ToArray() | Sort-Object -Property FullName)
+        }
+
+        $script:GetFrameValidatePredicateIdentifiers = {
+            param([Parameter(Mandatory)][string]$Predicate)
+
+            $ast = ConvertTo-FVPredicate -Predicate $Predicate
+            if (Test-FVParseError -Value $ast) {
+                throw "Predicate '$Predicate' failed to parse: $($ast.Message)"
+            }
+
+            $identifiers = [System.Collections.Generic.List[string]]::new()
+            $visit = {
+                param($Node)
+
+                if ($null -eq $Node) { return }
+                if ($Node -is [string] -or $Node -is [ValueType]) { return }
+
+                if ($Node -is [System.Collections.IEnumerable]) {
+                    foreach ($item in $Node) {
+                        & $visit $item
+                    }
+                    return
+                }
+
+                $kindProperty = $Node.PSObject.Properties['Kind']
+                if ($null -ne $kindProperty) {
+                    if ($kindProperty.Value -eq 'Identifier' -or $kindProperty.Value -eq 'Call') {
+                        $identifiers.Add([string]$Node.Name)
+                    }
+                }
+
+                foreach ($property in @($Node.PSObject.Properties)) {
+                    if ($property.Name -notin @('Kind', 'Name', 'LiteralType', 'Value', 'Operator', 'Position')) {
+                        & $visit $property.Value
+                    }
+                }
+            }
+
+            & $visit $ast
+            return [string[]]@(
+                $identifiers.ToArray() |
+                    Sort-Object -Unique
+            )
+        }
+
+        $script:GetFrameValidateAllowedPredicateIdentifiers = {
+            return [System.Collections.Generic.HashSet[string]]::new([string[]]@(
+                    'changeset.touchesSource'
+                    'changeset.touchesTestableCode'
+                    'changeset.touchedAreaHasRefactorableDebt'
+                    'changeset.changesBehaviorOrInterface'
+                    'changeset.touchesCliSurface'
+                    'changeset.touchesBrowserSurface'
+                    'changeset.touchesCanvasSurface'
+                    'changeset.touchesApiSurface'
+                    'changeset.touchesPluginEntryPoint'
+                    'changeset.touches'
+                    'changeset.totalLines'
+                    'changeset.complexity'
+                    'scope.isReReview'
+                    'scope.isProxyGithub'
+                    'review.sustainedCriticalOrHigh'
+                    'ceGate.defectsFound'
+                ), [System.StringComparer]::Ordinal)
+        }
+
+        $script:GetFrameValidateNonAllowlistedPredicateIdentifiers = {
+            param(
+                [Parameter(Mandatory)][string]$Predicate,
+                [Parameter(Mandatory)][System.Collections.Generic.HashSet[string]]$AllowedIdentifiers
+            )
+
+            return [string[]]@(
+                & $script:GetFrameValidatePredicateIdentifiers -Predicate $Predicate |
+                    Where-Object { -not $AllowedIdentifiers.Contains($_) } |
+                    Sort-Object -Unique
+            )
+        }
+
         $script:NewQuickValidateSupportFixture = {
             param([Parameter(Mandatory)][string]$Root)
 
@@ -172,7 +430,7 @@ None.
             Set-Content -Path $settingsPath -Value '@{ IncludeRules = @() }' -Encoding utf8NoBOM
 
             return [PSCustomObject]@{
-                GuidanceComplexityScriptPath  = $complexityScriptPath
+                GuidanceComplexityScriptPath = $complexityScriptPath
                 PSScriptAnalyzerSettingsPath = $settingsPath
                 ScriptsPath                  = & $script:JoinFrameValidateTestPath -Root $Root -RelativePath '.github/scripts'
             }
@@ -265,6 +523,47 @@ None.
             $result.Detail | Should -Match 'frame/ports missing'
             $result.Detail | Should -Match 'adapter symmetry skipped'
         }
+
+        It 'discovers skill adapter files alongside agent, skill, and command scan surfaces' {
+            $root = & $script:NewFrameValidateFixture -Ports @('experience')
+            $resolvedRoot = (Get-Item -LiteralPath $root).FullName
+            & $script:AddFrameAdapter -Root $root -RelativePath 'agents\discovered.agent.md' -Provides @('experience') | Out-Null
+            & $script:AddFrameAdapter -Root $root -RelativePath 'agents\lowercase-shell.md' -Provides @('experience') | Out-Null
+            & $script:AddFrameAdapter -Root $root -RelativePath 'commands\discovered-command.md' -Provides @('experience') | Out-Null
+            & $script:AddFrameAdapter -Root $root -RelativePath 'skills\test-skill\adapters\auto-na-experience.md' -Provides @('experience') | Out-Null
+            & $script:AddFrameAdapter -Root $root -RelativePath 'skills\test-skill\adapters\explicit-skip-experience.md' -Provides @('experience') | Out-Null
+            & $script:AddFrameAdapter -Root $root -RelativePath 'skills\test-skill\adapters\variant.md' -Provides @('experience') | Out-Null
+
+            $discoveredPaths = [string[]]@(
+                Get-FVAdapterFiles -RootPath $resolvedRoot |
+                    ForEach-Object { Get-FVRelativePath -RootPath $resolvedRoot -Path $_.FullName } |
+                    Sort-Object
+            )
+
+            $expectedPaths = [string[]]@(
+                'agents/discovered.agent.md'
+                'agents/lowercase-shell.md'
+                'commands/discovered-command.md'
+                'skills/test-skill/SKILL.md'
+                'skills/test-skill/adapters/auto-na-experience.md'
+                'skills/test-skill/adapters/explicit-skip-experience.md'
+                'skills/test-skill/adapters/variant.md'
+            ) | Sort-Object
+
+            $discoveredPaths | Should -Be $expectedPaths
+        }
+
+        It 'fails a typoed reveiw provides declaration with deterministic adapter symmetry detail' {
+            $root = & $script:NewFrameValidateFixture -Ports @('review')
+            $resolvedRoot = (Get-Item -LiteralPath $root).FullName
+            & $script:AddFrameAdapter -Root $root -RelativePath 'skills\test-skill\adapters\typo-review.md' -Provides @('reveiw') | Out-Null
+
+            $result = Test-FVAdapterSymmetry -RootPath $resolvedRoot
+
+            & $script:AssertCheckResult -Result $result -ExpectedName 'AdapterSymmetry'
+            $result.Passed | Should -BeFalse
+            $result.Detail | Should -Be "1 invalid provides declaration(s): skills/test-skill/adapters/typo-review.md provides 'reveiw'; valid ports: review"
+        }
     }
 
     Context 'Test-FVPredicateParse' {
@@ -313,7 +612,7 @@ provides: # comment
   - experience
   - review # comment
 applies-when: >-
-  changeset.touches('docs/**') and changeset.behaviorChanged()
+    changeset.touches('docs/**') and changeset.changesBehaviorOrInterface()
 ---
 
 # Test Skill
@@ -378,6 +677,171 @@ applies-when: |+
             $result.Detail | Should -Match 'agents/bad-predicate\.agent\.md'
             $result.Detail | Should -Match ([regex]::Escape($Predicate))
             $result.Detail | Should -Match 'parse error at position'
+        }
+    }
+
+    Context 'Live adapter declaration locks' {
+
+        It 'has the expected adapter role set for every non-deferred live port' {
+            $expectedRolesByPort = & $script:GetFrameValidateExpectedRolesByPort
+            $portNames = & $script:GetFrameValidateLivePortNames -Root $script:RepoRoot
+            $metadataByPort = @{}
+
+            foreach ($adapter in @(Get-FVAdapterMetadata -RootPath $script:RepoRoot)) {
+                foreach ($providedPort in @($adapter.Provides)) {
+                    if (-not $metadataByPort.ContainsKey($providedPort)) {
+                        $metadataByPort[$providedPort] = [System.Collections.Generic.List[string]]::new()
+                    }
+
+                    $metadataByPort[$providedPort].Add((& $script:GetFrameValidateAdapterRole -File $adapter.File))
+                }
+            }
+
+            $violations = [System.Collections.Generic.List[string]]::new()
+            foreach ($portName in $portNames) {
+                if (-not $expectedRolesByPort.ContainsKey($portName)) {
+                    $violations.Add("$portName has no expected adapter role mapping")
+                    continue
+                }
+
+                $expectedRoles = [string[]]@($expectedRolesByPort[$portName] | Sort-Object -Unique)
+                $actualRoles = if ($metadataByPort.ContainsKey($portName)) {
+                    [string[]]@($metadataByPort[$portName].ToArray() | Sort-Object -Unique)
+                }
+                else {
+                    [string[]]@()
+                }
+
+                if (($actualRoles -join ', ') -ne ($expectedRoles -join ', ')) {
+                    $violations.Add("$portName expected roles [$($expectedRoles -join ', ')]; actual roles [$($actualRoles -join ', ')]")
+                }
+            }
+
+            ($violations -join "`n") | Should -Be ''
+        }
+
+        It 'allows only the documented provider declaration paths for each adapter role' {
+            $expectedProviderDeclarations = & $script:GetFrameValidateExpectedProviderDeclarationKeys
+            $actualProviderDeclarations = & $script:GetFrameValidateActualProviderDeclarationKeys -Root $script:RepoRoot
+
+            ($actualProviderDeclarations -join "`n") | Should -Be ($expectedProviderDeclarations -join "`n")
+        }
+
+        It 'has zero providers for the deferred process-retrospective port' {
+            $processRetrospectiveProviders = [System.Collections.Generic.List[string]]::new()
+            foreach ($adapter in @(Get-FVAdapterMetadata -RootPath $script:RepoRoot)) {
+                foreach ($providedPort in @($adapter.Provides)) {
+                    if ($providedPort -eq 'process-retrospective') {
+                        $relativePath = Get-FVRelativePath -RootPath $script:RepoRoot -Path $adapter.File.FullName
+                        $processRetrospectiveProviders.Add($relativePath)
+                    }
+                }
+            }
+
+            $processRetrospectiveProviders.ToArray() | Should -HaveCount 0
+        }
+
+        It 'keeps supporting methodology skills free of provider declarations' {
+            $supportingSkillPaths = @(
+                'skills/routing-tables/SKILL.md'
+                'skills/session-memory-contract/SKILL.md'
+                'skills/subagent-env-handshake/SKILL.md'
+            )
+
+            $violations = [System.Collections.Generic.List[string]]::new()
+            foreach ($supportingSkillPath in $supportingSkillPaths) {
+                $file = Get-Item -LiteralPath (Join-Path -Path $script:RepoRoot -ChildPath $supportingSkillPath)
+                $frontmatter = Get-FVAdapterFrontmatter -File $file
+                if (@($frontmatter.Provides).Count -ne 0) {
+                    $violations.Add("$supportingSkillPath declares provides: $(@($frontmatter.Provides) -join ', ')")
+                }
+            }
+
+            ($violations -join "`n") | Should -Be ''
+        }
+
+        It 'keeps standard and lite review predicates exclusive from judge-only and proxy scopes' {
+            $expectedPredicatesByPath = @{
+                'skills/adversarial-review/adapters/standard.md'     = 'changeset.totalLines >= 200 and not scope.isReReview and not scope.isProxyGithub'
+                'skills/adversarial-review/adapters/lite.md'         = 'changeset.totalLines < 200 and not scope.isReReview and not scope.isProxyGithub'
+                'skills/adversarial-review/adapters/judge-only.md'   = 'scope.isReReview'
+                'skills/adversarial-review/adapters/proxy-github.md' = 'scope.isProxyGithub'
+            }
+
+            foreach ($relativePath in @($expectedPredicatesByPath.Keys | Sort-Object)) {
+                $file = Get-Item -LiteralPath (Join-Path -Path $script:RepoRoot -ChildPath $relativePath)
+                $frontmatter = Get-FVAdapterFrontmatter -File $file
+
+                @($frontmatter.AppliesWhen) | Should -Be @($expectedPredicatesByPath[$relativePath])
+            }
+        }
+
+        It 'requires every explicit-skip adapter to declare the D9 reason-required line' {
+            $expectedExplicitSkipCount = @(& $script:GetFrameValidateLivePortNames -Root $script:RepoRoot).Count
+            $explicitSkipFiles = & $script:GetFrameValidateExplicitSkipFiles -Root $script:RepoRoot
+            $violations = [System.Collections.Generic.List[string]]::new()
+
+            if ($explicitSkipFiles.Count -ne $expectedExplicitSkipCount) {
+                $violations.Add("expected $expectedExplicitSkipCount explicit-skip adapter file(s); found $($explicitSkipFiles.Count)")
+            }
+
+            foreach ($explicitSkipFile in $explicitSkipFiles) {
+                $frontmatterLines = & $script:GetFrameValidateFrontmatterLines -File $explicitSkipFile
+                if ($frontmatterLines -notcontains 'reason-required: true') {
+                    $relativePath = Get-FVRelativePath -RootPath $script:RepoRoot -Path $explicitSkipFile.FullName
+                    $violations.Add("$relativePath is missing literal frontmatter line 'reason-required: true'")
+                }
+            }
+
+            ($violations -join "`n") | Should -Be ''
+        }
+
+        It 'keeps lowercase agent shells and commands free of provides declarations' {
+            $dispatcherFiles = & $script:GetFrameValidateDispatcherFiles -Root $script:RepoRoot
+            $dispatcherFiles | Should -Not -BeNullOrEmpty
+
+            $violations = [System.Collections.Generic.List[string]]::new()
+            foreach ($dispatcherFile in $dispatcherFiles) {
+                $frontmatter = Get-FVAdapterFrontmatter -File $dispatcherFile
+                if (@($frontmatter.Provides).Count -ne 0) {
+                    $relativePath = Get-FVRelativePath -RootPath $script:RepoRoot -Path $dispatcherFile.FullName
+                    $violations.Add("$relativePath declares provides: $(@($frontmatter.Provides) -join ', ')")
+                }
+            }
+
+            ($violations -join "`n") | Should -Be ''
+        }
+
+        It 'uses only allowlisted DSL identifiers and functions in adapter applies-when predicates' {
+            $allowedIdentifiers = & $script:GetFrameValidateAllowedPredicateIdentifiers
+
+            $violations = [System.Collections.Generic.List[string]]::new()
+            $predicateCount = 0
+
+            foreach ($adapter in @(Get-FVAdapterMetadata -RootPath $script:RepoRoot)) {
+                foreach ($predicate in @($adapter.AppliesWhen)) {
+                    $predicateCount++
+                    $relativePath = Get-FVRelativePath -RootPath $script:RepoRoot -Path $adapter.File.FullName
+
+                    foreach ($identifier in @(& $script:GetFrameValidateNonAllowlistedPredicateIdentifiers -Predicate $predicate -AllowedIdentifiers $allowedIdentifiers)) {
+                        $violations.Add("$relativePath applies-when '$predicate' uses non-allowlisted identifier/function '$identifier'")
+                    }
+                }
+            }
+
+            if ($predicateCount -eq 0) {
+                $violations.Add('no adapter applies-when predicates were discovered for DSL allowlist validation')
+            }
+
+            ($violations -join "`n") | Should -Be ''
+        }
+
+        It 'catches bare non-allowlisted predicate identifiers' {
+            $allowedIdentifiers = & $script:GetFrameValidateAllowedPredicateIdentifiers
+
+            $violations = & $script:GetFrameValidateNonAllowlistedPredicateIdentifiers -Predicate 'bogus == true' -AllowedIdentifiers $allowedIdentifiers
+
+            $violations | Should -Be @('bogus')
         }
     }
 

@@ -1,6 +1,8 @@
 ---
 name: Code-Smith
 description: "Focused code implementation following TDD or plan-driven approach"
+provides: implement-code
+applies-when: changeset.touchesSource()
 argument-hint: "Implement code changes based on tests or plan"
 user-invocable: false
 tools:

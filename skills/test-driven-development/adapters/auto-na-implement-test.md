@@ -1,0 +1,9 @@
+---
+name: auto-na-implement-test
+provides: implement-test
+applies-when: not changeset.touchesTestableCode()
+---
+
+# Auto N/A Implement Test
+
+Writes or represents a not-applicable credit for `implement-test` when the predicate matches.

@@ -157,3 +157,9 @@ Then run the repository validation command required by the current task.
 | Trigger                                  | Gotcha                                                        | Fix                                                        |
 | ---------------------------------------- | ------------------------------------------------------------- | ---------------------------------------------------------- |
 | Copying logic into a new helper or class | The change creates a second source of truth that drifts later | Search first, inject the existing dependency, and delegate |
+
+## Frame Ports Filled By This Skill
+
+| Port | Work adapter | Auto-N/A adapter | Explicit-skip adapter |
+| --- | --- | --- | --- |
+| `implement-code` | [agents/Code-Smith.agent.md](../../agents/Code-Smith.agent.md) | [adapters/auto-na-implement-code.md](adapters/auto-na-implement-code.md) | [adapters/explicit-skip-implement-code.md](adapters/explicit-skip-implement-code.md) |

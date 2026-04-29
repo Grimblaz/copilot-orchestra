@@ -2,3 +2,4 @@ name: process-retrospective
 description: "Should this change contribute to a broader process retrospective signal?"
 applies: always
 status: tbd-decision-pending
+notes: "No adapter declared yet - resolution tracked under umbrella #425, with active sibling #443 (sub-C: process-review + process-retrospective decision)."
