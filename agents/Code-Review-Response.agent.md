@@ -1,6 +1,7 @@
 ---
 name: Code-Review-Response
 description: "Single-shot Judge for prosecution/defense findings — rule, score, categorize"
+provides: review
 argument-hint: "Judge prosecution/defense findings and emit scored categorization"
 tools:
   [

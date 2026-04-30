@@ -73,7 +73,7 @@ Detailed CE scenarios are deferred until the audit-only sub-issue produces a con
 | **Auto-N/A adapter** | A special adapter per port that fires when a declarative predicate matches "this PR has nothing for this port to do," writing a `not-applicable` credit. |
 | **Explicit-skip adapter** | A special adapter per port that requires an operator/agent to supply a justification. Writes a `skipped` credit. The escape hatch for cases predicates don't capture. |
 | **Terminal-step rule** | The credit for a multi-stage adapter is written by the *terminal* step (the one that produces the customer-relevant outcome), not by intermediate steps. |
-| **Trigger-conditional port** | A port that only applies when a triggering signal occurs in another port's output (e.g., `post-fix-review` fires only when `review` finds a Critical/High; `process-review` fires only when CE Gate finds a defect). Distinct from always-applies. |
+| **Trigger-conditional port** | A port that only applies when a triggering signal occurs in the changeset or another port's output (e.g., `release-hygiene` fires when plugin entry-point files change; `post-fix-review` fires only when `review` finds a Critical/High; `process-review` fires only when CE Gate finds a defect). Distinct from always-applies. |
 | **Inconclusive credit** | A credit-status value distinct from `skipped` and `not-applicable`. Used when an adapter could not complete because of an environmental constraint (e.g., browser tools unavailable, runtime surface unreachable). Recoverable; gate may treat as soft-block depending on port configuration. |
 
 ### Port-naming principle
@@ -86,15 +86,15 @@ This is the test for whether to split or merge a port.
 
 ## Canonical Port List (V2)
 
-**Seventeen ports**: 14 always-applies + 3 trigger-conditional. Flat list — sub-ports rejected during design (parent nodes added bookkeeping without structural meaning). Display can group by name prefix without altering the gate's data model.
+**Seventeen ports**: 13 always-applies, 3 trigger-conditional, and 1 deferred decision port. Flat list — sub-ports rejected during design (parent nodes added bookkeeping without structural meaning). Display can group by name prefix without altering the gate's data model.
 
-### Always-applies ports (14)
+### Always-applies ports (13)
 
 | Port | Adapter family today | Auto-N/A rule (declarative) |
 |---|---|---|
-| `experience` | Experience-Owner upstream framing | `changeset.complexity == trivial` |
-| `design` | Solution-Designer 3-pass exploration | `changeset.complexity == trivial` |
-| `plan` | Issue-Planner | `changeset.complexity == trivial` |
+| `experience` | Experience-Owner upstream framing | `changeset.complexity == 'trivial'` |
+| `design` | Solution-Designer 3-pass exploration | `changeset.complexity == 'trivial'` |
+| `plan` | Issue-Planner | `changeset.complexity == 'trivial'` |
 | `implement-code` | Code-Smith | no source files changed |
 | `implement-test` | Test-Writer | no testable code changed |
 | `implement-refactor` | Refactor-Specialist | no touched-area debt above threshold |
@@ -104,47 +104,48 @@ This is the test for whether to split or merge a port.
 | `ce-gate-browser` | Browser-surface scenario exercise | web UI not touched |
 | `ce-gate-canvas` | Canvas-surface scenario exercise | canvas surface not touched |
 | `ce-gate-api` | API-surface scenario exercise | API surface not touched |
-| `release-hygiene` | plugin-release-hygiene + version-bump check | no plugin entry-point or manifest files changed |
 | `post-pr` | post-pr-review checklist | (always applies) |
 
 ### Trigger-conditional ports (3)
 
-These ports do not have a predicate-based applies-when. They activate when a triggering signal appears in another port's credit. If the trigger does not fire, the port is auto-N/A with the trigger absence as evidence.
+These ports activate when their trigger signal appears. If the trigger does not fire, trigger absence is the N/A evidence; no separate auto-N/A adapter file is declared.
 
 | Port | Trigger | Adapter family today |
 |---|---|---|
+| `release-hygiene` | Plugin entry-point or distributed plugin files changed | plugin-release-hygiene |
 | `post-fix-review` | `review` credit contains a sustained Critical or High finding | Code-Critic post-fix prosecution |
 | `process-review` | CE Gate credit shows a sustained defect (`ce_gate_defects_found > 0`) | Process-Review |
-| `process-retrospective` | (TBD — currently undecided whether always-applies, post-pr-conditional, or formally retired) | Step 11 retrospective practice (visible in #286 only) |
+
+### Deferred decision port (1)
+
+| Port | Current status | Adapter family today |
+|---|---|---|
+| `process-retrospective` | `tbd-decision-pending`; no adapter declared | Step 11 retrospective practice (visible in #286 only) |
 
 ### Revisions from V1 → V2 (driven by audit)
 
 - Dropped `scope.isHotfix` from `experience`/`design`/`plan` auto-N/A predicates. Audit showed PR #415 (a bug fix) ran all three. Trivial-complexity is the only reliable predicate.
-- Added `release-hygiene` port. Every recent merged PR shows version bumps across 4-5 manifest files with no enforcement.
+- Added `release-hygiene` as a trigger-conditional port for plugin entry-point and distributed plugin file changes.
 - Added `post-fix-review` port. PR #286 ran it explicitly; today it lives inside `review`'s prose. It has a distinct trigger and scope, so it deserves its own credit.
-- Added `process-review` and `process-retrospective` as trigger-conditional ports.
-- `process-retrospective` flagged as TBD — visible in pre-thin/fat #286 but absent in all three other PRs. Decision in audit-only sub-issue: lift to first-class port, fold into `post-pr`, or retire the practice.
-
-Notes (unchanged from V1):
-
-- Every port **always applies** to every PR — except trigger-conditional ports, whose applicability is itself derived from another port's credit (not silently skipped: an explicit "trigger absent" credit is still written).
-- For ports with multiple work-adapter variants (today: `review`, `experience`), the SKILL.md acts as the adapter directory.
+- Added `process-review` as a trigger-conditional port.
+- `process-retrospective` flagged as TBD — visible in pre-thin/fat #286 but absent in all three other PRs. The active decision work is tracked under #443: lift to first-class port, fold into `post-pr`, or retire the practice.
 
 Notes:
 
-- Every port **always applies** to every PR. Variation lives in adapter selection, including the auto-N/A adapter. There is no port-level "this port doesn't apply" silent skip.
+- Always-applies ports appear in every PR's ledger as passed, failed, skipped, or not-applicable. Trigger-conditional ports appear when triggered or when trigger absence is recorded by the eventual evaluator.
 - For ports with multiple work-adapter variants (today, only `review`), the SKILL.md acts as the adapter directory:
 
   ```text
   skills/adversarial-review/
     SKILL.md            # describes the port + lists adapters
     adapters/
-      standard.md       # provides: review, applies-when: changeset.totalLines >= 200
-      lite.md           # provides: review, applies-when: changeset.totalLines < 200
+      standard.md       # provides: review, applies-when: changeset.totalLines >= 200 and not scope.isReReview and not scope.isProxyGithub
+      lite.md           # provides: review, applies-when: changeset.totalLines < 200 and not scope.isReReview and not scope.isProxyGithub
       judge-only.md     # provides: review, applies-when: scope.isReReview
+      proxy-github.md   # provides: review, applies-when: scope.isProxyGithub
   ```
 
-- For single-adapter ports the directory is degenerate (one entry). The model accommodates both.
+- Single-adapter ports declare in the owning `.agent.md` or `SKILL.md`; companion auto-N/A and explicit-skip declarations live in `skills/<skill>/adapters/`.
 
 ---
 
@@ -152,16 +153,17 @@ Notes:
 
 ### Adapter declaration
 
-Adapters declare port intent in their frontmatter (skill, agent, or command):
+Adapters declare port intent in frontmatter on the file that fills the port:
 
 ```yaml
 ---
-name: code-critic-lite
+name: review-lite
 provides: review
-applies-when: changeset.totalLines < 200
-produces-credit: review.{adapter}.{timestamp}
+applies-when: changeset.totalLines < 200 and not scope.isReReview and not scope.isProxyGithub
 ---
 ```
+
+Explicit-skip adapters add `reason-required: true` and omit `applies-when` because they are invoked manually with a visible justification.
 
 The current frame validator ships as `.github/scripts/frame-validate.ps1`, backed by `.github/scripts/lib/frame-validate-core.ps1` and `.github/scripts/lib/frame-predicate-core.ps1`. `quick-validate.ps1` aggregates it as `FrameValidator`, so the validator passes or fails with the existing structural validation suite rather than adding a separate CI lane.
 
@@ -173,13 +175,56 @@ The first shipped validator slice is intentionally symmetry-only plus predicate 
 - If `frame/ports/` is missing, adapter symmetry passes with informational detail and predicate parsing still runs.
 - Frontmatter handling is deliberately lightweight. It accepts the scalar, inline-list, indented-list, comment, and block-scalar forms used by adapter declarations, but it is not a full YAML parser.
 
+### Declaration asymmetry
+
+Port-filling skills and agents declare `provides:`. Supporting skills loaded only as methodology do not. Use the credit-author/output test: if the skill or agent produces the terminal output that becomes the credit for a port, it declares `provides:`; if it only supplies reusable guidance to another adapter, such as `session-memory-contract`, `routing-tables`, or `subagent-env-handshake`, it stays declaration-free.
+
 ### Three adapter types per port
 
 | Type | Count per port | Purpose |
 |---|---|---|
-| **Work adapter** | ≥1 | Does the actual thing. Has positive `applies-when`. |
-| **Auto-N/A adapter** | 0 or 1 | Fires when declarative rule matches "nothing to do." Writes `not-applicable` credit with the matched rule as evidence. No judgment. |
-| **Explicit-skip adapter** | exactly 1 | Operator/agent invokes with `reason`. Writes `skipped` credit. Justification is visible in PR review and challengeable. |
+| **Work adapter** | ≥1 for live ports | Does the actual thing. Has positive `applies-when` when the port is conditional or variant-bearing. |
+| **Auto-N/A adapter** | 0 or 1 | Fires when declarative rule matches "nothing to do." Trigger-conditional ports use trigger absence instead and do not declare auto-N/A files. |
+| **Explicit-skip adapter** | exactly 1 for each non-deferred port | Operator/agent invokes with `reason`. Writes `skipped` credit. Justification is visible in PR review and challengeable. |
+
+`process-retrospective` is the only deferred port and currently has no work, auto-N/A, or explicit-skip adapter.
+
+### Where to declare
+
+| Adapter type | Declaration location |
+|---|---|
+| Agent-owned work adapter | Canonical `agents/<Name>.agent.md` |
+| Skill-owned single work adapter | `skills/<skill>/SKILL.md` |
+| Skill-owned variant or work file | `skills/<skill>/adapters/<variant>.md` |
+| Auto-N/A adapter | `skills/<skill>/adapters/auto-na-<port>.md` |
+| Explicit-skip adapter | `skills/<skill>/adapters/explicit-skip-<port>.md` |
+
+Lowercase Claude shells and slash commands are dispatchers, not adapters; they do not declare `provides:`.
+
+### Per-port adapter table
+
+| Port | Applies | Work declaration | Work predicate | Auto-N/A declaration | Explicit-skip declaration |
+|---|---|---|---|---|---|
+| `experience` | always | `agents/Experience-Owner.agent.md` | (single adapter) | `skills/customer-experience/adapters/auto-na-experience.md` — `changeset.complexity == 'trivial'` | `skills/customer-experience/adapters/explicit-skip-experience.md` |
+| `design` | always | `agents/Solution-Designer.agent.md` | (single adapter) | `skills/design-exploration/adapters/auto-na-design.md` — `changeset.complexity == 'trivial'` | `skills/design-exploration/adapters/explicit-skip-design.md` |
+| `plan` | always | `agents/Issue-Planner.agent.md` | (single adapter) | `skills/plan-authoring/adapters/auto-na-plan.md` — `changeset.complexity == 'trivial'` | `skills/plan-authoring/adapters/explicit-skip-plan.md` |
+| `implement-code` | always | `agents/Code-Smith.agent.md` | `changeset.touchesSource()` | `skills/implementation-discipline/adapters/auto-na-implement-code.md` — `not changeset.touchesSource()` | `skills/implementation-discipline/adapters/explicit-skip-implement-code.md` |
+| `implement-test` | always | `agents/Test-Writer.agent.md` | `changeset.touchesTestableCode()` | `skills/test-driven-development/adapters/auto-na-implement-test.md` — `not changeset.touchesTestableCode()` | `skills/test-driven-development/adapters/explicit-skip-implement-test.md` |
+| `implement-refactor` | always | `agents/Refactor-Specialist.agent.md` | `changeset.touchedAreaHasRefactorableDebt()` | `skills/refactoring-methodology/adapters/auto-na-implement-refactor.md` — `not changeset.touchedAreaHasRefactorableDebt()` | `skills/refactoring-methodology/adapters/explicit-skip-implement-refactor.md` |
+| `implement-docs` | always | `agents/Doc-Keeper.agent.md` | `changeset.changesBehaviorOrInterface()` | `skills/documentation-finalization/adapters/auto-na-implement-docs.md` — `not changeset.changesBehaviorOrInterface()` | `skills/documentation-finalization/adapters/explicit-skip-implement-docs.md` |
+| `review` standard | always | `agents/Code-Review-Response.agent.md`; `skills/adversarial-review/adapters/standard.md` | `changeset.totalLines >= 200 and not scope.isReReview and not scope.isProxyGithub` | none — always applies | `skills/adversarial-review/adapters/explicit-skip-review.md` |
+| `review` lite | always | `agents/Code-Review-Response.agent.md`; `skills/adversarial-review/adapters/lite.md` | `changeset.totalLines < 200 and not scope.isReReview and not scope.isProxyGithub` | none — always applies | `skills/adversarial-review/adapters/explicit-skip-review.md` |
+| `review` judge-only | always | `agents/Code-Review-Response.agent.md`; `skills/adversarial-review/adapters/judge-only.md` | `scope.isReReview` | none — always applies | `skills/adversarial-review/adapters/explicit-skip-review.md` |
+| `review` proxy-github | always | `agents/Code-Review-Response.agent.md`; `skills/adversarial-review/adapters/proxy-github.md` | `scope.isProxyGithub` | none — always applies | `skills/adversarial-review/adapters/explicit-skip-review.md` |
+| `ce-gate-cli` | always | `skills/customer-experience/adapters/ce-gate-cli.md` | `changeset.touchesCliSurface()` | `skills/customer-experience/adapters/auto-na-ce-gate-cli.md` — `not changeset.touchesCliSurface()` | `skills/customer-experience/adapters/explicit-skip-ce-gate-cli.md` |
+| `ce-gate-browser` | always | `skills/customer-experience/adapters/ce-gate-browser.md` | `changeset.touchesBrowserSurface()` | `skills/customer-experience/adapters/auto-na-ce-gate-browser.md` — `not changeset.touchesBrowserSurface()` | `skills/customer-experience/adapters/explicit-skip-ce-gate-browser.md` |
+| `ce-gate-canvas` | always | `skills/customer-experience/adapters/ce-gate-canvas.md` | `changeset.touchesCanvasSurface()` | `skills/customer-experience/adapters/auto-na-ce-gate-canvas.md` — `not changeset.touchesCanvasSurface()` | `skills/customer-experience/adapters/explicit-skip-ce-gate-canvas.md` |
+| `ce-gate-api` | always | `skills/customer-experience/adapters/ce-gate-api.md` | `changeset.touchesApiSurface()` | `skills/customer-experience/adapters/auto-na-ce-gate-api.md` — `not changeset.touchesApiSurface()` | `skills/customer-experience/adapters/explicit-skip-ce-gate-api.md` |
+| `release-hygiene` | trigger-conditional | `skills/plugin-release-hygiene/SKILL.md` | `changeset.touchesPluginEntryPoint()` | none — N/A by trigger absence | `skills/plugin-release-hygiene/adapters/explicit-skip-release-hygiene.md` |
+| `post-pr` | always | `skills/post-pr-review/SKILL.md` | (single adapter) | none — always applies | `skills/post-pr-review/adapters/explicit-skip-post-pr.md` |
+| `post-fix-review` | trigger-conditional | `skills/adversarial-review/adapters/post-fix.md` | `review.sustainedCriticalOrHigh == true` | none — N/A by trigger absence | `skills/adversarial-review/adapters/explicit-skip-post-fix-review.md` |
+| `process-review` | trigger-conditional | `agents/Process-Review.agent.md` | `ceGate.defectsFound > 0` | none — N/A by trigger absence | `skills/process-analysis/adapters/explicit-skip-process-review.md` |
+| `process-retrospective` | deferred | none | none | none | none |
 
 ### Selection (where judgment lives)
 
@@ -192,24 +237,53 @@ Each agent that owns a port is responsible for selection. When the agent runs:
 
 The pre-PR hook independently verifies via the credit. Selection logic is never re-run by the hook — it just checks that *some* credit exists.
 
+Review adapter selection is mutually exclusive: `judge-only` and `proxy-github` match their scope flags, while `standard` and `lite` both require those flags to be false.
+
 ### `applies-when` predicate language
 
 Target enforcement evaluates the declarative DSL against:
 
 - `git diff` against the merge target (file list, line counts, paths)
 - Repo signals (file patterns, surface markers)
-- Operator-supplied scope label (only for explicit-skip; `applies-when` predicates do not read scope class to prevent gaming)
+- Operator-supplied review routing flags for specialized review modes (`scope.isReReview`, `scope.isProxyGithub`) and explicit-skip justification
 
 Examples:
 
 ```yaml
 applies-when: changeset.touches('src/ui/**')
-applies-when: changeset.totalLines < 200
+applies-when: changeset.totalLines < 200 and not scope.isReReview and not scope.isProxyGithub
 applies-when: not changeset.touchesSource()
-applies-when: changeset.touches('docs/**') and changeset.behaviorChanged()
+applies-when: changeset.changesBehaviorOrInterface()
 ```
 
 The grammar is small and deterministic. Current validation is parse-only: it accepts comparisons, logical `AND`/`OR`/`NOT`, grouped expressions, dotted identifiers, bare boolean identifiers such as `scope.isReReview`, and function-call predicates with literal arguments such as `changeset.touches('docs/**')`. It rejects malformed syntax but does not validate field existence, function existence, or type consistency; those semantic checks are deferred to the evaluator work. The target hook evaluates valid predicates; the agent does not.
+
+### Predicate schema appendix
+
+This is the **Provisional DSL surface (v1)**: every identifier or function below is used by a live adapter predicate and is subject to revision in #429 once warn-only hook interpretation is in place. The current parser accepts the shapes; #429 owns runtime meaning.
+
+| Identifier or function | Current intended shape |
+|---|---|
+| `changeset.touches` | Function with a literal glob argument, e.g., `changeset.touches('docs/**')` |
+| `changeset.touchesSource` | Function returning whether source files changed |
+| `changeset.touchesTestableCode` | Function returning whether testable production code changed |
+| `changeset.touchedAreaHasRefactorableDebt` | Function returning whether touched areas need refactor review |
+| `changeset.changesBehaviorOrInterface` | Function returning whether behavior or interface docs changed |
+| `changeset.touchesCliSurface` | Function returning whether CLI surface files changed |
+| `changeset.touchesBrowserSurface` | Function returning whether browser UI surface files changed |
+| `changeset.touchesCanvasSurface` | Function returning whether canvas surface files changed |
+| `changeset.touchesApiSurface` | Function returning whether API surface files changed |
+| `changeset.touchesPluginEntryPoint` | Function returning whether plugin entry-point or distributed plugin files changed |
+| `changeset.totalLines` | Numeric identifier used in comparisons |
+| `changeset.complexity` | String identifier; current predicates use `'trivial'` |
+| `scope.isReReview` | Bare boolean identifier for judge-only reruns |
+| `scope.isProxyGithub` | Bare boolean identifier for proxy-GitHub review intake |
+| `review.sustainedCriticalOrHigh` | Boolean credit-reference identifier for post-fix-review trigger predicates |
+| `ceGate.defectsFound` | Numeric credit-reference identifier for process-review trigger predicates |
+
+### Rejected alternative: all-in-adapters
+
+The all-in-adapters shape would put every adapter, including single work adapters, under `skills/<skill>/adapters/`. The D1 hybrid reduces total file count by declaring agent-owned and skill-owned single adapters in their canonical files, but it does create high-density skills such as `customer-experience` and `adversarial-review`; the SKILL.md adapter pointer sections mitigate that density by listing each port and adapter path near the owning methodology.
 
 ---
 
@@ -242,7 +316,7 @@ credits:
   - port: design
     adapter: design-auto-na
     status: not-applicable
-    rule: "changeset.complexity == trivial"
+    rule: "changeset.complexity == 'trivial'"
     evidence: changeset:diff-stat@HEAD
     applied-by: Code-Conductor
     timestamp: 2026-04-24T14:02:00Z
@@ -288,7 +362,7 @@ credits:
     applied-by: Code-Conductor
     timestamp: 2026-04-24T14:18:00Z
 
-  # ... 17 entries total (14 always-applies + 3 trigger-conditional)
+  # ... 17 entries total (13 always-applies + 3 trigger-conditional + 1 deferred decision port)
 
 # v2 fields preserved unchanged below — readers of v2 see the legacy block; v3-aware readers consume credits[]
 prosecution_findings: 6
@@ -375,7 +449,7 @@ Cheapest path to evidence: extend the existing pipeline-metrics block to v3 with
 
 ### Deliverables
 
-1. **`frame/ports/*.yaml`** — the 17 port files (14 always-applies + 3 trigger-conditional), declarative.
+1. **`frame/ports/*.yaml`** — the 17 port files (13 always-applies, 3 trigger-conditional, 1 deferred decision port), declarative.
 2. **`frame/pipeline-metrics-v3-schema.yaml`** — schema doc that extends `metrics_version: 2` with the `credits[]` array, status enum (`passed | failed | skipped | not-applicable | inconclusive`), and integrity-check fields. Backwards-compatible with v2 readers.
 3. **`scripts/frame-back-derive.ps1`** — script that, given a PR number:
    - Reads PR body (existing v2 pipeline-metrics block), diff, linked issue markers, PR-body sections (Adversarial Review Scores, CE Gate, Validation Evidence, Process Gaps)
@@ -448,21 +522,23 @@ These come in subsequent sub-issues, prioritized by audit findings.
 
 Order is intentional but flexible — actual priority will shift based on audit-report missing-rate per port. Sub-issues 1–4 are foundational and should land in order; 5+ are port reifications driven by audit data.
 
-| # | Sub-issue | Deliverable | Depends on |
-|---|---|---|---|
-| 1 | **Audit-only credit ledger from existing markers + pipeline-metrics v3 schema** | Schema doc, port files (17), back-deriver script, audit report. No enforcement. | — |
-| 2 | Frame validator (lint/CI step) | Walks `frame/ports/*.yaml` and adapter frontmatter; fails CI when an adapter declares a non-existent port and when `applies-when` cannot parse. Missing adapters for existing ports are allowed until coverage enforcement ships. | #1 |
-| 3 | Adapter declarations in skill/agent frontmatter | All current skills/agents declare `provides: <port>` and `applies-when` predicates. Validator (#2) passes. | #1, #2 |
-| 4 | Pre-PR hook (warn-only mode) | Hook exists, reads PR body's pipeline-metrics v3 block, posts a comment listing missing/failed/inconclusive credits. **Does not block.** | #1, #3 |
-| 5 | Reify `review` port end-to-end with input-integrity check | Code-Review-Response writes the v3 credit on judge completion; integrity check verifies pass-block durability (closes #411-style gap). | #4 |
-| 6 | Reify `release-hygiene` port | plugin-release-hygiene skill declares `provides: release-hygiene`; predicate detects entry-point/manifest changes; auto-N/A path for non-release PRs. | #3 |
-| 7 | Reify CE Gate surface ports + `inconclusive` status path | `ce-gate-cli/browser/canvas/api` adapters with surface-touch predicates; CE Gate emits `inconclusive` when environment unable to exercise (not silently `skipped`). | #3 |
-| 8 | Reify `experience`, `design`, `plan` ports | Pipeline-entry agents emit credits with `applies-when` based on `changeset.complexity`. | #3 |
-| 9 | Reify `implement-*` ports | Specialist agents emit credits; Validation Evidence table consumed as input-integrity inputs. | #3 |
-| 10 | Reify `post-pr` and `post-fix-review` ports | Trigger-conditional logic for post-fix-review; explicit credit for post-pr cleanup. | #5 |
-| 11 | Decision: `process-retrospective` port or retire | Audit shows usage rate; decide formalize-as-port or remove from practice. | #1 |
-| 12 | Reify `process-review` port | Trigger-conditional on CE Gate defects. | #7 |
-| 13 | Pre-PR hook switches to **blocking mode** | After all 17 ports have adapters and audit shows acceptable credit-rate, hook upgrades from warn → block. **The actual rails turn on.** | All preceding |
+| # | Real issue | Sub-issue | Deliverable | Depends on |
+|---|---|---|---|---|
+| 1 | #426 | **Audit-only credit ledger from existing markers + pipeline-metrics v3 schema** | Schema doc, port files (17), back-deriver script, audit report. No enforcement. | — |
+| 2 | #427 | Frame validator (lint/CI step) | Walks `frame/ports/*.yaml` and adapter frontmatter; fails CI when an adapter declares a non-existent port and when `applies-when` cannot parse. Missing adapters for existing ports are allowed until coverage enforcement ships. | row 1 |
+| 3 | #428 | Adapter declarations in skill/agent frontmatter | All current skills/agents declare `provides: <port>` and `applies-when` predicates. Validator (row 2) passes. | rows 1, 2 |
+| 4 | #429 | Pre-PR hook (warn-only mode) | Hook exists, reads PR body's pipeline-metrics v3 block, posts a comment listing missing/failed/inconclusive credits. **Does not block.** | rows 1, 3 |
+| 5 | #430 (closed; bundled into #441) | Reify `review` port end-to-end with input-integrity check | Code-Review-Response writes the v3 credit on judge completion; integrity check verifies pass-block durability (closes #411-style gap). | row 4 |
+| 6 | #431 (closed) | Reify `release-hygiene` port | plugin-release-hygiene skill declares `provides: release-hygiene`; predicate detects entry-point and distributed plugin file changes. | row 3 |
+| 7 | #432 (closed) | Reify CE Gate surface ports + `inconclusive` status path | `ce-gate-cli/browser/canvas/api` adapters with surface-touch predicates; CE Gate emits `inconclusive` when environment unable to exercise (not silently `skipped`). | row 3 |
+| 8 | #433 (closed) | Reify `experience`, `design`, `plan` ports | Pipeline-entry agents emit credits with `applies-when` based on `changeset.complexity`. | row 3 |
+| 9 | #434 (closed) | Reify `implement-*` ports | Specialist agents emit credits; Validation Evidence table consumed as input-integrity inputs. | row 3 |
+| 10 | #435 (closed) | Reify `post-pr` and `post-fix-review` ports | Trigger-conditional logic for post-fix-review; explicit credit for post-pr cleanup. | row 5 |
+| 11 | #436 (closed; bundled into #443) | Decision: `process-retrospective` port or retire | Audit shows usage rate; decide formalize-as-port or remove from practice. | row 1 |
+| 12 | #438 (closed) | Reify `process-review` port | Trigger-conditional on CE Gate defects. | row 7 |
+| 13 | #439 | Pre-PR hook switches to **blocking mode** | After all 17 ports have adapters and audit shows acceptable credit-rate, hook upgrades from warn → block. **The actual rails turn on.** | all preceding |
+
+Active aggregation issues: #441 covers sub-A rows 5, 6, and 10; #442 covers sub-B rows 7, 8, and 9; #443 covers sub-C rows 11 and 12.
 
 ---
 
@@ -470,7 +546,7 @@ Order is intentional but flexible — actual priority will shift based on audit-
 
 | V1 question | V2 resolution |
 |---|---|
-| Does the 13-port set cover everything? | **No.** Audit added 4: `release-hygiene` (always-applies), `post-fix-review`, `process-review`, `process-retrospective` (all trigger-conditional or TBD). Total = 17 ports. |
+| Does the 13-port set cover everything? | **No.** Audit added 4: `release-hygiene`, `post-fix-review`, and `process-review` as trigger-conditional ports, plus `process-retrospective` as a deferred/TBD decision port. Total = 17 ports. |
 | Is back-derivation accurate for both eras? | **Era-aware fallbacks required.** Pre-thin/fat PRs lack `plan-issue-{ID}` markers; the back-deriver infers from PR-body sections instead. Documented in the rules table. |
 | How to distinguish "port wasn't required at the time" from "port was missed"? | Era split in audit report: pre-thin/fat reports against 14 ports, post-thin/fat against 17. Trigger-conditional ports auto-N/A under their trigger absence rule across both. |
 | Does the flat list still feel right? | **Yes.** Walking 4 PRs, no decomposition pressure emerged. Display grouping (`implement-*`, `ce-gate-*`) is sufficient. |
@@ -500,10 +576,10 @@ Order is intentional but flexible — actual priority will shift based on audit-
 | F9 | Port granularity principle | One port per customer-meaningful question about the PR | Internal stages of an adapter (prosecute/defend/judge) aren't separate ports. | V1 |
 | F10 | All-or-nothing semantics | Terminal-step credit + input-integrity check | Partial states recoverable but not credit-writable; gate enforces at terminal point. **Audit confirmed need**: PR #411 shipped with `pass_1/2/3_findings: n/a` and an explicit "not durably persisted" warning that today goes unchallenged. | V1 (audit-validated V2) |
 | F11 | Port applicability | Every port always applies; auto-N/A is an adapter, not a port-level skip | One mechanism, not two; no silent gaps; uniform audit trail. | V1 |
-| F12 | **Trigger-conditional ports** | Three ports (`post-fix-review`, `process-review`, `process-retrospective`) activate only when a triggering signal appears in another port's credit. Trigger-absent still emits an explicit credit. | Audit revealed `post-fix-review` (in #286) and `process-review` (mentioned in #286, #411) have distinct triggers and scopes; folding them into other ports loses the conditional structure. | **V2 new** |
+| F12 | **Trigger-conditional ports** | Three ports (`release-hygiene`, `post-fix-review`, `process-review`) activate only when a triggering signal appears in the changeset or another port's credit. Trigger-absent still emits an explicit credit. `process-retrospective` remains deferred/TBD and is not trigger-conditional. | Audit revealed `release-hygiene`, `post-fix-review` (in #286), and `process-review` (mentioned in #286, #411) have distinct triggers and scopes; folding them into other ports loses the conditional structure. | **V2 new** |
 | F13 | **Credit status enum** | `passed` \| `failed` \| `skipped` \| `not-applicable` \| `inconclusive` | Audit revealed CE Gate "skipped — environment couldn't exercise" is neither a true skip nor truly N/A. Add `inconclusive` for environment/tooling-blocked states. | **V2 new** |
-| F14 | **Auto-N/A predicate refinement** | Drop `scope.isHotfix` from `experience`/`design`/`plan`; use only `changeset.complexity == trivial` | Audit showed PR #415 (a bug fix) ran all three with full marker chain. The hotfix predicate would have wrongly auto-N/A'd. | **V2 new** |
-| F15 | **Release-hygiene as a port** | Add `release-hygiene` (always-applies, auto-N/A on no entry-point/manifest changes) | Every recent PR shows version bumps with no enforcement; visible drift surface. | **V2 new** |
+| F14 | **Auto-N/A predicate refinement** | Drop `scope.isHotfix` from `experience`/`design`/`plan`; use only `changeset.complexity == 'trivial'` | Audit showed PR #415 (a bug fix) ran all three with full marker chain. The hotfix predicate would have wrongly auto-N/A'd. | **V2 new** |
+| F15 | **Release-hygiene as a port** | Add `release-hygiene` as trigger-conditional on plugin entry-point and distributed plugin file changes | Every recent PR shows version bumps with no enforcement; visible drift surface. | **V2 new** |
 | F16 | **Express-lane carve-out in integrity check** | Integrity check accepts `express_lane: true` findings as valid terminators | PR #338 used express_lane on 5/12 findings; full-defense-required rule would have falsely flagged. | **V2 new** |
 | F17 | **Pipeline-metrics versioning** | v2 → v3 is additive (preserve all v2 fields, add `credits[]` + `frame_version`). v2-only readers continue to work. | Backwards-compat is mandatory; existing tooling consumes v2 metrics today. | **V2 new** |
 
@@ -542,7 +618,8 @@ PRs walked: **#411** (Phase 3 Code-Conductor, post-thin/fat), **#415** (inline-d
 | `ce-gate-*` | ⚠️ **inconclusive** | "*CE Gate skipped — runtime cross-surface manual scenarios were not exercised in this environment*" — today silent skip; V2 distinguishes as `inconclusive` |
 | `release-hygiene` | ✅ passed | 2.3.4 bump |
 | `post-pr` | ✅ passed | |
-| `post-fix-review` / `process-review` / `process-retrospective` | ⏭️ all trigger-absent | |
+| `post-fix-review` / `process-review` | ⏭️ trigger-absent | |
+| `process-retrospective` | ⏭️ deferred/TBD | No Step 11 section |
 
 #### PR #286 — Fix Effectiveness (pre-thin/fat, +2367/-115, 3 files)
 
@@ -572,7 +649,8 @@ PRs walked: **#411** (Phase 3 Code-Conductor, post-thin/fat), **#415** (inline-d
 | `review` | ✅ passed | 7 rulings; `express_lane_count: 5` (5/12 findings shortcut) — **drives F16 carve-out** |
 | `ce-gate-*` | ⏭️ N/A | "agent orchestration definition change with no independently exercisable customer surface" — clean justified N/A, exact V1 model |
 | `release-hygiene` | ⏭️ N/A (era) | |
-| `post-fix-review` / `process-review` / `process-retrospective` | ⏭️ all trigger-absent / missing | |
+| `post-fix-review` / `process-review` | ⏭️ trigger-absent | |
+| `process-retrospective` | ⏭️ deferred/TBD | No Step 11 section |
 
 ### Cross-PR aggregate (4-PR sample)
 

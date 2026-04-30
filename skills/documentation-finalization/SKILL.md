@@ -87,3 +87,9 @@ Make documentation reflect the shipped state of the repository. Treat deletion o
 | Trigger                                      | Gotcha                                                           | Fix                                                             |
 | -------------------------------------------- | ---------------------------------------------------------------- | --------------------------------------------------------------- |
 | Turning a domain design doc into issue notes | The file becomes a changelog and stops reflecting the current UX | Rewrite the doc around current domain behavior and delete drift |
+
+## Frame Ports Filled By This Skill
+
+| Port | Work adapter | Auto-N/A adapter | Explicit-skip adapter |
+| --- | --- | --- | --- |
+| `implement-docs` | [agents/Doc-Keeper.agent.md](../../agents/Doc-Keeper.agent.md) | [adapters/auto-na-implement-docs.md](adapters/auto-na-implement-docs.md) | [adapters/explicit-skip-implement-docs.md](adapters/explicit-skip-implement-docs.md) |

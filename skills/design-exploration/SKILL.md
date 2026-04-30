@@ -137,6 +137,12 @@ See `adversarial-review` for the full prosecution workflow and output schemas th
 
 ---
 
+## Frame Ports Filled By This Skill
+
+| Port | Work adapter | Auto-N/A adapter | Explicit-skip adapter |
+| --- | --- | --- | --- |
+| `design` | [agents/Solution-Designer.agent.md](../../agents/Solution-Designer.agent.md) | [adapters/auto-na-design.md](adapters/auto-na-design.md) | [adapters/explicit-skip-design.md](adapters/explicit-skip-design.md) |
+
 ## Platform-specific invocation
 
 This skill's methodology is tool-agnostic. Platform-specific routing lives alongside:

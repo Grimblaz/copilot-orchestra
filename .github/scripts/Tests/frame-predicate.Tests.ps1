@@ -192,7 +192,7 @@ Describe 'ConvertTo-FVPredicate' -Tag 'unit' {
             @{ Predicate = 'scope.isReReview'; ExpectedKinds = @('Identifier'); ExpectedValues = @('scope.isReReview') }
             @{ Predicate = "changeset.touches('src/ui/**')"; ExpectedKinds = @('Call', 'Literal'); ExpectedValues = @('changeset.touches', 'src/ui/**') }
             @{ Predicate = 'not changeset.touchesSource()'; ExpectedKinds = @('Not', 'Call'); ExpectedValues = @('changeset.touchesSource') }
-            @{ Predicate = "changeset.touches('docs/**') and changeset.behaviorChanged()"; ExpectedKinds = @('Logical', 'Call'); ExpectedValues = @('AND', 'changeset.touches', 'docs/**', 'changeset.behaviorChanged') }
+            @{ Predicate = "changeset.touches('docs/**') and changeset.changesBehaviorOrInterface()"; ExpectedKinds = @('Logical', 'Call'); ExpectedValues = @('AND', 'changeset.touches', 'docs/**', 'changeset.changesBehaviorOrInterface') }
         ) {
             param($Predicate, $ExpectedKinds, $ExpectedValues)
 

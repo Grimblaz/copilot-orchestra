@@ -214,3 +214,9 @@ all members, not only the first or primary record.
 | Mocking inside a layer instead of at its boundary | Tests become implementation-aware and break during harmless refactors | Stub only the external seam and let the layer's internal collaborators run |
 
 For detailed examples of each anti-pattern, see `references/anti-patterns.md`.
+
+## Frame Ports Filled By This Skill
+
+| Port | Work adapter | Auto-N/A adapter | Explicit-skip adapter |
+| --- | --- | --- | --- |
+| `implement-test` | [agents/Test-Writer.agent.md](../../agents/Test-Writer.agent.md) | [adapters/auto-na-implement-test.md](adapters/auto-na-implement-test.md) | [adapters/explicit-skip-implement-test.md](adapters/explicit-skip-implement-test.md) |

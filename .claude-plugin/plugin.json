@@ -17,6 +17,5 @@
     "tdd",
     "multi-agent",
     "pipeline"
-  ],
-  "hooks": "./hooks/hooks.json"
+  ]
 }

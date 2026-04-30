@@ -69,9 +69,8 @@ This gate applies equally to upstream framing (Experience-Owner) and downstream 
 - Only drafting functional scenarios lets CE Gate prove correctness while missing design-intent regressions. Always include at least one intent scenario.
 - Multi-surface work cannot inherit coverage from one exercised path. Enumerate each surface group and mark uncovered ones explicitly.
 
-## Platform-specific invocation
+## Frame Ports Filled By This Skill
 
-This skill's methodology is tool-agnostic. Platform-specific routing lives alongside:
-
-- Copilot: [platforms/copilot.md](platforms/copilot.md)
-- Claude Code: [platforms/claude.md](platforms/claude.md)
+Ports: `experience`, `ce-gate-cli`, `ce-gate-browser`, `ce-gate-canvas`, and `ce-gate-api`.
+The `experience` work adapter is [agents/Experience-Owner.agent.md](../../agents/Experience-Owner.agent.md); its auto-N/A and explicit-skip adapters use `adapters/auto-na-experience.md` and `adapters/explicit-skip-experience.md`.
+CE Gate adapter files follow `adapters/{port}.md`, `adapters/auto-na-{port}.md`, and `adapters/explicit-skip-{port}.md`.

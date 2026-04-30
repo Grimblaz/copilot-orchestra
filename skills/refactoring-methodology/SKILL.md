@@ -149,3 +149,9 @@ Refactor-Specialist will:
 | Trigger                                   | Gotcha                                                    | Fix                                                                  |
 | ----------------------------------------- | --------------------------------------------------------- | -------------------------------------------------------------------- |
 | Treating unused new data as later cleanup | The PR ships an incomplete feature under a refactor label | Identify the missing integration point and fix it in the same change |
+
+## Frame Ports Filled By This Skill
+
+| Port | Work adapter | Auto-N/A adapter | Explicit-skip adapter |
+| --- | --- | --- | --- |
+| `implement-refactor` | [agents/Refactor-Specialist.agent.md](../../agents/Refactor-Specialist.agent.md) | [adapters/auto-na-implement-refactor.md](adapters/auto-na-implement-refactor.md) | [adapters/explicit-skip-implement-refactor.md](adapters/explicit-skip-implement-refactor.md) |

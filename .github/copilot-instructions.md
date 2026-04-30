@@ -34,6 +34,10 @@ Pipeline-based agent orchestration:
 - **Skills** (42): Loaded on demand by agents from `skills/` (repo root)
 - **Instruction files**: Repo-local instruction files remain under `.github/instructions/`, while shared workflow rules load from skills
 
+## Frame Port Declarations
+
+Before adding or changing any adapter that fills a frame port, read the Adapter Model in [Documents/Design/frame-architecture.md](../Documents/Design/frame-architecture.md). That design doc owns the declaration locations, provisional predicate DSL, and the distinction between port-filling adapters that declare `provides:` and supporting methodology skills that do not.
+
 ## Key Conventions
 
 - Agent files use `.agent.md` extension with YAML frontmatter (`name`, `description`, `tools`, `handoffs`, `user-invocable`)
